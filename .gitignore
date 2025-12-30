@@ -1,2 +1,26 @@
 # Claude planning documents (ephemeral)
 docs/plans/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+*.egg-info/
+
+# Node
+node_modules/
+.wrangler/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+
+# Secrets
+.env
+.env.local
+secrets/
