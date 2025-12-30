@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPU Instance Dashboard</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0e1a 0%, #1a1f2e 100%);
+            color: #e4e4e7;
+            padding: 2rem;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #2d3748;
+            padding-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: #00d4ff;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        .instances-grid {
+            display: grid;
+            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+        }
+
+        .instance-card {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .instance-card:hover {
+            border-color: #00d4ff;
+            box-shadow: 0 8px 16px rgba(0, 212, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .instance-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #334155;
+        }
+
+        .instance-title {
+            flex: 1;
+        }
+
+        .instance-name {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #00d4ff;
+            margin-bottom: 0.25rem;
+        }
+
+        .instance-type {
+            color: #94a3b8;
+            font-size: 0.85rem;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-active {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border: 1px solid #10b981;
+        }
+
+        .status-booting {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+            border: 1px solid #fbbf24;
+        }
+
+        .status-unhealthy {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+
+        .instance-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .detail-label {
+            font-size: 0.75rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-value {
+            color: #e4e4e7;
+            font-size: 0.95rem;
+        }
+
+        .metric-value {
+            font-weight: 600;
+            color: #00d4ff;
+        }
+
+        .warning-value {
+            color: #fbbf24;
+        }
+
+        .actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #334155;
+        }
+
+        button {
+            flex: 1;
+            padding: 0.65rem 1rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: #00d4ff;
+            color: #0a0e1a;
+        }
+
+        .btn-primary:hover {
+            background: #00b8e6;
+            transform: scale(1.02);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #64748b;
+        }
+
+        .spinner {
+            border: 3px solid #1e293b;
+            border-top: 3px solid #00d4ff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #64748b;
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .gpu-utilization {
+            margin-top: 0.5rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #1e293b;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #00d4ff);
+            transition: width 0.3s ease;
+        }
+
+        .model-info {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 6px;
+            padding: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .model-name {
+            font-weight: 600;
+            color: #00d4ff;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .instances-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .instance-details {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>
+                <span class="status-indicator"></span>
+                GPU Instance Dashboard
+            </h1>
+            <p class="subtitle">Real-time monitoring and management | Auto-refresh: 30s</p>
+        </header>
+
+        <div id="instances" hx-get="/api/instances" hx-trigger="load, every 30s" hx-swap="innerHTML">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Loading instances...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Handle instance list rendering
+        document.body.addEventListener('htmx:afterSwap', function(event) {
+            if (event.detail.target.id === 'instances') {
+                const data = JSON.parse(event.detail.xhr.response);
+                renderInstances(data);
+            }
+        });
+
+        function renderInstances(instances) {
+            const container = document.getElementById('instances');
+
+            if (instances.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🖥️</div>
+                        <h2>No Active Instances</h2>
+                        <p>Start a GPU session to see it here</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const html = `
+                <div class="instances-grid">
+                    ${instances.map(instance => renderInstanceCard(instance)).join('')}
+                </div>
+            `;
+            container.innerHTML = html;
+        }
+
+        function renderInstanceCard(instance) {
+            const daemon = instance.daemon_status || {};
+            const hasStatus = Object.keys(daemon).length > 0;
+
+            const status = instance.status === 'active' ?
+                (hasStatus ? 'active' : 'booting') : 'unhealthy';
+
+            const statusLabel = status === 'active' ? 'Running' :
+                              status === 'booting' ? 'Booting' : 'Unhealthy';
+
+            return `
+                <div class="instance-card">
+                    <div class="instance-header">
+                        <div class="instance-title">
+                            <div class="instance-name">
+                                ${instance.name || instance.id.substring(0, 12)}
+                            </div>
+                            <div class="instance-type">${instance.instance_type}</div>
+                        </div>
+                        <span class="status-badge status-${status}">${statusLabel}</span>
+                    </div>
+
+                    <div class="instance-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Region</span>
+                            <span class="detail-value">${instance.region}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">IP Address</span>
+                            <span class="detail-value">${instance.ip || 'Pending'}</span>
+                        </div>
+                        ${hasStatus ? `
+                            <div class="detail-item">
+                                <span class="detail-label">Uptime</span>
+                                <span class="detail-value metric-value">${daemon.uptime_minutes} min</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Idle Time</span>
+                                <span class="detail-value ${daemon.idle_minutes > 15 ? 'warning-value' : 'metric-value'}">
+                                    ${daemon.idle_minutes} min
+                                </span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Shutdown In</span>
+                                <span class="detail-value ${daemon.shutdown_in_minutes < 30 ? 'warning-value' : 'metric-value'}">
+                                    ${daemon.shutdown_in_minutes} min
+                                </span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">GPU Utilization</span>
+                                <span class="detail-value metric-value">${daemon.gpu_utilization}%</span>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${daemon.gpu_utilization}%"></div>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    ${hasStatus && daemon.model_loaded !== 'not-loaded' ? `
+                        <div class="model-info">
+                            <div class="detail-label">Model Loaded</div>
+                            <div class="model-name">${daemon.model_loaded}</div>
+                        </div>
+                    ` : ''}
+
+                    <div class="actions">
+                        <button class="btn-primary"
+                                onclick="extendLease('${instance.id}')"
+                                ${!hasStatus ? 'disabled' : ''}>
+                            Extend +2h
+                        </button>
+                        <button class="btn-danger"
+                                onclick="terminateInstance('${instance.id}')">
+                            Terminate
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function extendLease(instanceId) {
+            if (!confirm('Extend lease by 2 hours?')) return;
+
+            try {
+                const response = await fetch(`/api/extend/${instanceId}?hours=2`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    alert(`Lease extended by ${data.extended_by_hours} hours`);
+                    htmx.trigger('#instances', 'load');
+                } else {
+                    alert('Failed to extend lease');
+                }
+            } catch (error) {
+                alert('Error extending lease: ' + error.message);
+            }
+        }
+
+        async function terminateInstance(instanceId) {
+            if (!confirm('Are you sure you want to terminate this instance? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/terminate/${instanceId}`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    alert('Instance termination initiated');
+                    htmx.trigger('#instances', 'load');
+                } else {
+                    alert('Failed to terminate instance');
+                }
+            } catch (error) {
+                alert('Error terminating instance: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
