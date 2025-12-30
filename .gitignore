@@ -24,3 +24,10 @@ node_modules/
 .env
 .env.local
 secrets/
+
+# Logs and runtime files
+logs/
+*.log
+
+# Claude-flow runtime
+.claude-flow/
