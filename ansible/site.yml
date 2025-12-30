@@ -1,0 +1,19 @@
+---
+# Lambda GPU Coding Stack - Main Playbook
+# Configures SGLang, n8n, OpenHands, and Status Daemon on Lambda instance
+
+- name: Configure Lambda GPU Coding Stack
+  hosts: localhost
+  connection: local
+  become: yes
+
+  vars_files:
+    - group_vars/all.yml
+
+  roles:
+    - common
+    - firewall
+    - sglang
+    - n8n
+    - openhands
+    - status-daemon

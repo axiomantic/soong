@@ -1,0 +1,10 @@
+name = "gpu-watchdog"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+[triggers]
+crons = ["*/30 * * * *"]
+
+# Secrets to configure via `wrangler secret put`:
+# - LAMBDA_API_KEY
+# - STATUS_DAEMON_TOKEN

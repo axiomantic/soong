@@ -1,0 +1,39 @@
+---
+# Lambda GPU Coding Stack - Global Variables
+# These values are shared across all roles
+
+# Persistent storage path (Lambda filesystem mount point)
+persistent_path: "/lambda/nfs/coding-stack"
+
+# Model configurations
+model_configs:
+  deepseek-r1-70b:
+    hf_path: "deepseek-ai/DeepSeek-R1-Distill-Llama-70B"
+    recommended_gpu: "gpu_1x_a100_sxm4_80gb"
+  qwen2.5-coder-32b:
+    hf_path: "Qwen/Qwen2.5-Coder-32B-Instruct"
+    recommended_gpu: "gpu_1x_rtx6000"
+
+# Default model (can be overridden via -e flag)
+model: "deepseek-r1-70b"
+model_hf_path: "{{ model_configs[model].hf_path }}"
+
+# Lease and timeout settings
+lease_hours: 4
+idle_timeout_minutes: 30
+max_lease_hours: 8
+
+# Service ports
+sglang_port: 8000
+n8n_port: 5678
+status_daemon_port: 8080
+
+# Retry configuration (per design doc)
+retry_max_attempts: 3
+retry_base_delay: 1
+retry_backoff_multiplier: 2
+
+# These are passed from cloud-init via -e flags
+# lambda_api_key: ""
+# status_token: ""
+# n8n_token: ""
