@@ -61,8 +61,8 @@ def signal_activity():
             headers={"Authorization": f"Bearer {STATUS_TOKEN}"},
             timeout=5
         )
-    except:
-        pass
+    except (requests.exceptions.RequestException, OSError):
+        pass  # Activity signal is best-effort
 
 
 def main():
