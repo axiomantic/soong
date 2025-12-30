@@ -1,0 +1,30 @@
+---
+- name: Install n8n globally
+  npm:
+    name: n8n
+    global: yes
+    state: present
+
+- name: Create n8n systemd service
+  template:
+    src: n8n.service.j2
+    dest: /etc/systemd/system/n8n.service
+    mode: '0644'
+  notify: Reload systemd
+
+- name: Start n8n service
+  systemd:
+    name: n8n
+    state: started
+    enabled: yes
+    daemon_reload: yes
+
+- name: Wait for n8n to be ready
+  uri:
+    url: "http://127.0.0.1:{{ n8n_port }}/healthz"
+    method: GET
+    status_code: 200
+  register: result
+  until: result.status == 200
+  retries: 30
+  delay: 5

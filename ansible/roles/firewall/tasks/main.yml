@@ -1,0 +1,29 @@
+---
+- name: Fetch Cloudflare IPv4 ranges
+  uri:
+    url: https://www.cloudflare.com/ips-v4
+    return_content: yes
+  register: cf_ipv4
+
+- name: Fetch Cloudflare IPv6 ranges
+  uri:
+    url: https://www.cloudflare.com/ips-v6
+    return_content: yes
+  register: cf_ipv6
+
+- name: Parse Cloudflare IPs
+  set_fact:
+    cf_ips: "{{ (cf_ipv4.content.split('\n') + cf_ipv6.content.split('\n')) | select('match', '.+') | list }}"
+
+- name: Save Cloudflare IPs for reference
+  copy:
+    content: "{{ cf_ips | join('\n') }}"
+    dest: "{{ persistent_path }}/logs/cloudflare-ips.txt"
+
+# Note: Lambda firewall API integration needs verification
+# For now, manually configure via console or verify API format
+- name: Log firewall update reminder
+  debug:
+    msg: |
+      MANUAL STEP: Update Lambda firewall to allow port 8080 from Cloudflare IPs.
+      IPs saved to {{ persistent_path }}/logs/cloudflare-ips.txt

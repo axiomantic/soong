@@ -1,0 +1,14 @@
+[Unit]
+Description=GPU Status Daemon
+After=network.target sglang.service
+
+[Service]
+Type=simple
+User=ubuntu
+Environment="PATH={{ persistent_path }}/venv/bin:/usr/bin"
+ExecStart={{ persistent_path }}/venv/bin/python {{ persistent_path }}/status_daemon.py
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

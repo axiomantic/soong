@@ -1,0 +1,30 @@
+---
+- name: Install status daemon dependencies
+  pip:
+    name:
+      - flask
+      - requests
+    virtualenv: "{{ persistent_path }}/venv"
+    state: present
+
+- name: Copy status daemon script
+  template:
+    src: status_daemon.py.j2
+    dest: "{{ persistent_path }}/status_daemon.py"
+    mode: '0755'
+    owner: ubuntu
+    group: ubuntu
+
+- name: Create status daemon systemd service
+  template:
+    src: status-daemon.service.j2
+    dest: /etc/systemd/system/status-daemon.service
+    mode: '0644'
+  notify: Reload systemd
+
+- name: Start status daemon service
+  systemd:
+    name: status-daemon
+    state: started
+    enabled: yes
+    daemon_reload: yes

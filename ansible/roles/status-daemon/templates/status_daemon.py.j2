@@ -1,0 +1,273 @@
+#!/usr/bin/env python3
+"""
+Status Daemon - Health checks, lease management, idle detection, self-termination.
+"""
+
+import os
+import time
+import threading
+import subprocess
+import requests
+from datetime import datetime, timedelta
+from flask import Flask, jsonify, request, render_template_string
+
+app = Flask(__name__)
+
+# Configuration
+LAMBDA_API_KEY = "{{ lambda_api_key }}"
+STATUS_TOKEN = "{{ status_token }}"
+IDLE_TIMEOUT_MINUTES = {{ idle_timeout_minutes }}
+LEASE_HOURS = {{ lease_hours }}
+MAX_LEASE_HOURS = {{ max_lease_hours }}
+
+# State
+BOOT_TIME = datetime.utcnow()
+LAST_ACTIVITY = datetime.utcnow()
+SHUTDOWN_AT = BOOT_TIME + timedelta(hours=LEASE_HOURS)
+INSTANCE_ID = None
+
+
+def get_instance_id():
+    """Get instance ID from Lambda API by matching IP."""
+    global INSTANCE_ID
+    if INSTANCE_ID:
+        return INSTANCE_ID
+
+    max_retries = 5
+    retry_delay = 2
+
+    for attempt in range(max_retries):
+        try:
+            my_ip = subprocess.check_output(
+                ["curl", "-s", "ifconfig.me"], timeout=10
+            ).decode().strip()
+
+            if not my_ip:
+                app.logger.warning(f"Empty IP response, retry {attempt + 1}/{max_retries}")
+                time.sleep(retry_delay)
+                continue
+
+            resp = requests.get(
+                "https://cloud.lambdalabs.com/api/v1/instances",
+                headers={"Authorization": f"Bearer {LAMBDA_API_KEY}"},
+                timeout=15
+            )
+            resp.raise_for_status()
+
+            for instance in resp.json().get("data", []):
+                if instance.get("ip") == my_ip:
+                    INSTANCE_ID = instance.get("id")
+                    app.logger.info(f"Found instance ID: {INSTANCE_ID}")
+                    return INSTANCE_ID
+
+            app.logger.warning(f"Instance not found for IP {my_ip}, retry {attempt + 1}/{max_retries}")
+
+        except subprocess.TimeoutExpired:
+            app.logger.error(f"IP lookup timeout, retry {attempt + 1}/{max_retries}")
+        except requests.exceptions.RequestException as e:
+            app.logger.error(f"Lambda API error: {e}, retry {attempt + 1}/{max_retries}")
+        except Exception as e:
+            app.logger.error(f"Unexpected error getting instance ID: {e}")
+
+        if attempt < max_retries - 1:
+            time.sleep(retry_delay * (attempt + 1))
+
+    fallback_id = os.environ.get("HOSTNAME", "unknown")
+    app.logger.error(f"Failed to get instance ID after {max_retries} retries, using fallback: {fallback_id}")
+    return fallback_id
+
+
+def get_gpu_utilization():
+    """Get GPU utilization from nvidia-smi."""
+    try:
+        output = subprocess.check_output(
+            ["nvidia-smi", "--query-gpu=utilization.gpu", "--format=csv,noheader,nounits"],
+            timeout=5
+        ).decode().strip()
+        return int(output.split("\n")[0])
+    except:
+        return -1
+
+
+def get_model_loaded():
+    """Check which model SGLang is serving."""
+    try:
+        resp = requests.get("http://localhost:{{ sglang_port }}/v1/models", timeout=5)
+        models = resp.json().get("data", [])
+        if models:
+            return models[0].get("id", "unknown")
+    except:
+        pass
+    return "not-loaded"
+
+
+def has_active_ssh():
+    """Check if any SSH sessions are active."""
+    try:
+        output = subprocess.check_output(["who"], timeout=5).decode()
+        return len(output.strip()) > 0
+    except:
+        return False
+
+
+def check_auth():
+    """Verify bearer token."""
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        return auth[7:] == STATUS_TOKEN
+    return False
+
+
+def terminate_instance(reason: str):
+    """Call Lambda API to terminate this instance."""
+    instance_id = get_instance_id()
+    app.logger.warning(f"TERMINATING INSTANCE: {reason}")
+
+    max_retries = 3
+    retry_delay = 5
+
+    for attempt in range(max_retries):
+        try:
+            resp = requests.post(
+                "https://cloud.lambdalabs.com/api/v1/instance-operations/terminate",
+                headers={
+                    "Authorization": f"Bearer {LAMBDA_API_KEY}",
+                    "Content-Type": "application/json"
+                },
+                json={"instance_ids": [instance_id]},
+                timeout=30
+            )
+            app.logger.info(f"Terminate response: {resp.status_code} - {resp.text}")
+
+            if resp.status_code in (200, 202):
+                app.logger.info("Termination successful")
+                return
+
+            app.logger.warning(f"Termination returned {resp.status_code}, retry {attempt + 1}/{max_retries}")
+
+        except requests.exceptions.RequestException as e:
+            app.logger.error(f"Termination request failed: {e}, retry {attempt + 1}/{max_retries}")
+        except Exception as e:
+            app.logger.error(f"Unexpected termination error: {e}")
+
+        if attempt < max_retries - 1:
+            time.sleep(retry_delay)
+
+    app.logger.error(f"Failed to terminate instance after {max_retries} retries")
+
+
+def idle_checker():
+    """Background thread checking for idle timeout and lease expiry."""
+    global LAST_ACTIVITY, SHUTDOWN_AT
+    while True:
+        time.sleep(60)
+        now = datetime.utcnow()
+
+        # Reset activity if SSH session active
+        if has_active_ssh():
+            LAST_ACTIVITY = now
+
+        # Check lease expiry
+        if now > SHUTDOWN_AT:
+            terminate_instance("lease_expired")
+            return
+
+        # Check idle timeout
+        idle_minutes = (now - LAST_ACTIVITY).total_seconds() / 60
+        if idle_minutes > IDLE_TIMEOUT_MINUTES:
+            terminate_instance(f"idle_timeout ({idle_minutes:.0f} min)")
+            return
+
+
+def get_status_dict():
+    now = datetime.utcnow()
+    return {
+        "instance_id": get_instance_id(),
+        "status": "healthy",
+        "uptime_minutes": int((now - BOOT_TIME).total_seconds() / 60),
+        "idle_minutes": int((now - LAST_ACTIVITY).total_seconds() / 60),
+        "shutdown_at": SHUTDOWN_AT.isoformat() + "Z",
+        "shutdown_in_minutes": max(0, int((SHUTDOWN_AT - now).total_seconds() / 60)),
+        "model_loaded": get_model_loaded(),
+        "gpu_utilization": get_gpu_utilization(),
+        "boot_time": BOOT_TIME.isoformat() + "Z",
+    }
+
+
+# HTML template for dashboard
+DASHBOARD_HTML = """
+<!DOCTYPE html>
+<html>
+<head><title>GPU Instance Status</title>
+<style>
+body { font-family: monospace; padding: 20px; background: #1a1a2e; color: #eee; }
+pre { background: #16213e; padding: 15px; border-radius: 8px; }
+button { background: #00d4ff; border: none; padding: 10px 20px; cursor: pointer; }
+input { padding: 8px; width: 60px; }
+</style>
+</head>
+<body>
+<h1>GPU Instance Status</h1>
+<pre>{{ status }}</pre>
+<form action="/extend" method="post" style="margin-top: 20px;">
+    <label>Extend by hours: <input type="number" name="hours" value="2" min="1" max="4"></label>
+    <button type="submit">Extend Lease</button>
+</form>
+<script>setTimeout(() => location.reload(), 30000);</script>
+</body>
+</html>
+"""
+
+
+@app.route("/")
+def index():
+    """Simple HTML dashboard."""
+    token = request.args.get("token", "")
+    if not check_auth() and token != STATUS_TOKEN:
+        return "Unauthorized", 401
+
+    import json
+    status = json.dumps(get_status_dict(), indent=2)
+    return render_template_string(DASHBOARD_HTML, status=status)
+
+
+@app.route("/status")
+def status():
+    if not check_auth():
+        return jsonify({"error": "unauthorized"}), 401
+    return jsonify(get_status_dict())
+
+
+@app.route("/extend", methods=["POST"])
+def extend():
+    global SHUTDOWN_AT
+    token = request.form.get("token", "")
+    if not check_auth() and token != STATUS_TOKEN:
+        return jsonify({"error": "unauthorized"}), 401
+
+    hours = int(request.form.get("hours", 2))
+    max_allowed = MAX_LEASE_HOURS - ((datetime.utcnow() - BOOT_TIME).total_seconds() / 3600)
+    hours = min(hours, int(max_allowed))
+
+    if hours > 0:
+        SHUTDOWN_AT = SHUTDOWN_AT + timedelta(hours=hours)
+
+    return jsonify({
+        "extended_by_hours": hours,
+        "new_shutdown_at": SHUTDOWN_AT.isoformat() + "Z"
+    })
+
+
+@app.route("/activity", methods=["POST"])
+def activity():
+    global LAST_ACTIVITY
+    if not check_auth():
+        return jsonify({"error": "unauthorized"}), 401
+    LAST_ACTIVITY = datetime.utcnow()
+    return jsonify({"last_activity": LAST_ACTIVITY.isoformat() + "Z"})
+
+
+if __name__ == "__main__":
+    checker = threading.Thread(target=idle_checker, daemon=True)
+    checker.start()
+    app.run(host="0.0.0.0", port={{ status_daemon_port }})

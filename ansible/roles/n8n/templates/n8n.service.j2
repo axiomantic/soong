@@ -1,0 +1,17 @@
+[Unit]
+Description=n8n Workflow Automation
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Environment="N8N_USER_FOLDER=/home/ubuntu/.n8n"
+Environment="N8N_PORT={{ n8n_port }}"
+Environment="N8N_HOST=127.0.0.1"
+Environment="N8N_PROTOCOL=http"
+ExecStart=/usr/bin/n8n start
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

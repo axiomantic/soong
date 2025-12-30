@@ -1,0 +1,39 @@
+---
+- name: Install SGLang kernel
+  pip:
+    name: sgl-kernel
+    state: latest
+    extra_args: "--force-reinstall --no-deps"
+  environment:
+    HF_HOME: "{{ persistent_path }}/models"
+
+- name: Install SGLang
+  pip:
+    name: "sglang[all]>=0.4.3.post2"
+    extra_args: "--find-links https://flashinfer.ai/whl/cu124/torch2.5/flashinfer"
+  environment:
+    HF_HOME: "{{ persistent_path }}/models"
+
+- name: Create SGLang systemd service
+  template:
+    src: sglang.service.j2
+    dest: /etc/systemd/system/sglang.service
+    mode: '0644'
+  notify: Reload systemd
+
+- name: Start SGLang service
+  systemd:
+    name: sglang
+    state: started
+    enabled: yes
+    daemon_reload: yes
+
+- name: Wait for SGLang to be ready (may take 60+ min on first run)
+  uri:
+    url: "http://127.0.0.1:{{ sglang_port }}/health"
+    method: GET
+    status_code: 200
+  register: result
+  until: result.status == 200
+  retries: 180
+  delay: 20

@@ -1,0 +1,20 @@
+[Unit]
+Description=SGLang LLM Server
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Environment="HF_HOME={{ persistent_path }}/models"
+Environment="TRANSFORMERS_CACHE={{ persistent_path }}/models"
+ExecStart=/usr/bin/python3 -m sglang.launch_server \
+    --model {{ model_hf_path }} \
+    --trust-remote-code \
+    --port {{ sglang_port }} \
+    --host 127.0.0.1
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=1800
+
+[Install]
+WantedBy=multi-user.target

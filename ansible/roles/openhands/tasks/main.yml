@@ -1,0 +1,22 @@
+---
+- name: Create Python virtual environment if not exists
+  command: python3 -m venv {{ persistent_path }}/venv
+  args:
+    creates: "{{ persistent_path }}/venv/bin/activate"
+
+- name: Install OpenHands SDK and dependencies
+  pip:
+    name:
+      - openhands-sdk
+      - requests
+      - httpx
+    virtualenv: "{{ persistent_path }}/venv"
+    state: present
+
+- name: Copy agent script
+  template:
+    src: agent.py.j2
+    dest: "{{ persistent_path }}/agent.py"
+    mode: '0755'
+    owner: ubuntu
+    group: ubuntu

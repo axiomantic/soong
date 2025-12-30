@@ -1,0 +1,87 @@
+#!/usr/bin/env python3
+"""
+Custom OpenHands Agent - connects to local SGLang and n8n MCP.
+"""
+
+import os
+import sys
+import requests
+from openhands.sdk import Agent, LLM, Conversation
+from openhands.tools.terminal import TerminalTool
+from openhands.tools.file_editor import FileEditorTool
+
+# Configuration
+SGLANG_URL = os.environ.get("SGLANG_URL", "http://localhost:{{ sglang_port }}/v1")
+N8N_MCP_URL = os.environ.get("N8N_MCP_URL", "http://localhost:{{ n8n_port }}/mcp")
+N8N_TOKEN = os.environ.get("N8N_TOKEN", "")
+STATUS_DAEMON_URL = os.environ.get("STATUS_DAEMON_URL", "http://localhost:{{ status_daemon_port }}")
+STATUS_TOKEN = os.environ.get("STATUS_DAEMON_TOKEN", "")
+
+# Connect to local SGLang
+llm = LLM(
+    model="openai/{{ model }}",
+    base_url=SGLANG_URL,
+    api_key="not-needed",
+)
+
+# Configure MCP servers
+mcp_config = {
+    "mcpServers": {
+        "n8n": {
+            "url": N8N_MCP_URL,
+            "headers": {"Authorization": f"Bearer {N8N_TOKEN}"} if N8N_TOKEN else {}
+        }
+    }
+}
+
+# Create agent
+agent = Agent(
+    llm=llm,
+    tools=[TerminalTool(), FileEditorTool()],
+    mcp_config=mcp_config,
+    system_prompt="""
+You are a coding assistant with access to:
+1. Terminal commands (bash)
+2. File editing
+3. n8n workflows (GitHub, Jira, CircleCI) via MCP
+
+Before starting work, check n8n for relevant Jira tickets.
+After completing work, update Jira status via n8n.
+"""
+)
+
+
+def signal_activity():
+    """Signal activity to status daemon."""
+    if not STATUS_TOKEN:
+        return
+    try:
+        requests.post(
+            f"{STATUS_DAEMON_URL}/activity",
+            headers={"Authorization": f"Bearer {STATUS_TOKEN}"},
+            timeout=5
+        )
+    except:
+        pass
+
+
+def main():
+    if len(sys.argv) > 1:
+        task = " ".join(sys.argv[1:])
+    else:
+        task = input("Enter task: ")
+
+    workspace = os.environ.get("WORKSPACE", "/home/ubuntu/projects")
+    conversation = Conversation(agent=agent, workspace=workspace)
+
+    signal_activity()
+    conversation.send_message(task)
+    result = conversation.run()
+    signal_activity()
+
+    print("\n--- Result ---")
+    print(result)
+
+
+if __name__ == "__main__":
+    main()
