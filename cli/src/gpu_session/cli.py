@@ -1,6 +1,7 @@
 """CLI interface for GPU session management."""
 
 import typer
+import secrets
 from typing import Optional
 from rich.console import Console
 from rich.table import Table
@@ -35,7 +36,7 @@ def get_config() -> Config:
 @app.command()
 def configure(
     api_key: Optional[str] = typer.Option(None, prompt="Lambda API key"),
-    status_token: Optional[str] = typer.Option(None, prompt="Status daemon token"),
+    status_token: Optional[str] = typer.Option(None, help="Shared secret for status daemon auth"),
     default_region: str = typer.Option("us-west-1", prompt="Default region"),
     filesystem_name: str = typer.Option("coding-stack", prompt="Filesystem name"),
     default_model: str = typer.Option("deepseek-r1-70b", prompt="Default model"),
@@ -44,6 +45,17 @@ def configure(
     ssh_key_path: str = typer.Option("~/.ssh/id_rsa", prompt="SSH key path"),
 ):
     """Configure CLI with API keys and defaults."""
+    # Auto-generate status token if not provided
+    if status_token is None:
+        status_token = typer.prompt(
+            "Status daemon token (shared secret for auth, leave blank to auto-generate)",
+            default="",
+            show_default=False,
+        )
+        if not status_token.strip():
+            status_token = secrets.token_urlsafe(32)
+            console.print(f"[cyan]Generated token:[/cyan] {status_token}")
+
     config = Config(
         lambda_config=LambdaConfig(
             api_key=api_key,
