@@ -4,6 +4,7 @@ import time
 import requests
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass
+from datetime import datetime
 
 
 @dataclass
@@ -16,6 +17,7 @@ class Instance:
     instance_type: str
     region: str
     created_at: str
+    lease_expires_at: Optional[str] = None
 
     @classmethod
     def from_api_response(cls, data: Dict[str, Any]) -> "Instance":
@@ -28,7 +30,43 @@ class Instance:
             instance_type=data["instance_type"]["name"],
             region=data["region"]["name"],
             created_at=data["created_at"],
+            lease_expires_at=data.get("lease_expires_at"),
         )
+
+    def is_lease_expired(self) -> bool:
+        """Check if the instance lease has expired."""
+        if not self.lease_expires_at:
+            return False
+
+        try:
+            expires_at = datetime.fromisoformat(self.lease_expires_at.replace('Z', '+00:00'))
+            return datetime.utcnow().replace(tzinfo=expires_at.tzinfo) > expires_at
+        except (ValueError, AttributeError):
+            return False
+
+    def lease_status_style(self) -> str:
+        """
+        Get rich style string for lease status.
+
+        Returns:
+            "red" if expired, "yellow" if expiring soon (< 1 hour), "green" otherwise
+        """
+        if not self.lease_expires_at:
+            return "white"
+
+        try:
+            expires_at = datetime.fromisoformat(self.lease_expires_at.replace('Z', '+00:00'))
+            now = datetime.utcnow().replace(tzinfo=expires_at.tzinfo)
+            time_left = expires_at - now
+
+            if time_left.total_seconds() < 0:
+                return "red"  # Expired
+            elif time_left.total_seconds() < 3600:
+                return "yellow"  # Expiring soon (< 1 hour)
+            else:
+                return "green"  # Safe
+        except (ValueError, AttributeError):
+            return "white"
 
 
 class LambdaAPIError(Exception):

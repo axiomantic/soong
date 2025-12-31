@@ -10,6 +10,7 @@
 interface Env {
   LAMBDA_API_KEY: string;
   STATUS_DAEMON_TOKEN: string;
+  KV?: KVNamespace;  // Optional KV namespace for history storage
 }
 
 interface LambdaInstance {
@@ -47,10 +48,54 @@ interface FailureTracker {
   [instanceId: string]: number;
 }
 
+interface HistoryEvent {
+  timestamp: string;
+  instance_id: string;
+  event_type: string;
+  reason: string;
+  uptime_minutes: number;
+  gpu_type: string;
+  region: string;
+}
+
 // KV namespace to track consecutive failures across cron runs
 // Note: This would require adding KV binding in wrangler.toml for production
 // For now, we'll use a global in-memory store (resets on each deployment)
 let failureTracker: FailureTracker = {};
+
+/**
+ * Log a history event to KV storage
+ * Note: Requires KV namespace binding configured in wrangler.toml
+ */
+async function logHistoryEvent(
+  env: Env,
+  instance: LambdaInstance,
+  reason: string,
+  uptimeMinutes: number
+): Promise<void> {
+  if (!env.KV) {
+    console.log('KV namespace not configured, skipping history logging');
+    return;
+  }
+
+  const event: HistoryEvent = {
+    timestamp: new Date().toISOString(),
+    instance_id: instance.id,
+    event_type: 'termination',
+    reason,
+    uptime_minutes: uptimeMinutes,
+    gpu_type: instance.instance_type.name,
+    region: instance.region.name,
+  };
+
+  // Store with key: history:{timestamp}:{instance_id}
+  const key = `history:${event.timestamp}:${instance.id}`;
+  await env.KV.put(key, JSON.stringify(event), {
+    expirationTtl: 7 * 24 * 60 * 60,  // Keep for 7 days
+  });
+
+  console.log(`Logged history event: ${key}`);
+}
 
 /**
  * Retry a function with exponential backoff
@@ -206,6 +251,19 @@ async function watchdogCheck(env: Env): Promise<string[]> {
           logs.push(`Instance ${instance.id} failed ${currentFailures} consecutive checks, terminating...`);
 
           try {
+            // Calculate uptime (rough estimate based on created_at)
+            const createdAt = new Date(instance.created_at);
+            const now = new Date();
+            const uptimeMinutes = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60));
+
+            // Log history event before terminating
+            await logHistoryEvent(
+              env,
+              instance,
+              'watchdog: health check failures',
+              uptimeMinutes
+            );
+
             await terminateInstance(env.LAMBDA_API_KEY, instance.id);
             logs.push(`Instance ${instance.id} terminated successfully`);
             delete failureTracker[instance.id];
@@ -256,8 +314,10 @@ export default {
     env: Env,
     ctx: ExecutionContext
   ): Promise<Response> {
+    const url = new URL(request.url);
+
     // Allow manual triggering via HTTP for testing
-    if (request.method === 'GET' && new URL(request.url).pathname === '/trigger') {
+    if (request.method === 'GET' && url.pathname === '/trigger') {
       const logs = await watchdogCheck(env);
 
       return new Response(
@@ -275,7 +335,7 @@ export default {
     }
 
     // Status endpoint
-    if (request.method === 'GET' && new URL(request.url).pathname === '/status') {
+    if (request.method === 'GET' && url.pathname === '/status') {
       return new Response(
         JSON.stringify({
           service: 'gpu-watchdog',
@@ -291,7 +351,78 @@ export default {
       );
     }
 
-    return new Response('GPU Watchdog Worker\n\nEndpoints:\n- GET /trigger (manual run)\n- GET /status (view tracker)', {
+    // History endpoint - returns recent termination events
+    if (request.method === 'GET' && url.pathname === '/history') {
+      if (!env.KV) {
+        return new Response(
+          JSON.stringify({
+            error: 'KV namespace not configured',
+            events: [],
+          }),
+          {
+            status: 503,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      try {
+        // Get hours parameter (default 24)
+        const hours = parseInt(url.searchParams.get('hours') || '24', 10);
+        const cutoffTime = new Date(Date.now() - hours * 60 * 60 * 1000);
+
+        // List all history keys
+        const { keys } = await env.KV.list({ prefix: 'history:' });
+
+        // Fetch and filter events
+        const events: HistoryEvent[] = [];
+        for (const key of keys) {
+          const value = await env.KV.get(key.name);
+          if (value) {
+            const event: HistoryEvent = JSON.parse(value);
+            const eventTime = new Date(event.timestamp);
+            if (eventTime > cutoffTime) {
+              events.push(event);
+            }
+          }
+        }
+
+        // Sort by timestamp descending (newest first)
+        events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+        return new Response(
+          JSON.stringify({
+            events,
+            count: events.length,
+            hours,
+            timestamp: new Date().toISOString(),
+          }),
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        return new Response(
+          JSON.stringify({
+            error: errorMsg,
+            events: [],
+          }),
+          {
+            status: 500,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+    }
+
+    return new Response('GPU Watchdog Worker\n\nEndpoints:\n- GET /trigger (manual run)\n- GET /status (view tracker)\n- GET /history?hours=24 (termination history)', {
       headers: {
         'Content-Type': 'text/plain',
       },

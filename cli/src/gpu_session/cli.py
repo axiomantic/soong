@@ -5,11 +5,13 @@ from typing import Optional
 from rich.console import Console
 from rich.table import Table
 from rich import print as rprint
+from datetime import datetime
 
 from .config import Config, ConfigManager, LambdaConfig, StatusDaemonConfig, DefaultsConfig, SSHConfig
 from .lambda_api import LambdaAPI, LambdaAPIError
 from .instance import InstanceManager
 from .ssh import SSHTunnelManager
+from .history import HistoryManager, HistoryEvent
 
 app = typer.Typer(
     name="gpu-session",
@@ -123,15 +125,115 @@ def start(
         raise typer.Exit(1)
 
 
+def show_termination_history(events: list, hours: int):
+    """Display termination history in a rich table."""
+    if not events:
+        console.print(f"[yellow]No termination events found in the last {hours} hours[/yellow]")
+        return
+
+    table = Table(title=f"Termination History (Last {hours} Hours)")
+    table.add_column("Time", style="cyan")
+    table.add_column("Instance ID", style="magenta")
+    table.add_column("Reason", style="yellow")
+    table.add_column("Uptime", style="blue")
+    table.add_column("GPU", style="green")
+    table.add_column("Region", style="white")
+
+    for event in events:
+        # Color code reason
+        reason_text = event.reason
+        if "watchdog" in event.reason.lower():
+            reason_style = "red"
+        elif "idle" in event.reason.lower() or "timeout" in event.reason.lower():
+            reason_style = "yellow"
+        elif "lease" in event.reason.lower() or "expired" in event.reason.lower():
+            reason_style = "orange1"
+        else:
+            reason_style = "white"
+
+        # Format timestamp
+        try:
+            timestamp = datetime.fromisoformat(event.timestamp.replace('Z', '+00:00'))
+            time_str = timestamp.strftime("%Y-%m-%d %H:%M")
+        except (ValueError, AttributeError):
+            time_str = event.timestamp
+
+        # Format uptime
+        hours_up = event.uptime_minutes // 60
+        mins_up = event.uptime_minutes % 60
+        uptime_str = f"{hours_up}h {mins_up}m" if hours_up > 0 else f"{mins_up}m"
+
+        table.add_row(
+            time_str,
+            event.instance_id[:8],
+            f"[{reason_style}]{reason_text}[/{reason_style}]",
+            uptime_str,
+            event.gpu_type,
+            event.region,
+        )
+
+    console.print(table)
+
+
+def show_stopped_instances(instances: list):
+    """Display stopped instances grouped by termination reason."""
+    stopped = [i for i in instances if i.status in ["terminated", "stopped"]]
+
+    if not stopped:
+        console.print("[yellow]No stopped instances found[/yellow]")
+        return
+
+    table = Table(title="Stopped Instances")
+    table.add_column("Instance ID", style="cyan")
+    table.add_column("Name", style="magenta")
+    table.add_column("Status", style="red")
+    table.add_column("GPU", style="yellow")
+    table.add_column("Region", style="white")
+    table.add_column("Created At", style="blue")
+
+    for instance in stopped:
+        # Format created_at
+        try:
+            created = datetime.fromisoformat(instance.created_at.replace('Z', '+00:00'))
+            created_str = created.strftime("%Y-%m-%d %H:%M")
+        except (ValueError, AttributeError):
+            created_str = instance.created_at
+
+        table.add_row(
+            instance.id[:8],
+            instance.name or "-",
+            instance.status,
+            instance.instance_type,
+            instance.region,
+            created_str,
+        )
+
+    console.print(table)
+
+
 @app.command()
 def status(
     instance_id: Optional[str] = typer.Option(None, help="Instance ID (uses active if not specified)"),
+    history: bool = typer.Option(False, "--history", "-h", help="Show termination history"),
+    stopped: bool = typer.Option(False, "--stopped", "-s", help="Show stopped instances"),
+    history_hours: int = typer.Option(24, help="Hours of history to show"),
+    worker_url: Optional[str] = typer.Option(None, help="Cloudflare Worker URL for history"),
 ):
     """Show status of running instances."""
     config = get_config()
     api = LambdaAPI(config.lambda_config.api_key)
 
     try:
+        # Show termination history if requested
+        if history:
+            history_mgr = HistoryManager()
+            if worker_url:
+                events = history_mgr.sync_from_worker(worker_url, history_hours)
+            else:
+                events = history_mgr.get_local_history(history_hours)
+            show_termination_history(events, history_hours)
+            return
+
         if instance_id:
             instances = [api.get_instance(instance_id)]
             if instances[0] is None:
@@ -144,6 +246,20 @@ def status(
             console.print("[yellow]No instances found[/yellow]")
             return
 
+        # Show stopped instances if requested
+        if stopped:
+            show_stopped_instances(instances)
+            return
+
+        # Filter to running instances only for default view
+        running_instances = [i for i in instances if i.status not in ["terminated", "stopped"]]
+
+        if not running_instances:
+            console.print("[yellow]No running instances found[/yellow]")
+            console.print("\nUse --stopped to see terminated instances")
+            console.print("Use --history to see termination history")
+            return
+
         # Create table
         table = Table(title="GPU Instances")
         table.add_column("ID", style="cyan")
@@ -152,8 +268,29 @@ def status(
         table.add_column("IP", style="blue")
         table.add_column("GPU", style="yellow")
         table.add_column("Region", style="white")
+        table.add_column("Lease Status", style="white")
 
-        for instance in instances:
+        for instance in running_instances:
+            # Determine lease status
+            if instance.lease_expires_at:
+                try:
+                    expires_at = datetime.fromisoformat(instance.lease_expires_at.replace('Z', '+00:00'))
+                    now = datetime.utcnow().replace(tzinfo=expires_at.tzinfo)
+                    time_left = expires_at - now
+                    hours_left = int(time_left.total_seconds() // 3600)
+                    mins_left = int((time_left.total_seconds() % 3600) // 60)
+
+                    if time_left.total_seconds() < 0:
+                        lease_text = "[red]EXPIRED[/red]"
+                    elif hours_left < 1:
+                        lease_text = f"[yellow]{mins_left}m[/yellow]"
+                    else:
+                        lease_text = f"[green]{hours_left}h {mins_left}m[/green]"
+                except (ValueError, AttributeError):
+                    lease_text = "-"
+            else:
+                lease_text = "-"
+
             table.add_row(
                 instance.id[:8],
                 instance.name or "-",
@@ -161,6 +298,7 @@ def status(
                 instance.ip or "-",
                 instance.instance_type,
                 instance.region,
+                lease_text,
             )
 
         console.print(table)

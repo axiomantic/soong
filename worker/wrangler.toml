@@ -8,3 +8,10 @@ crons = ["*/30 * * * *"]
 # Secrets to configure via `wrangler secret put`:
 # - LAMBDA_API_KEY
 # - STATUS_DAEMON_TOKEN
+
+# KV namespace for history storage
+# To create a KV namespace: wrangler kv:namespace create "KV"
+# Then replace the id below with the namespace ID from the output
+[[kv_namespaces]]
+binding = "KV"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"  # Replace with actual KV namespace ID
