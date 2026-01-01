@@ -104,11 +104,22 @@ class ConfigManager:
         with open(self.config_file) as f:
             data = yaml.safe_load(f)
 
+        # Load custom_models and validate each one
+        custom_models = data.get("custom_models", {})
+        for model_id, model_data in custom_models.items():
+            try:
+                validate_custom_model(model_data)
+            except ValueError as e:
+                # Log warning but don't fail load
+                import logging
+                logging.warning(f"Invalid custom model '{model_id}': {e}")
+
         return Config(
             lambda_config=LambdaConfig(**data.get("lambda", {})),
             status_daemon=StatusDaemonConfig(**data.get("status_daemon", {})),
             defaults=DefaultsConfig(**data.get("defaults", {})),
             ssh=SSHConfig(**data.get("ssh", {})),
+            custom_models=custom_models,
         )
 
     def save(self, config: Config):
@@ -120,6 +131,7 @@ class ConfigManager:
             "status_daemon": asdict(config.status_daemon),
             "defaults": asdict(config.defaults),
             "ssh": asdict(config.ssh),
+            "custom_models": config.custom_models,
         }
 
         with open(self.config_file, "w") as f:
