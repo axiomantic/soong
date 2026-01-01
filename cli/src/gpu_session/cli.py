@@ -10,7 +10,7 @@ from rich.panel import Panel
 from rich import print as rprint
 from datetime import datetime
 
-from .config import Config, ConfigManager, LambdaConfig, StatusDaemonConfig, DefaultsConfig, SSHConfig
+from .config import Config, ConfigManager, LambdaConfig, StatusDaemonConfig, DefaultsConfig, SSHConfig, validate_custom_model
 from .lambda_api import LambdaAPI, LambdaAPIError, InstanceType
 from .instance import InstanceManager
 from .ssh import SSHTunnelManager
@@ -979,6 +979,236 @@ def models_list(ctx: typer.Context):
         console.print(f"\n[dim]Custom models: {custom_count} configured[/dim]")
     else:
         console.print("\n[dim]Custom models: 0 configured[/dim]")
+
+
+@models_app.command("info")
+def models_info(model_id: str = typer.Argument(..., help="Model ID to display info for")):
+    """Display detailed information about a specific model."""
+    from .models import MODEL_INFO, estimate_vram
+
+    config = get_config()
+
+    # Check known models first
+    model_config = get_model_config(model_id)
+    model_info = MODEL_INFO.get(model_id)
+
+    # Check custom models if not found in known models
+    if not model_config:
+        custom_data = config.custom_models.get(model_id)
+        if custom_data:
+            try:
+                model_config = ModelConfig.from_dict(model_id, custom_data)
+                # Create model_info from custom data
+                from .models import ModelInfo
+                model_info = ModelInfo(
+                    config=model_config,
+                    good_for=custom_data.get("good_for", []),
+                    not_good_for=custom_data.get("not_good_for", []),
+                    notes=custom_data.get("notes", ""),
+                )
+            except ValueError as e:
+                console.print(f"[red]Error: Invalid custom model '{model_id}': {e}[/red]")
+                raise typer.Exit(1)
+
+    # Model not found
+    if not model_config:
+        console.print(f"[red]Error: Model '{model_id}' not found. Use 'gpu-session models' to see available models.[/red]")
+        raise typer.Exit(1)
+
+    # Get recommended GPU
+    recommended_gpu = get_recommended_gpu(model_id)
+    gpu_info = KNOWN_GPUS.get(recommended_gpu, {}) if recommended_gpu else {}
+
+    # Calculate VRAM breakdown
+    vram_breakdown = estimate_vram(
+        model_config.params_billions,
+        model_config.default_quantization,
+        model_config.context_length
+    )
+
+    # Display model information
+    console.print(Panel(
+        f"[bold cyan]{model_config.name}[/bold cyan]",
+        border_style="cyan",
+    ))
+    console.print()
+
+    # Basic info
+    console.print(f"[bold]HuggingFace Path:[/bold] {model_config.hf_path}")
+    console.print(f"[bold]Parameters:[/bold] {model_config.params_billions:.0f}B")
+    console.print(f"[bold]Quantization:[/bold] {model_config.default_quantization.value.upper()}")
+    console.print(f"[bold]Context Length:[/bold] {model_config.context_length:,} tokens")
+    console.print()
+
+    # VRAM breakdown
+    console.print("[bold]VRAM Breakdown:[/bold]")
+    console.print(f"  Base weights:     {vram_breakdown['base_vram_gb']:>6.1f} GB")
+    console.print(f"  KV cache:         {vram_breakdown['kv_cache_gb']:>6.1f} GB")
+    console.print(f"  Overhead:         {vram_breakdown['overhead_gb']:>6.1f} GB")
+    console.print(f"  Activations:      {model_config.base_vram_gb * 0.1:>6.1f} GB")
+    console.print(f"  [cyan]Total estimated:  {vram_breakdown['total_estimated_gb']:>6.1f} GB[/cyan]")
+    console.print()
+
+    # Recommended GPU
+    if recommended_gpu:
+        console.print(f"[bold]Recommended GPU:[/bold] {gpu_info.get('description', recommended_gpu)}")
+
+        # Try to get pricing from API
+        try:
+            api = LambdaAPI(config.lambda_config.api_key)
+            instance_type = api.get_instance_type(recommended_gpu)
+            if instance_type:
+                console.print(f"  Price: {instance_type.format_price()}")
+        except Exception:
+            pass  # Silently skip if API unavailable
+        console.print()
+
+    # Good for / Not good for (if available)
+    if model_info:
+        if model_info.good_for:
+            console.print("[bold green]Good for:[/bold green]")
+            for item in model_info.good_for:
+                console.print(f"  • {item}")
+            console.print()
+
+        if model_info.not_good_for:
+            console.print("[bold yellow]Not good for:[/bold yellow]")
+            for item in model_info.not_good_for:
+                console.print(f"  • {item}")
+            console.print()
+
+        if model_info.notes:
+            console.print(f"[bold]Notes:[/bold] {model_info.notes}")
+            console.print()
+
+
+@models_app.command("add")
+def models_add(
+    name: Optional[str] = typer.Option(None, "--name", help="Model name/ID"),
+    hf_path: Optional[str] = typer.Option(None, "--hf-path", help="HuggingFace model path"),
+    params: Optional[float] = typer.Option(None, "--params", help="Parameter count in billions"),
+    quantization: Optional[str] = typer.Option(None, "--quantization", help="Quantization (fp32, fp16, int8, int4)"),
+    context: Optional[int] = typer.Option(None, "--context", help="Context length"),
+):
+    """Add a custom model to configuration."""
+    config = get_config()
+
+    # Determine if we're in interactive or flag mode
+    interactive = name is None
+
+    if interactive:
+        # Interactive mode using questionary
+        console.print("[bold]Add Custom Model[/bold]\n")
+
+        name = questionary.text("Model name/ID:").ask()
+        if not name:
+            raise typer.Exit(1)
+
+        hf_path = questionary.text("HuggingFace model path:").ask()
+        if not hf_path:
+            raise typer.Exit(1)
+
+        params_str = questionary.text(
+            "Parameter count (billions):",
+            default="7",
+        ).ask()
+        if not params_str:
+            raise typer.Exit(1)
+        try:
+            params = float(params_str)
+        except ValueError:
+            console.print("[red]Error: params_billions must be a number[/red]")
+            raise typer.Exit(1)
+
+        quantization = questionary.select(
+            "Quantization:",
+            choices=[
+                questionary.Choice(title="FP32 (4 bytes/param)", value="fp32"),
+                questionary.Choice(title="FP16 (2 bytes/param)", value="fp16"),
+                questionary.Choice(title="INT8 (1 byte/param)", value="int8"),
+                questionary.Choice(title="INT4/GPTQ/AWQ (0.5 bytes/param)", value="int4"),
+            ],
+        ).ask()
+        if not quantization:
+            raise typer.Exit(1)
+
+        context_str = questionary.text(
+            "Context length:",
+            default="8192",
+        ).ask()
+        if not context_str:
+            raise typer.Exit(1)
+        try:
+            context = int(context_str)
+        except ValueError:
+            console.print("[red]Error: context_length must be an integer[/red]")
+            raise typer.Exit(1)
+    else:
+        # Flag mode - all flags must be provided
+        if not all([name, hf_path, params is not None, quantization, context is not None]):
+            console.print("[red]Error: When using flags, all options are required: --name, --hf-path, --params, --quantization, --context[/red]")
+            raise typer.Exit(2)
+
+    # Build model data dictionary
+    model_data = {
+        "hf_path": hf_path,
+        "params_billions": params,
+        "quantization": quantization.lower(),
+        "context_length": context,
+    }
+
+    # Validate using validate_custom_model
+    try:
+        validate_custom_model(model_data)
+    except ValueError as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
+    # Add to config
+    config.custom_models[name] = model_data
+
+    # Save config
+    config_manager.save(config)
+
+    console.print(f"[green]Model '{name}' added successfully![/green]")
+
+
+@models_app.command("remove")
+def models_remove(
+    model_id: str = typer.Argument(..., help="Model ID to remove"),
+    yes: bool = typer.Option(False, "-y", "--yes", help="Skip confirmation"),
+):
+    """Remove a custom model from configuration."""
+    config = get_config()
+
+    # Check if trying to remove built-in model
+    if model_id in KNOWN_MODELS:
+        console.print(f"[red]Error: Cannot remove built-in model '{model_id}'. Only custom models can be removed.[/red]")
+        raise typer.Exit(1)
+
+    # Check if custom model exists
+    if model_id not in config.custom_models:
+        console.print(f"[red]Error: Custom model '{model_id}' not found.[/red]")
+        raise typer.Exit(1)
+
+    # Confirm removal unless --yes flag provided
+    if not yes:
+        confirmed = questionary.confirm(
+            f"Remove custom model '{model_id}'?",
+            default=False,
+        ).ask()
+
+        if not confirmed:
+            console.print("[yellow]Removal cancelled.[/yellow]")
+            return
+
+    # Remove from config
+    del config.custom_models[model_id]
+
+    # Save updated config
+    config_manager.save(config)
+
+    console.print(f"[green]Custom model '{model_id}' removed.[/green]")
 
 
 # Tunnel subcommand group
