@@ -1,7 +1,7 @@
 """Tests for config.py configuration management."""
 
 import pytest
-from gpu_session.config import validate_custom_model
+from gpu_session.config import validate_custom_model, Config, LambdaConfig, StatusDaemonConfig
 
 
 def test_validate_custom_model_valid():
@@ -67,3 +67,43 @@ def test_validate_custom_model_invalid_context():
 
     with pytest.raises(ValueError, match="context_length must be"):
         validate_custom_model(invalid_data)
+
+
+# Task A1 Tests: Config Dataclass custom_models field
+
+
+def test_config_has_custom_models_field():
+    """Test Config dataclass has custom_models field."""
+    config = Config(
+        lambda_config=LambdaConfig(api_key="test-key"),
+        status_daemon=StatusDaemonConfig(token="test-token"),
+    )
+    assert hasattr(config, "custom_models")
+    assert isinstance(config.custom_models, dict)
+
+
+def test_config_custom_models_defaults_to_empty_dict():
+    """Test custom_models defaults to empty dict in __post_init__."""
+    config = Config(
+        lambda_config=LambdaConfig(api_key="test-key"),
+        status_daemon=StatusDaemonConfig(token="test-token"),
+    )
+    assert config.custom_models == {}
+
+
+def test_config_custom_models_can_be_provided():
+    """Test custom_models can be explicitly provided."""
+    custom = {
+        "my-model": {
+            "hf_path": "org/model",
+            "params_billions": 7.0,
+            "quantization": "int4",
+            "context_length": 4096,
+        }
+    }
+    config = Config(
+        lambda_config=LambdaConfig(api_key="test-key"),
+        status_daemon=StatusDaemonConfig(token="test-token"),
+        custom_models=custom,
+    )
+    assert config.custom_models == custom

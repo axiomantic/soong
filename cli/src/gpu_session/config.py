@@ -3,8 +3,8 @@
 import os
 import yaml
 from pathlib import Path
-from typing import Optional
-from dataclasses import dataclass, asdict
+from typing import Optional, Dict
+from dataclasses import dataclass, asdict, field
 
 
 def validate_custom_model(model_data: dict) -> None:
@@ -78,12 +78,15 @@ class Config:
     status_daemon: StatusDaemonConfig
     defaults: DefaultsConfig = None
     ssh: SSHConfig = None
+    custom_models: Dict[str, dict] = None
 
     def __post_init__(self):
         if self.defaults is None:
             self.defaults = DefaultsConfig()
         if self.ssh is None:
             self.ssh = SSHConfig()
+        if self.custom_models is None:
+            self.custom_models = {}
 
 
 class ConfigManager:
