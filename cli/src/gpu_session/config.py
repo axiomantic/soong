@@ -7,6 +7,41 @@ from typing import Optional
 from dataclasses import dataclass, asdict
 
 
+def validate_custom_model(model_data: dict) -> None:
+    """
+    Validate custom model configuration.
+
+    Args:
+        model_data: Dictionary with model configuration
+
+    Raises:
+        ValueError: If validation fails with descriptive error message
+    """
+    required = ["hf_path", "params_billions", "quantization", "context_length"]
+    missing = [f for f in required if f not in model_data]
+    if missing:
+        raise ValueError(f"Missing required fields: {', '.join(missing)}")
+
+    # Validate quantization
+    valid_quants = ["fp32", "fp16", "bf16", "int8", "int4"]
+    quant = model_data["quantization"].lower()
+    if quant not in valid_quants:
+        raise ValueError(
+            f"Invalid quantization '{model_data['quantization']}'. "
+            f"Must be one of: {', '.join(valid_quants)}"
+        )
+
+    # Validate params_billions
+    params = model_data["params_billions"]
+    if not isinstance(params, (int, float)) or params <= 0:
+        raise ValueError("params_billions must be a positive number")
+
+    # Validate context_length
+    context = model_data["context_length"]
+    if not isinstance(context, int) or context < 512:
+        raise ValueError("context_length must be an integer >= 512")
+
+
 @dataclass
 class LambdaConfig:
     """Lambda Labs API configuration."""
