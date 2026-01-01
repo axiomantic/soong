@@ -4,7 +4,7 @@ import time
 import requests
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 @dataclass
@@ -86,7 +86,7 @@ class Instance:
 
         try:
             expires_at = datetime.fromisoformat(self.lease_expires_at.replace('Z', '+00:00'))
-            return datetime.utcnow().replace(tzinfo=expires_at.tzinfo) > expires_at
+            return datetime.now(timezone.utc).replace(tzinfo=expires_at.tzinfo) > expires_at
         except (ValueError, AttributeError):
             return False
 
@@ -102,7 +102,7 @@ class Instance:
 
         try:
             expires_at = datetime.fromisoformat(self.lease_expires_at.replace('Z', '+00:00'))
-            now = datetime.utcnow().replace(tzinfo=expires_at.tzinfo)
+            now = datetime.now(timezone.utc).replace(tzinfo=expires_at.tzinfo)
             time_left = expires_at - now
 
             if time_left.total_seconds() < 0:

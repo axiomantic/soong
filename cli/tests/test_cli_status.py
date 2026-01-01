@@ -343,7 +343,7 @@ def test_status_displays_running_instances(mocker, sample_config):
     mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     created_at = (now - timedelta(hours=2)).replace(tzinfo=timezone.utc).isoformat()
     expires_at = (now + timedelta(hours=2)).replace(tzinfo=timezone.utc).isoformat()
 
@@ -412,7 +412,7 @@ def test_status_specific_instance_id(mocker, sample_config):
     mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     created_at = (now - timedelta(hours=1)).replace(tzinfo=timezone.utc).isoformat()
 
     mock_api.get_instance.return_value = Instance(
@@ -561,7 +561,7 @@ def test_status_calculates_uptime_correctly(mocker, sample_config):
     mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     created_at = (now - timedelta(hours=3, minutes=25)).replace(
         tzinfo=timezone.utc
     ).isoformat()
@@ -598,7 +598,7 @@ def test_status_shows_expired_time_left_in_red(mocker, sample_config):
     mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     created_at = (now - timedelta(hours=5)).replace(tzinfo=timezone.utc).isoformat()
     expires_at = (now - timedelta(hours=1)).replace(
         tzinfo=timezone.utc
@@ -637,7 +637,7 @@ def test_status_shows_expiring_soon_in_yellow(mocker, sample_config):
     mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     created_at = (now - timedelta(hours=3)).replace(tzinfo=timezone.utc).isoformat()
     expires_at = (now + timedelta(minutes=30)).replace(
         tzinfo=timezone.utc
@@ -676,7 +676,7 @@ def test_status_shows_safe_time_left_in_green(mocker, sample_config):
     mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     created_at = (now - timedelta(hours=1)).replace(tzinfo=timezone.utc).isoformat()
     expires_at = (now + timedelta(hours=3, minutes=15)).replace(
         tzinfo=timezone.utc
@@ -715,7 +715,7 @@ def test_status_calculates_current_cost(mocker, sample_config):
     mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     created_at = (now - timedelta(hours=2)).replace(
         tzinfo=timezone.utc
     ).isoformat()  # 2 hours uptime
@@ -763,7 +763,7 @@ def test_status_calculates_total_cost(mocker, sample_config):
     mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     created_at = (now - timedelta(hours=1)).replace(tzinfo=timezone.utc).isoformat()
     expires_at = (now + timedelta(hours=3)).replace(
         tzinfo=timezone.utc
@@ -813,7 +813,7 @@ def test_status_multiple_instances_total_cost(mocker, sample_config):
     mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     created_at_1 = (now - timedelta(hours=2)).replace(tzinfo=timezone.utc).isoformat()
     created_at_2 = (now - timedelta(hours=1)).replace(tzinfo=timezone.utc).isoformat()
 
@@ -898,7 +898,7 @@ def test_status_filters_to_running_only(mocker, sample_config):
     mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     created_at = (now - timedelta(hours=1)).replace(tzinfo=timezone.utc).isoformat()
 
     mock_api.list_instances.return_value = [
@@ -954,7 +954,7 @@ def test_status_handles_missing_pricing(mocker, sample_config):
     mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     created_at = (now - timedelta(hours=1)).replace(tzinfo=timezone.utc).isoformat()
 
     mock_api.list_instances.return_value = [
@@ -1019,7 +1019,7 @@ def test_status_expired_cost_highlighted_in_red(mocker, sample_config):
     mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     created_at = (now - timedelta(hours=5)).replace(tzinfo=timezone.utc).isoformat()
     expires_at = (now - timedelta(hours=1)).replace(
         tzinfo=timezone.utc

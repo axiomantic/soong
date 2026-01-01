@@ -269,7 +269,7 @@ class TestInstance:
 
     def test_is_lease_expired_future_expiration(self):
         """Test is_lease_expired returns False for future expiration."""
-        future_time = datetime.utcnow() + timedelta(hours=2)
+        future_time = datetime.now(timezone.utc) + timedelta(hours=2)
         future_iso = future_time.strftime("%Y-%m-%dT%H:%M:%SZ")
 
         instance = Instance(
@@ -287,7 +287,7 @@ class TestInstance:
 
     def test_is_lease_expired_past_expiration(self):
         """Test is_lease_expired returns True for past expiration."""
-        past_time = datetime.utcnow() - timedelta(hours=2)
+        past_time = datetime.now(timezone.utc) - timedelta(hours=2)
         past_iso = past_time.strftime("%Y-%m-%dT%H:%M:%SZ")
 
         instance = Instance(
@@ -353,7 +353,7 @@ class TestInstance:
 
     def test_lease_status_style_expired(self):
         """Test lease_status_style returns red when expired."""
-        past_time = datetime.utcnow() - timedelta(hours=1)
+        past_time = datetime.now(timezone.utc) - timedelta(hours=1)
         past_iso = past_time.strftime("%Y-%m-%dT%H:%M:%SZ")
 
         instance = Instance(
@@ -371,7 +371,7 @@ class TestInstance:
 
     def test_lease_status_style_expiring_soon(self):
         """Test lease_status_style returns yellow when expiring soon (< 1 hour)."""
-        future_time = datetime.utcnow() + timedelta(minutes=30)
+        future_time = datetime.now(timezone.utc) + timedelta(minutes=30)
         future_iso = future_time.strftime("%Y-%m-%dT%H:%M:%SZ")
 
         instance = Instance(
@@ -389,7 +389,7 @@ class TestInstance:
 
     def test_lease_status_style_safe(self):
         """Test lease_status_style returns green when expiration is far."""
-        future_time = datetime.utcnow() + timedelta(hours=3)
+        future_time = datetime.now(timezone.utc) + timedelta(hours=3)
         future_iso = future_time.strftime("%Y-%m-%dT%H:%M:%SZ")
 
         instance = Instance(
