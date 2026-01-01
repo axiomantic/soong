@@ -8,6 +8,52 @@ from datetime import datetime
 
 
 @dataclass
+class InstanceType:
+    """Lambda instance type with pricing."""
+    name: str
+    description: str
+    price_cents_per_hour: int
+    vcpus: int
+    memory_gib: int
+    storage_gib: int
+    regions_available: List[str]
+
+    @classmethod
+    def from_api_response(cls, name: str, data: Dict[str, Any]) -> "InstanceType":
+        """Create InstanceType from API response."""
+        instance_info = data.get("instance_type", {})
+        specs = instance_info.get("specs", {})
+        regions = [r["name"] for r in data.get("regions_with_capacity_available", [])]
+        return cls(
+            name=name,
+            description=instance_info.get("description", name),
+            price_cents_per_hour=instance_info.get("price_cents_per_hour", 0),
+            vcpus=specs.get("vcpus", 0),
+            memory_gib=specs.get("memory_gib", 0),
+            storage_gib=specs.get("storage_gib", 0),
+            regions_available=regions,
+        )
+
+    @property
+    def price_per_hour(self) -> float:
+        """Price in dollars per hour."""
+        return self.price_cents_per_hour / 100.0
+
+    def format_price(self) -> str:
+        """Format price as string."""
+        return f"${self.price_per_hour:.2f}/hr"
+
+    def estimate_cost(self, hours: int) -> float:
+        """Estimate total cost for given hours."""
+        return self.price_per_hour * hours
+
+    def format_for_selection(self) -> str:
+        """Format for TUI selection display."""
+        availability = "available" if self.regions_available else "no capacity"
+        return f"{self.description} - {self.format_price()} ({availability})"
+
+
+@dataclass
 class Instance:
     """Lambda instance information."""
     id: str
@@ -167,7 +213,19 @@ class LambdaAPI:
         data = resp.json()
         return [item["name"] for item in data.get("data", [])]
 
-    def list_instance_types(self) -> Dict[str, Any]:
-        """List available instance types."""
+    def list_instance_types(self) -> List[InstanceType]:
+        """List available instance types with pricing."""
         resp = self._request_with_retry("GET", "instance-types")
-        return resp.json().get("data", {})
+        data = resp.json().get("data", {})
+        return [
+            InstanceType.from_api_response(name, info)
+            for name, info in data.items()
+        ]
+
+    def get_instance_type(self, name: str) -> Optional[InstanceType]:
+        """Get a specific instance type by name."""
+        types = self.list_instance_types()
+        for t in types:
+            if t.name == name:
+                return t
+        return None

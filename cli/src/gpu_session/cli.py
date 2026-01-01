@@ -2,17 +2,23 @@
 
 import typer
 import secrets
-from typing import Optional
+import questionary
+from typing import Optional, Dict
 from rich.console import Console
 from rich.table import Table
+from rich.panel import Panel
 from rich import print as rprint
 from datetime import datetime
 
 from .config import Config, ConfigManager, LambdaConfig, StatusDaemonConfig, DefaultsConfig, SSHConfig
-from .lambda_api import LambdaAPI, LambdaAPIError
+from .lambda_api import LambdaAPI, LambdaAPIError, InstanceType
 from .instance import InstanceManager
 from .ssh import SSHTunnelManager
 from .history import HistoryManager, HistoryEvent
+from .models import (
+    KNOWN_MODELS, KNOWN_GPUS, ModelConfig, Quantization,
+    get_model_config, get_recommended_gpu, estimate_vram, format_model_info
+)
 
 app = typer.Typer(
     name="gpu-session",
@@ -34,28 +40,291 @@ def get_config() -> Config:
 
 
 @app.command()
-def configure(
-    api_key: Optional[str] = typer.Option(None, prompt="Lambda API key"),
-    status_token: Optional[str] = typer.Option(None, help="Shared secret for status daemon auth"),
-    default_region: str = typer.Option("us-west-1", prompt="Default region"),
-    filesystem_name: str = typer.Option("coding-stack", prompt="Filesystem name"),
-    default_model: str = typer.Option("deepseek-r1-70b", prompt="Default model"),
-    default_gpu: str = typer.Option("gpu_1x_a100_sxm4_80gb", prompt="Default GPU type"),
-    lease_hours: int = typer.Option(4, prompt="Default lease hours"),
-    ssh_key_path: str = typer.Option("~/.ssh/id_rsa", prompt="SSH key path"),
-):
-    """Configure CLI with API keys and defaults."""
-    # Auto-generate status token if not provided
-    if status_token is None:
-        status_token = typer.prompt(
-            "Status daemon token (shared secret for auth, leave blank to auto-generate)",
-            default="",
-            show_default=False,
-        )
-        if not status_token.strip():
-            status_token = secrets.token_urlsafe(32)
-            console.print(f"[cyan]Generated token:[/cyan] {status_token}")
+def configure():
+    """Interactive configuration wizard."""
+    console.print(Panel(
+        "[bold]GPU Session Configuration Wizard[/bold]\n\n"
+        "This will guide you through setting up your Lambda Labs credentials and defaults.",
+        border_style="cyan",
+    ))
+    console.print()
 
+    # Step 1: Lambda API Key
+    api_key = questionary.text(
+        "Lambda API key:",
+        validate=lambda x: len(x) > 0 or "API key is required",
+    ).ask()
+    if not api_key:
+        console.print("[red]Configuration cancelled.[/red]")
+        raise typer.Exit(1)
+
+    # Validate API key by fetching instance types
+    console.print("[cyan]Validating API key...[/cyan]")
+    api = LambdaAPI(api_key)
+    try:
+        instance_types = api.list_instance_types()
+        console.print("[green]API key valid.[/green]\n")
+    except LambdaAPIError as e:
+        console.print(f"[red]Invalid API key: {e}[/red]")
+        raise typer.Exit(1)
+
+    # Step 2: Status daemon token
+    console.print("[dim]The status daemon token is a shared secret for authenticating with the instance.[/dim]")
+    status_token = questionary.text(
+        "Status daemon token (leave blank to auto-generate):",
+        default="",
+    ).ask()
+    if status_token is None:
+        raise typer.Exit(1)
+    if not status_token.strip():
+        status_token = secrets.token_urlsafe(32)
+        console.print(f"[cyan]Generated token:[/cyan] {status_token}\n")
+    else:
+        console.print()
+
+    # Step 3: Select model first (determines GPU requirements)
+    console.print("[bold]Step 3: Select default model[/bold]")
+    console.print("[dim]The model determines minimum GPU requirements.[/dim]\n")
+
+    model_choices = []
+    for model_id, model in KNOWN_MODELS.items():
+        rec_gpu = get_recommended_gpu(model_id)
+        gpu_info = KNOWN_GPUS.get(rec_gpu, {})
+        vram = model.estimated_vram_gb
+        label = f"{model.name} ({model.params_billions:.0f}B {model.default_quantization.value.upper()}) - needs {vram:.0f}GB+ VRAM"
+        model_choices.append(questionary.Choice(title=label, value=model_id))
+
+    model_choices.append(questionary.Choice(title="Custom model (enter manually)", value="_custom"))
+
+    default_model = questionary.select(
+        "Default model:",
+        choices=model_choices,
+        style=questionary.Style([
+            ('selected', 'fg:cyan bold'),
+            ('pointer', 'fg:cyan bold'),
+        ]),
+    ).ask()
+    if not default_model:
+        raise typer.Exit(1)
+
+    # Handle custom model
+    recommended_gpu = None
+    model_config = None
+    if default_model == "_custom":
+        default_model = questionary.text("Enter model name/path:").ask()
+        if not default_model:
+            raise typer.Exit(1)
+
+        # Ask for custom model specs to estimate GPU
+        console.print("\n[dim]Enter model specs to calculate GPU requirements:[/dim]")
+        try:
+            params_b = float(questionary.text("Parameter count (billions):", default="70").ask() or "70")
+            quant = questionary.select(
+                "Quantization:",
+                choices=[
+                    questionary.Choice(title="FP16 (2 bytes/param)", value="fp16"),
+                    questionary.Choice(title="INT8 (1 byte/param)", value="int8"),
+                    questionary.Choice(title="INT4/GPTQ/AWQ (0.5 bytes/param)", value="int4"),
+                ],
+            ).ask()
+
+            quant_enum = {"fp16": Quantization.FP16, "int8": Quantization.INT8, "int4": Quantization.INT4}[quant]
+            vram_info = estimate_vram(params_b, quant_enum)
+
+            console.print(f"\n[cyan]Estimated VRAM:[/cyan] {vram_info['total_estimated_gb']:.1f} GB")
+            console.print(f"[cyan]Minimum GPU:[/cyan] {vram_info['min_vram_gb']} GB\n")
+
+            # Find recommended GPU
+            for gpu_name, gpu_info in sorted(KNOWN_GPUS.items(), key=lambda x: x[1]['vram_gb']):
+                if gpu_info['vram_gb'] >= vram_info['min_vram_gb']:
+                    recommended_gpu = gpu_name
+                    break
+        except (ValueError, TypeError):
+            console.print("[yellow]Could not parse specs, will select GPU manually.[/yellow]")
+    else:
+        model_config = get_model_config(default_model)
+        recommended_gpu = get_recommended_gpu(default_model)
+        if model_config:
+            console.print(f"\n[green]Selected:[/green] {model_config.name}")
+            console.print(f"  {model_config.description}")
+            console.print(f"  Est. VRAM: {model_config.estimated_vram_gb:.1f} GB")
+            if recommended_gpu:
+                gpu_info = KNOWN_GPUS.get(recommended_gpu, {})
+                console.print(f"  Recommended GPU: {gpu_info.get('description', recommended_gpu)}\n")
+
+    # Step 4: GPU type selection (with recommendation)
+    console.print("[bold]Step 4: Select GPU type[/bold]")
+
+    # Calculate minimum VRAM needed
+    min_vram_needed = 0
+    if model_config:
+        min_vram_needed = model_config.estimated_vram_gb
+    elif 'vram_info' in dir() and vram_info:
+        min_vram_needed = vram_info.get('total_estimated_gb', 0)
+
+    if instance_types:
+        # Build GPU list with VRAM info from our known GPUs
+        gpu_options = []
+        for t in instance_types:
+            known_gpu = KNOWN_GPUS.get(t.name, {})
+            vram = known_gpu.get('vram_gb', 0)
+
+            # Try to infer VRAM from description if not in our list
+            if vram == 0:
+                import re
+                match = re.search(r'\((\d+)\s*GB', t.description)
+                if match:
+                    vram = int(match.group(1))
+
+            gpu_options.append({
+                'type': t,
+                'vram': vram,
+                'available': len(t.regions_available) > 0,
+            })
+
+        # Sort by price
+        gpu_options.sort(key=lambda x: x['type'].price_cents_per_hour)
+
+        # Separate viable vs non-viable GPUs
+        viable_gpus = [g for g in gpu_options if g['vram'] >= min_vram_needed]
+        small_gpus = [g for g in gpu_options if g['vram'] < min_vram_needed and g['vram'] > 0]
+
+        if min_vram_needed > 0:
+            console.print(f"[dim]Model needs ~{min_vram_needed:.0f}GB VRAM. Showing compatible GPUs first.[/dim]\n")
+
+        choices = []
+        default_idx = 0
+        cheapest_available_idx = None
+
+        # Add viable GPUs first
+        for i, g in enumerate(viable_gpus):
+            t = g['type']
+            vram = g['vram']
+            avail = "available" if g['available'] else "no capacity"
+
+            # Find cheapest available option
+            if g['available'] and cheapest_available_idx is None:
+                cheapest_available_idx = i
+
+            marker = ""
+            if cheapest_available_idx == i:
+                marker = " ⟵ RECOMMENDED"
+
+            label = f"{t.description} ({vram}GB) - {t.format_price()} ({avail}){marker}"
+            choices.append(questionary.Choice(title=label, value=t.name))
+
+        # Add separator if there are non-viable GPUs
+        if small_gpus and viable_gpus:
+            choices.append(questionary.Choice(title="─── Below: insufficient VRAM ───", value="_separator", disabled=""))
+
+        # Add non-viable GPUs (disabled or marked)
+        for g in small_gpus:
+            t = g['type']
+            vram = g['vram']
+            avail = "available" if g['available'] else "no capacity"
+            label = f"{t.description} ({vram}GB) - {t.format_price()} ({avail}) [TOO SMALL]"
+            choices.append(questionary.Choice(title=label, value=t.name))
+
+        if not choices:
+            console.print("[red]No GPU types available![/red]")
+            raise typer.Exit(1)
+
+        # Set default to cheapest available viable option
+        default_val = None
+        if cheapest_available_idx is not None and viable_gpus:
+            default_val = viable_gpus[cheapest_available_idx]['type'].name
+
+        default_gpu = questionary.select(
+            "GPU type:",
+            choices=choices,
+            default=default_val,
+            style=questionary.Style([
+                ('selected', 'fg:cyan bold'),
+                ('pointer', 'fg:cyan bold'),
+            ]),
+        ).ask()
+
+        if not default_gpu or default_gpu == "_separator":
+            raise typer.Exit(1)
+
+        selected_type = next((t for t in instance_types if t.name == default_gpu), None)
+        if selected_type:
+            selected_vram = next((g['vram'] for g in gpu_options if g['type'].name == default_gpu), 0)
+            console.print(f"[green]Selected:[/green] {selected_type.description} ({selected_vram}GB) @ {selected_type.format_price()}\n")
+
+            # Warn if selected GPU is too small
+            if selected_vram < min_vram_needed and min_vram_needed > 0:
+                console.print(f"[yellow]Warning: Selected GPU has {selected_vram}GB but model needs ~{min_vram_needed:.0f}GB[/yellow]\n")
+    else:
+        default_gpu = recommended_gpu or "gpu_1x_a100_sxm4_80gb"
+        selected_type = None
+        console.print(f"[yellow]Using GPU: {default_gpu}[/yellow]\n")
+
+    # Step 5: Default region
+    console.print("[bold]Step 5: Select region[/bold]")
+    if selected_type and selected_type.regions_available:
+        region_choices = [questionary.Choice(title=r, value=r) for r in selected_type.regions_available]
+        if not any(c.value == "us-west-1" for c in region_choices):
+            region_choices.append(questionary.Choice(title="us-west-1", value="us-west-1"))
+
+        default_region = questionary.select(
+            "Default region:",
+            choices=region_choices,
+        ).ask()
+    else:
+        default_region = questionary.text(
+            "Default region:",
+            default="us-west-1",
+        ).ask()
+    if not default_region:
+        raise typer.Exit(1)
+    console.print()
+
+    # Step 6: Filesystem name
+    console.print("[bold]Step 6: Persistent filesystem[/bold]")
+    console.print("[dim]Stores models, secrets, and project files across sessions.[/dim]")
+    filesystem_name = questionary.text(
+        "Filesystem name:",
+        default="coding-stack",
+    ).ask()
+    if not filesystem_name:
+        raise typer.Exit(1)
+    console.print()
+
+    # Step 7: Default lease hours (with cost estimates)
+    console.print("[bold]Step 7: Default lease duration[/bold]")
+    if selected_type:
+        lease_choices = [
+            questionary.Choice(title=f"2 hours (${selected_type.price_per_hour * 2:.2f})", value=2),
+            questionary.Choice(title=f"4 hours (${selected_type.price_per_hour * 4:.2f}) - recommended", value=4),
+            questionary.Choice(title=f"6 hours (${selected_type.price_per_hour * 6:.2f})", value=6),
+            questionary.Choice(title=f"8 hours (${selected_type.price_per_hour * 8:.2f}) - maximum", value=8),
+        ]
+    else:
+        lease_choices = [
+            questionary.Choice(title="2 hours", value=2),
+            questionary.Choice(title="4 hours - recommended", value=4),
+            questionary.Choice(title="6 hours", value=6),
+            questionary.Choice(title="8 hours - maximum", value=8),
+        ]
+    lease_hours = questionary.select(
+        "Default lease duration:",
+        choices=lease_choices,
+        default=lease_choices[1],
+    ).ask()
+    if lease_hours is None:
+        raise typer.Exit(1)
+    console.print()
+
+    # Step 8: SSH key path
+    ssh_key_path = questionary.path(
+        "SSH private key path:",
+        default="~/.ssh/id_rsa",
+    ).ask()
+    if not ssh_key_path:
+        raise typer.Exit(1)
+
+    # Save configuration
     config = Config(
         lambda_config=LambdaConfig(
             api_key=api_key,
@@ -72,8 +341,45 @@ def configure(
     )
 
     config_manager.save(config)
-    console.print("[green]Configuration saved successfully[/green]")
-    console.print(f"Config file: {config_manager.config_file}")
+
+    # Show summary
+    console.print()
+    console.print(Panel(
+        f"[bold green]Configuration saved![/bold green]\n\n"
+        f"API Key: {api_key[:8]}...{api_key[-4:]}\n"
+        f"GPU: {default_gpu}\n"
+        f"Region: {default_region}\n"
+        f"Model: {default_model}\n"
+        f"Lease: {lease_hours} hours\n"
+        f"Filesystem: {filesystem_name}\n\n"
+        f"Config file: {config_manager.config_file}",
+        title="[cyan]Summary[/cyan]",
+        border_style="green",
+    ))
+
+
+def show_cost_estimate(instance_type: InstanceType, hours: int, action: str = "launch") -> bool:
+    """Show cost estimate and get confirmation."""
+    estimated_cost = instance_type.estimate_cost(hours)
+
+    console.print()
+    console.print(Panel(
+        f"[bold]Cost Estimate[/bold]\n\n"
+        f"GPU: {instance_type.description}\n"
+        f"Rate: {instance_type.format_price()}\n"
+        f"Duration: {hours} hours\n\n"
+        f"[bold yellow]Estimated cost: ${estimated_cost:.2f}[/bold yellow]",
+        title=f"[cyan]{action.title()} Instance[/cyan]",
+        border_style="cyan",
+    ))
+    console.print()
+
+    confirm = questionary.confirm(
+        f"Proceed with {action}?",
+        default=True,
+    ).ask()
+
+    return confirm if confirm is not None else False
 
 
 @app.command()
@@ -84,6 +390,7 @@ def start(
     hours: Optional[int] = typer.Option(None, help="Lease hours (overrides default)"),
     name: Optional[str] = typer.Option(None, help="Instance name"),
     wait: bool = typer.Option(True, help="Wait for instance to be ready"),
+    yes: bool = typer.Option(False, "-y", "--yes", help="Skip cost confirmation"),
 ):
     """Launch new GPU instance with cloud-init."""
     config = get_config()
@@ -96,19 +403,34 @@ def start(
     region = region or config.lambda_config.default_region
     hours = hours or config.defaults.lease_hours
 
-    console.print(f"[cyan]Launching instance...[/cyan]")
+    console.print(f"[cyan]Preparing to launch instance...[/cyan]")
     console.print(f"  Model: {model}")
     console.print(f"  GPU: {gpu}")
     console.print(f"  Region: {region}")
     console.print(f"  Lease: {hours} hours")
 
     try:
+        # Get pricing info for cost estimate
+        instance_type = api.get_instance_type(gpu)
+        if instance_type and not yes:
+            if not show_cost_estimate(instance_type, hours, "launch"):
+                console.print("[yellow]Launch cancelled.[/yellow]")
+                raise typer.Exit(0)
+        elif not instance_type:
+            console.print(f"[yellow]Could not fetch pricing for {gpu}[/yellow]")
+            if not yes:
+                confirm = typer.confirm("Proceed without cost estimate?", default=True)
+                if not confirm:
+                    raise typer.Exit(0)
+
         # Get SSH keys
         ssh_keys = api.list_ssh_keys()
         if not ssh_keys:
             console.print("[red]Error: No SSH keys found in Lambda account[/red]")
             console.print("Add an SSH key at: https://cloud.lambdalabs.com/ssh-keys")
             raise typer.Exit(1)
+
+        console.print(f"\n[cyan]Launching instance...[/cyan]")
 
         # Launch instance
         instance_id = api.launch_instance(
@@ -272,6 +594,14 @@ def status(
             console.print("Use --history to see termination history")
             return
 
+        # Fetch pricing for all instance types (cache for efficiency)
+        pricing_cache: Dict[str, InstanceType] = {}
+        try:
+            for itype in api.list_instance_types():
+                pricing_cache[itype.name] = itype
+        except LambdaAPIError:
+            pass  # Continue without pricing if API fails
+
         # Create table
         table = Table(title="GPU Instances")
         table.add_column("ID", style="cyan")
@@ -279,29 +609,69 @@ def status(
         table.add_column("Status", style="green")
         table.add_column("IP", style="blue")
         table.add_column("GPU", style="yellow")
-        table.add_column("Region", style="white")
-        table.add_column("Lease Status", style="white")
+        table.add_column("Uptime", style="white")
+        table.add_column("Time Left", style="white")
+        table.add_column("Cost Now", style="yellow")
+        table.add_column("Est. Total", style="yellow")
 
         for instance in running_instances:
-            # Determine lease status
+            now = datetime.utcnow()
+
+            # Calculate uptime
+            uptime_text = "-"
+            uptime_hours = 0.0
+            try:
+                created = datetime.fromisoformat(instance.created_at.replace('Z', '+00:00'))
+                now_tz = now.replace(tzinfo=created.tzinfo)
+                uptime = now_tz - created
+                uptime_hours = uptime.total_seconds() / 3600
+                hours_up = int(uptime_hours)
+                mins_up = int((uptime.total_seconds() % 3600) // 60)
+                uptime_text = f"{hours_up}h {mins_up}m"
+            except (ValueError, AttributeError):
+                pass
+
+            # Calculate time left and total lease duration
+            time_left_text = "-"
+            total_lease_hours = 0.0
+            is_expired = False
             if instance.lease_expires_at:
                 try:
                     expires_at = datetime.fromisoformat(instance.lease_expires_at.replace('Z', '+00:00'))
-                    now = datetime.utcnow().replace(tzinfo=expires_at.tzinfo)
-                    time_left = expires_at - now
+                    created = datetime.fromisoformat(instance.created_at.replace('Z', '+00:00'))
+                    now_tz = now.replace(tzinfo=expires_at.tzinfo)
+                    time_left = expires_at - now_tz
+                    total_lease = expires_at - created
+                    total_lease_hours = total_lease.total_seconds() / 3600
+
                     hours_left = int(time_left.total_seconds() // 3600)
                     mins_left = int((time_left.total_seconds() % 3600) // 60)
 
                     if time_left.total_seconds() < 0:
-                        lease_text = "[red]EXPIRED[/red]"
+                        time_left_text = "[red]EXPIRED[/red]"
+                        is_expired = True
                     elif hours_left < 1:
-                        lease_text = f"[yellow]{mins_left}m[/yellow]"
+                        time_left_text = f"[yellow]{mins_left}m[/yellow]"
                     else:
-                        lease_text = f"[green]{hours_left}h {mins_left}m[/green]"
+                        time_left_text = f"[green]{hours_left}h {mins_left}m[/green]"
                 except (ValueError, AttributeError):
-                    lease_text = "-"
-            else:
-                lease_text = "-"
+                    pass
+
+            # Calculate costs
+            current_cost_text = "-"
+            total_cost_text = "-"
+            instance_type = pricing_cache.get(instance.instance_type)
+            if instance_type:
+                current_cost = instance_type.price_per_hour * uptime_hours
+                current_cost_text = f"${current_cost:.2f}"
+
+                if total_lease_hours > 0:
+                    total_cost = instance_type.price_per_hour * total_lease_hours
+                    total_cost_text = f"${total_cost:.2f}"
+
+                # Highlight in red if expired (cost is still accruing!)
+                if is_expired:
+                    current_cost_text = f"[red]{current_cost_text}[/red]"
 
             table.add_row(
                 instance.id[:8],
@@ -309,11 +679,29 @@ def status(
                 instance.status,
                 instance.ip or "-",
                 instance.instance_type,
-                instance.region,
-                lease_text,
+                uptime_text,
+                time_left_text,
+                current_cost_text,
+                total_cost_text,
             )
 
         console.print(table)
+
+        # Show total cost summary if multiple instances
+        if len(running_instances) > 1:
+            total_current = 0.0
+            for instance in running_instances:
+                instance_type = pricing_cache.get(instance.instance_type)
+                if instance_type:
+                    try:
+                        created = datetime.fromisoformat(instance.created_at.replace('Z', '+00:00'))
+                        now_tz = datetime.utcnow().replace(tzinfo=created.tzinfo)
+                        uptime_hours = (now_tz - created).total_seconds() / 3600
+                        total_current += instance_type.price_per_hour * uptime_hours
+                    except (ValueError, AttributeError):
+                        pass
+            if total_current > 0:
+                console.print(f"\n[bold]Total current cost: [yellow]${total_current:.2f}[/yellow][/bold]")
 
     except LambdaAPIError as e:
         console.print(f"[red]Error getting status: {e}[/red]")
@@ -324,6 +712,7 @@ def status(
 def extend(
     hours: int = typer.Argument(..., help="Hours to extend lease"),
     instance_id: Optional[str] = typer.Option(None, help="Instance ID (uses active if not specified)"),
+    yes: bool = typer.Option(False, "-y", "--yes", help="Skip cost confirmation"),
 ):
     """Extend instance lease."""
     config = get_config()
@@ -343,6 +732,33 @@ def extend(
     if not instance.ip:
         console.print("[red]Instance has no IP address[/red]")
         raise typer.Exit(1)
+
+    # Show cost estimate for extension
+    if not yes:
+        instance_type = api.get_instance_type(instance.instance_type)
+        if instance_type:
+            additional_cost = instance_type.estimate_cost(hours)
+            console.print()
+            console.print(Panel(
+                f"[bold]Extension Cost Estimate[/bold]\n\n"
+                f"Instance: {instance.id[:8]}\n"
+                f"GPU: {instance_type.description}\n"
+                f"Rate: {instance_type.format_price()}\n"
+                f"Extension: {hours} hours\n\n"
+                f"[bold yellow]Additional cost: ${additional_cost:.2f}[/bold yellow]",
+                title="[cyan]Extend Lease[/cyan]",
+                border_style="cyan",
+            ))
+            console.print()
+
+            confirm = questionary.confirm(
+                f"Extend lease by {hours} hours?",
+                default=True,
+            ).ask()
+
+            if not confirm:
+                console.print("[yellow]Extension cancelled.[/yellow]")
+                raise typer.Exit(0)
 
     # Make request to status daemon
     import requests
