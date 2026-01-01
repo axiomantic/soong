@@ -5,7 +5,7 @@ import requests
 from pathlib import Path
 from typing import List, Optional
 from dataclasses import dataclass, asdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 @dataclass
@@ -58,14 +58,14 @@ class HistoryManager:
             events = [HistoryEvent.from_dict(event) for event in data]
 
             # Filter by time window
-            cutoff = datetime.utcnow() - timedelta(hours=hours)
+            cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
             filtered = [
                 event for event in events
                 if datetime.fromisoformat(event.timestamp.replace('Z', '+00:00')) > cutoff
             ]
 
             return filtered
-        except (json.JSONDecodeError, KeyError, ValueError):
+        except (json.JSONDecodeError, KeyError, ValueError, TypeError):
             return []
 
     def save_local_history(self, events: List[HistoryEvent]):
@@ -101,7 +101,7 @@ class HistoryManager:
 
             data = response.json()
             return [HistoryEvent.from_dict(event) for event in data.get("events", [])]
-        except (requests.RequestException, json.JSONDecodeError, KeyError):
+        except (requests.RequestException, json.JSONDecodeError, KeyError, TypeError):
             return None
 
     def sync_from_worker(
