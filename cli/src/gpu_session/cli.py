@@ -30,6 +30,24 @@ console = Console()
 config_manager = ConfigManager()
 
 
+def show_gpu_size_warning(console, selected_vram, min_vram_needed, viable_gpus, selected_gpu):
+    """Show warning if selected GPU is larger than minimum needed."""
+    if selected_vram > min_vram_needed and min_vram_needed > 0:
+        # Find cheapest viable GPU
+        cheapest_viable = None
+        for g in viable_gpus:
+            if g['available']:
+                cheapest_viable = g
+                break
+
+        if cheapest_viable and cheapest_viable['type'].name != selected_gpu:
+            console.print(
+                f"[dim]Note: {cheapest_viable['type'].description} "
+                f"({cheapest_viable['vram']}GB) would also work and costs "
+                f"{cheapest_viable['type'].format_price()}[/dim]\n"
+            )
+
+
 def get_config() -> Config:
     """Load configuration or exit if not configured."""
     config = config_manager.load()
@@ -255,6 +273,15 @@ def configure():
             # Warn if selected GPU is too small
             if selected_vram < min_vram_needed and min_vram_needed > 0:
                 console.print(f"[yellow]Warning: Selected GPU has {selected_vram}GB but model needs ~{min_vram_needed:.0f}GB[/yellow]\n")
+
+            # Show info if selected GPU is larger than minimum needed
+            show_gpu_size_warning(
+                console=console,
+                selected_vram=selected_vram,
+                min_vram_needed=min_vram_needed,
+                viable_gpus=viable_gpus,
+                selected_gpu=default_gpu,
+            )
     else:
         default_gpu = recommended_gpu or "gpu_1x_a100_sxm4_80gb"
         selected_type = None
