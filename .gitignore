@@ -31,3 +31,6 @@ logs/
 
 # Claude-flow runtime
 .claude-flow/
+
+# Git worktrees
+.worktrees/
