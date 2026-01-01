@@ -35,6 +35,49 @@ class ModelConfig:
     context_length: int = 8192         # Default context length
     description: str = ""              # Short description
 
+    @classmethod
+    def from_dict(cls, model_id: str, data: dict) -> "ModelConfig":
+        """
+        Create ModelConfig from dictionary (for custom models).
+
+        Args:
+            model_id: Model identifier
+            data: Dictionary with keys: hf_path, params_billions, quantization,
+                  context_length, good_for (optional), not_good_for (optional),
+                  notes (optional)
+
+        Returns:
+            ModelConfig instance
+
+        Raises:
+            ValueError: If required fields missing or invalid quantization
+        """
+        # Map quantization string to enum
+        quant_map = {
+            "fp32": Quantization.FP32,
+            "fp16": Quantization.FP16,
+            "bf16": Quantization.BF16,
+            "int8": Quantization.INT8,
+            "int4": Quantization.INT4,
+        }
+
+        quant_str = data.get("quantization", "").lower()
+        if quant_str not in quant_map:
+            raise ValueError(
+                f"Invalid quantization '{quant_str}'. "
+                f"Must be one of: {', '.join(quant_map.keys())}"
+            )
+
+        return cls(
+            name=data.get("name", model_id),  # Use model_id as fallback
+            model_id=model_id,
+            hf_path=data["hf_path"],
+            params_billions=float(data["params_billions"]),
+            default_quantization=quant_map[quant_str],
+            context_length=int(data.get("context_length", 8192)),
+            description=data.get("notes", ""),  # Use notes as description
+        )
+
     @property
     def base_vram_gb(self) -> float:
         """Calculate base VRAM requirement (model weights only)."""
