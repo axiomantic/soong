@@ -3,7 +3,7 @@
 import os
 import yaml
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict
 from dataclasses import dataclass, asdict
 
 
@@ -78,12 +78,15 @@ class Config:
     status_daemon: StatusDaemonConfig
     defaults: DefaultsConfig = None
     ssh: SSHConfig = None
+    custom_models: Dict[str, dict] = None
 
     def __post_init__(self):
         if self.defaults is None:
             self.defaults = DefaultsConfig()
         if self.ssh is None:
             self.ssh = SSHConfig()
+        if self.custom_models is None:
+            self.custom_models = {}
 
 
 class ConfigManager:

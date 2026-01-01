@@ -879,6 +879,81 @@ def available():
         raise typer.Exit(1)
 
 
+# Models subcommand group
+models_app = typer.Typer(help="Manage AI models")
+app.add_typer(models_app, name="models")
+
+
+@models_app.callback(invoke_without_command=True)
+def models_list(ctx: typer.Context):
+    """List all available models."""
+    # If subcommand invoked, skip (let subcommand run)
+    if ctx.invoked_subcommand is not None:
+        return
+
+    config = get_config()
+
+    # Create table
+    table = Table(
+        title="Available Models",
+        show_header=True,
+        header_style="bold cyan",
+        border_style="blue",
+        title_style="bold white",
+    )
+
+    # Add columns
+    table.add_column("ID", style="green", no_wrap=True)
+    table.add_column("Params", justify="right", style="yellow")
+    table.add_column("Quant", justify="center", style="magenta")
+    table.add_column("VRAM", justify="right", style="cyan")
+    table.add_column("Min GPU", style="white")
+
+    # Merge KNOWN_MODELS and custom models
+    all_models = {**KNOWN_MODELS}
+    for model_id, custom_data in config.custom_models.items():
+        try:
+            custom_config = ModelConfig.from_dict(model_id, custom_data)
+            all_models[model_id] = custom_config
+        except ValueError as e:
+            console.print(f"[yellow]Warning: Invalid custom model '{model_id}': {e}[/yellow]")
+
+    # Sort by VRAM (ascending)
+    sorted_models = sorted(
+        all_models.items(),
+        key=lambda x: x[1].estimated_vram_gb
+    )
+
+    # Add rows
+    for model_id, model_config in sorted_models:
+        vram = model_config.estimated_vram_gb
+        min_vram = model_config.min_vram_gb
+
+        # Find cheapest GPU that fits
+        gpu_desc = "N/A"
+        for gpu_name, gpu_info in sorted(KNOWN_GPUS.items(), key=lambda x: x[1]['vram_gb']):
+            if gpu_info['vram_gb'] >= min_vram:
+                gpu_desc = gpu_info['description']
+                break
+
+        table.add_row(
+            model_id,
+            f"{model_config.params_billions:.0f}B",
+            model_config.default_quantization.value.upper(),
+            f"{vram:.0f}GB",
+            gpu_desc,
+        )
+
+    console.print(table)
+
+    # Show custom model count
+    custom_count = len(config.custom_models)
+    if custom_count > 0:
+        console.print(f"\n[dim]Custom models: {custom_count} configured[/dim]")
+    else:
+        console.print("\n[dim]Custom models: 0 configured[/dim]")
+
+
 # Tunnel subcommand group
 tunnel_app = typer.Typer(help="Manage SSH tunnels")
 app.add_typer(tunnel_app, name="tunnel")
