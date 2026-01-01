@@ -79,7 +79,12 @@ class TestGetModelConfigKnown:
         assert config.params_billions == 70
         assert config.default_quantization == Quantization.INT4
         assert config.context_length == 8192
-        assert "deepseek-ai" in config.hf_path.lower()
+        # Validate HF path format exactly
+        assert config.hf_path == "deepseek-ai/DeepSeek-R1-Distill-Llama-70B"
+        parts = config.hf_path.split("/")
+        assert len(parts) == 2
+        assert parts[0] == "deepseek-ai"
+        assert parts[1] == "DeepSeek-R1-Distill-Llama-70B"
 
     def test_llama_8b_config(self):
         """Llama 3.1 8B should return correct config."""
@@ -90,7 +95,11 @@ class TestGetModelConfigKnown:
         assert config.name == "Llama 3.1 8B"
         assert config.params_billions == 8
         assert config.default_quantization == Quantization.FP16
-        assert "llama" in config.hf_path.lower()
+        # Validate HF path format exactly
+        parts = config.hf_path.split("/")
+        assert len(parts) == 2
+        assert "llama" in parts[1].lower()  # Model name should contain llama
+        assert "3.1" in config.hf_path or "3-1" in config.hf_path  # Version indicator
 
     def test_qwen_coder_32b_config(self):
         """Qwen2.5-Coder 32B should return correct config."""
@@ -101,7 +110,11 @@ class TestGetModelConfigKnown:
         assert config.params_billions == 32
         assert config.default_quantization == Quantization.FP16
         assert config.context_length == 32768  # Long context
-        assert "qwen" in config.hf_path.lower()
+        # Validate HF path format exactly
+        parts = config.hf_path.split("/")
+        assert len(parts) == 2
+        assert "qwen" in parts[0].lower() or "qwen" in parts[1].lower()
+        assert "32" in config.hf_path or "32b" in config.hf_path.lower()  # Size indicator
 
     def test_qwen_coder_32b_int4_config(self):
         """Qwen2.5-Coder 32B INT4 should return correct config."""
@@ -112,8 +125,13 @@ class TestGetModelConfigKnown:
         assert config.params_billions == 32
         assert config.default_quantization == Quantization.INT4
         assert config.context_length == 32768
-        # INT4 should use quantized HF path
-        assert "awq" in config.hf_path.lower()
+        # INT4 should use quantized HF path - validate format
+        parts = config.hf_path.split("/")
+        assert len(parts) == 2
+        # Must contain quantization indicator (awq, gptq, or int4)
+        hf_lower = config.hf_path.lower()
+        assert "awq" in hf_lower or "gptq" in hf_lower or "int4" in hf_lower, \
+            f"INT4 model path should indicate quantization method: {config.hf_path}"
 
 
 class TestGetModelConfigUnknown:

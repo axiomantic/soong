@@ -130,3 +130,109 @@ def mock_lambda_api(mocker):
     ]
 
     return mock_api
+
+
+# HTTP Mocking Fixtures (Pattern #5 fix: Use responses library instead of mocking requests)
+import responses
+
+
+@pytest.fixture
+def mock_http():
+    """HTTP mocking context using responses library.
+
+    Use this instead of mocker.patch("requests.post/get/etc") to ensure
+    the actual HTTP logic is tested, not just that a mock was called.
+
+    Example:
+        def test_api_call(mock_http):
+            mock_http.add(
+                responses.POST,
+                "https://api.example.com/endpoint",
+                json={"status": "success"},
+                status=200,
+            )
+            # Call code that makes HTTP request
+            result = my_function()
+            # Verify the request was made correctly
+            assert len(mock_http.calls) == 1
+            assert mock_http.calls[0].request.headers["Authorization"] == "Bearer token"
+    """
+    with responses.RequestsMock() as rsps:
+        yield rsps
+
+
+@pytest.fixture
+def lambda_api_base_url():
+    """Base URL for Lambda Labs API."""
+    return "https://cloud.lambdalabs.com/api/v1"
+
+
+@pytest.fixture
+def mock_lambda_http(mock_http, lambda_api_base_url):
+    """Pre-configured HTTP mocks for Lambda Labs API endpoints.
+
+    Returns the responses mock with common endpoints configured.
+    """
+    # Common instance data used across tests
+    mock_http._test_instance = {
+        "id": "inst_abc123xyz",
+        "name": "test-instance",
+        "ip": "1.2.3.4",
+        "status": "active",
+        "instance_type": {
+            "name": "gpu_1x_a100_sxm4_80gb",
+            "description": "1x A100 SXM4 (80 GB)",
+            "price_cents_per_hour": 129,
+        },
+        "region": {
+            "name": "us-west-1",
+            "description": "US West 1",
+        },
+        "ssh_key_names": ["my-key"],
+        "hostname": "test-instance.cloud.lambdalabs.com",
+    }
+
+    # Default instance list endpoint
+    mock_http.add(
+        responses.GET,
+        f"{lambda_api_base_url}/instances",
+        json={"data": [mock_http._test_instance]},
+        status=200,
+    )
+
+    return mock_http
+
+
+@pytest.fixture
+def mock_instance(mocker):
+    """Create a mock instance object with realistic data.
+
+    Use unique values that would fail if hardcoded to catch Pattern #4 issues.
+    """
+    instance = mocker.Mock()
+    instance.id = "inst_unique_789xyz"  # Unique ID to catch hardcoding
+    instance.name = "unique-test-instance"
+    instance.ip = "192.168.99.42"  # Unique IP
+    instance.status = "active"
+    instance.instance_type = mocker.Mock(
+        name="gpu_1x_a100_sxm4_80gb",
+        description="1x A100 SXM4 (80 GB)",
+        price_cents_per_hour=129,
+        price_per_hour=1.29,
+    )
+    instance.region = mocker.Mock(
+        name="us-west-1",
+        description="US West 1",
+    )
+    instance.ssh_key_names = ["my-key"]
+    instance.hostname = "unique-test.cloud.lambdalabs.com"
+    instance.launched_at = "2025-01-01T12:00:00Z"
+
+    return instance
+
+
+@pytest.fixture
+def cli_runner():
+    """Typer CLI test runner."""
+    from typer.testing import CliRunner
+    return CliRunner()

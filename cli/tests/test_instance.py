@@ -101,11 +101,19 @@ def test_wait_for_ready_waits_for_pending_to_active(
     mock_api.get_instance.side_effect = [mock_pending_instance, mock_active_instance]
     mock_sleep = mocker.patch("time.sleep")
 
+    # Provide realistic time sequence for polling
+    time_values = [0, 5, 15]  # Start, after poll 1, after poll 2
+    mocker.patch("time.time", side_effect=time_values)
+
     result = instance_manager.wait_for_ready("i-pending-456", timeout_seconds=60)
 
     assert result == mock_active_instance
     assert result.status == "active"
+    # Verify polling interleaving: get_instance called exactly 2 times
     assert mock_api.get_instance.call_count == 2
+    assert mock_api.get_instance.call_args_list[0] == call("i-pending-456")
+    assert mock_api.get_instance.call_args_list[1] == call("i-pending-456")
+    # Verify sleep was called with poll interval after first pending check
     mock_sleep.assert_called_once_with(10)  # poll_interval
 
 
@@ -116,13 +124,19 @@ def test_wait_for_ready_returns_none_on_timeout(
     mock_api.get_instance.return_value = mock_pending_instance
     mocker.patch("time.sleep")
 
-    # Mock time to simulate timeout
-    mock_time = mocker.patch("time.time")
-    mock_time.side_effect = [0, 700]  # Start at 0, then jump past 600s timeout
+    # Provide realistic time sequence simulating multiple polling attempts before timeout
+    # Each poll cycle: check status, sleep 10s, repeat. Timeout at 600s
+    # Provide enough time values for realistic polling: 0, 10, 20, 30, 40, 50, 610 (timeout)
+    time_values = [0, 10, 20, 30, 40, 50, 610]
+    mock_time = mocker.patch("time.time", side_effect=time_values)
 
     result = instance_manager.wait_for_ready("i-pending-456", timeout_seconds=600)
 
     assert result is None
+    # Verify multiple polling attempts occurred before timeout (5 polls before timeout check)
+    assert mock_api.get_instance.call_count == 5
+    # Verify time was checked multiple times during polling
+    assert mock_time.call_count >= 6
 
 
 def test_wait_for_ready_returns_none_when_instance_not_found(
@@ -173,10 +187,18 @@ def test_wait_for_ready_handles_api_errors_and_retries(
     ]
     mock_sleep = mocker.patch("time.sleep")
 
+    # Provide realistic time sequence for polling with error handling
+    time_values = [0, 5, 15]  # Start, after error, after success
+    mocker.patch("time.time", side_effect=time_values)
+
     result = instance_manager.wait_for_ready("i-active-123", timeout_seconds=60)
 
     assert result == mock_active_instance
+    # Verify polling interleaving: error then success
     assert mock_api.get_instance.call_count == 2
+    assert mock_api.get_instance.call_args_list[0] == call("i-active-123")
+    assert mock_api.get_instance.call_args_list[1] == call("i-active-123")
+    # Verify sleep was called after error before retrying
     mock_sleep.assert_called_once_with(10)
 
 
@@ -208,11 +230,19 @@ def test_wait_for_ready_requires_both_active_status_and_ip(
     mock_api.get_instance.side_effect = [instance_without_ip, instance_with_ip]
     mock_sleep = mocker.patch("time.sleep")
 
+    # Provide realistic time sequence for polling
+    time_values = [0, 5, 15]  # Start, after first check, after second check
+    mocker.patch("time.time", side_effect=time_values)
+
     result = instance_manager.wait_for_ready("i-test", timeout_seconds=60)
 
     assert result == instance_with_ip
     assert result.ip == "1.2.3.4"
+    # Verify polling sequence: first check (no IP), second check (has IP)
     assert mock_api.get_instance.call_count == 2
+    assert mock_api.get_instance.call_args_list[0] == call("i-test")
+    assert mock_api.get_instance.call_args_list[1] == call("i-test")
+    # Verify sleep occurred between checks
     mock_sleep.assert_called_once_with(10)
 
 
@@ -243,12 +273,21 @@ def test_wait_for_ready_polls_at_10_second_intervals(
     ]
     mock_sleep = mocker.patch("time.sleep")
 
+    # Provide realistic time sequence for 3 polling cycles
+    # Poll at 0s (pending), sleep 10s, poll at 10s (pending), sleep 10s, poll at 20s (active)
+    time_values = [0, 5, 10, 15, 20, 25]
+    mocker.patch("time.time", side_effect=time_values)
+
     result = instance_manager.wait_for_ready("i-pending-456", timeout_seconds=60)
 
     assert result == mock_active_instance
-    # Should have slept twice (after first two polls)
+    # Verify exact polling sequence with timing
+    assert mock_api.get_instance.call_count == 3
+    # Should have slept twice (after first two polls), each time for exactly 10 seconds
     assert mock_sleep.call_count == 2
-    assert all(call_args[0][0] == 10 for call_args in mock_sleep.call_args_list)
+    # Verify each sleep call was exactly 10 seconds
+    assert mock_sleep.call_args_list[0] == call(10)
+    assert mock_sleep.call_args_list[1] == call(10)
 
 
 # get_active_instance() tests

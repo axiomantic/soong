@@ -27,8 +27,19 @@ def test_models_list_displays_all_known_models(mocker, temp_config_dir, sample_c
     assert "VRAM" in result.stdout
     assert "Min GPU" in result.stdout
 
-    # Should show at least one known model
-    assert "deepseek-r1-70b" in result.stdout or "qwen2.5-coder" in result.stdout
+    # Should show at least one known model - verify in actual data rows
+    from tests.helpers.assertions import assert_table_row
+    # Try to find at least one known model in table rows
+    known_models = ["deepseek-r1-70b", "llama-3.1-8b", "qwen2.5-coder-32b", "mistral-7b"]
+    found_model = False
+    for model_id in known_models:
+        try:
+            assert_table_row(result.stdout, model=model_id)
+            found_model = True
+            break
+        except AssertionError:
+            continue
+    assert found_model, f"None of {known_models} found in table output"
 
 
 def test_models_list_shows_custom_model_count(mocker, temp_config_dir, custom_model_dict):

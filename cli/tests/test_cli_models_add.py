@@ -82,13 +82,28 @@ class TestModelsAddInteractive:
         assert result.exit_code == 0
         assert "Model 'my-custom-model' added successfully" in result.stdout
 
-        # Verify model was saved to config
+        # Verify model was saved to config with complete validation
         config = config_manager_with_config.load()
         assert "my-custom-model" in config.custom_models
-        assert config.custom_models["my-custom-model"]["hf_path"] == "org/my-custom-model"
-        assert config.custom_models["my-custom-model"]["params_billions"] == 13.0
-        assert config.custom_models["my-custom-model"]["quantization"] == "int4"
-        assert config.custom_models["my-custom-model"]["context_length"] == 8192
+
+        # Verify complete model configuration (model is a dict)
+        model = config.custom_models["my-custom-model"]
+        assert isinstance(model, dict), "Model should be a dictionary"
+        assert model["hf_path"] == "org/my-custom-model"
+        assert model["params_billions"] == 13.0
+        assert model["quantization"] == "int4"
+        assert model["context_length"] == 8192
+
+        # Verify HF path has valid format
+        parts = model["hf_path"].split("/")
+        assert len(parts) == 2, f"HF path should have org/model format, got: {model['hf_path']}"
+        assert parts[0] == "org"
+        assert parts[1] == "my-custom-model"
+
+        # Verify all required keys present
+        required_keys = ["hf_path", "params_billions", "quantization", "context_length"]
+        for key in required_keys:
+            assert key in model, f"Missing required key: {key}"
 
     def test_models_add_interactive_invalid_quantization(self, runner, config_manager_with_config, monkeypatch):
         """Test interactive mode rejects invalid quantization."""

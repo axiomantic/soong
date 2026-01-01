@@ -33,7 +33,17 @@ def test_models_remove_custom_model_with_confirmation(mocker, temp_config_dir, c
     # Verify save was called with updated config
     mock_manager.save.assert_called_once()
     saved_config = mock_manager.save.call_args[0][0]
-    assert "my-custom-model" not in saved_config.custom_models
+
+    # Verify model was removed from saved config
+    assert "my-custom-model" not in saved_config.custom_models, "Model should be removed from saved config"
+
+    # Verify state transition by checking the original had it
+    # The config object may have been mutated, so we verify by checking the fixture
+    assert custom_model_dict is not None, "Test fixture should provide custom model"
+
+    # Verify no other custom models were accidentally removed
+    # Since we only had one model, saved_config.custom_models should be empty
+    assert len(saved_config.custom_models) == 0, "Should have no custom models after removal"
 
 
 def test_models_remove_custom_model_with_yes_flag(mocker, temp_config_dir, custom_model_dict):

@@ -248,10 +248,29 @@ class TestHistoryManagerGetLocalHistory:
             for event in result
         )
 
-    def test_get_local_history_handles_invalid_json(self, history_manager_with_temp_dir):
-        """get_local_history() should return empty list for invalid JSON."""
-        # Write invalid JSON to file
+    def test_get_local_history_handles_json_decode_error(self, history_manager_with_temp_dir):
+        """get_local_history() should return empty list for JSON decode errors."""
+        # Write invalid JSON syntax
         history_manager_with_temp_dir.history_file.write_text("{ invalid json }")
+
+        result = history_manager_with_temp_dir.get_local_history()
+
+        assert result == []
+
+    def test_get_local_history_handles_key_error(self, history_manager_with_temp_dir):
+        """get_local_history() should return empty list when events have missing keys."""
+        # Valid JSON array, but events missing required keys
+        invalid_data = [{"timestamp": "2025-01-01T12:00:00Z"}]  # Missing other required keys
+        history_manager_with_temp_dir.history_file.write_text(json.dumps(invalid_data))
+
+        result = history_manager_with_temp_dir.get_local_history()
+
+        assert result == []
+
+    def test_get_local_history_handles_type_error(self, history_manager_with_temp_dir):
+        """get_local_history() should return empty list for wrong data types."""
+        # Valid JSON, but not a list
+        history_manager_with_temp_dir.history_file.write_text('"not a list"')
 
         result = history_manager_with_temp_dir.get_local_history()
 
@@ -525,10 +544,14 @@ class TestHistoryManagerSyncFromWorker:
         # Should return remote events
         assert len(result) == 2
 
-        # Should save to local cache
+        # Should save to local cache - verify persistence through reload
         local_events = history_manager_with_temp_dir.get_local_history(hours=24*365)
         assert len(local_events) == 2
         assert local_events[0].instance_id == result[0].instance_id
+        # Verify all fields persisted correctly
+        assert local_events[0].event_type == result[0].event_type
+        assert local_events[0].uptime_minutes == result[0].uptime_minutes
+        assert local_events[1].instance_id == result[1].instance_id
 
     def test_sync_from_worker_returns_remote_events(self, history_manager_with_temp_dir, sample_history_events, mocker):
         """sync_from_worker() should return events from worker on success."""

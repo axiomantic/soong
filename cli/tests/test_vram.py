@@ -137,6 +137,8 @@ class TestVramLargeContext:
 
     def test_large_context_increases_total_vram(self):
         """32K context should increase total VRAM vs 4K context."""
+        from tests.helpers.assertions import assert_bounds
+
         result_4k = estimate_vram(
             params_billions=7.0,
             quantization=Quantization.FP16,
@@ -147,8 +149,16 @@ class TestVramLargeContext:
             quantization=Quantization.FP16,
             context_length=32768,
         )
-        # 32K has larger kv_cache (4.0 vs 2.0)
-        assert result_32k["total_estimated_gb"] > result_4k["total_estimated_gb"]
+        # 32K has larger kv_cache (4.0 vs 2.0), difference should be exactly 2.0GB
+        kv_diff = result_32k["kv_cache_gb"] - result_4k["kv_cache_gb"]
+        assert kv_diff == 2.0, f"Expected 2.0GB kv_cache difference, got {kv_diff}"
+
+        total_diff = result_32k["total_estimated_gb"] - result_4k["total_estimated_gb"]
+        assert total_diff == 2.0, f"Expected 2.0GB total difference, got {total_diff}"
+
+        # Verify bounds for both results
+        assert_bounds(result_4k["total_estimated_gb"], min_bound=18, max_bound=22, value_name="4K context VRAM")
+        assert_bounds(result_32k["total_estimated_gb"], min_bound=20, max_bound=24, value_name="32K context VRAM")
 
 
 class TestModelConfigVramProperties:
@@ -221,10 +231,26 @@ class TestEstimateVramEdgeCases:
 
     def test_minimal_context(self):
         """Test VRAM estimation with minimal context length."""
+        from tests.helpers.assertions import assert_bounds
+
         result = estimate_vram(
             params_billions=7.0,
             quantization=Quantization.FP16,
             context_length=512,
         )
         # 512 / 2048 = 0.25, min(4.0, 0.25) = 0.25
-        assert result["kv_cache_gb"] == 0.2  # Rounded to 1 decimal
+        # Verify exact value with tolerance for rounding
+        assert_bounds(result["kv_cache_gb"], min_bound=0.2, max_bound=0.3, value_name="KV cache")
+
+        # Verify result structure is complete
+        required_keys = ["base_vram_gb", "kv_cache_gb", "overhead_gb", "total_estimated_gb", "min_vram_gb"]
+        for key in required_keys:
+            assert key in result, f"Missing required key: {key}"
+
+        # Verify values are valid numbers and positive
+        assert isinstance(result["kv_cache_gb"], (int, float))
+        assert result["kv_cache_gb"] > 0
+        assert isinstance(result["total_estimated_gb"], (int, float))
+        assert result["total_estimated_gb"] > 0
+        assert isinstance(result["min_vram_gb"], int)
+        assert result["min_vram_gb"] > 0

@@ -242,7 +242,7 @@ def test_config_roundtrip_preserves_custom_models(tmp_path):
     assert loaded_config.custom_models == original_config.custom_models
 
 
-def test_config_load_validates_custom_models(tmp_path):
+def test_config_load_validates_custom_models(tmp_path, caplog):
     """Test Config.load() validates custom models and logs warnings for invalid ones."""
     from gpu_session.config import ConfigManager
     import yaml
@@ -259,9 +259,21 @@ def test_config_load_validates_custom_models(tmp_path):
                 "quantization": "int4",
                 "context_length": 4096,
             },
-            "invalid-model": {
+            "invalid-missing-fields": {
                 "hf_path": "org/invalid",
                 # Missing params_billions, quantization, context_length
+            },
+            "invalid-bad-quant": {
+                "hf_path": "org/bad",
+                "params_billions": 7.0,
+                "quantization": "invalid_quant",
+                "context_length": 4096,
+            },
+            "invalid-negative-params": {
+                "hf_path": "org/negative",
+                "params_billions": -5.0,
+                "quantization": "int4",
+                "context_length": 4096,
             },
         },
     }
@@ -275,11 +287,21 @@ def test_config_load_validates_custom_models(tmp_path):
     manager.config_dir = tmp_path
     manager.config_file = config_file
 
-    with pytest.warns(None) as warning_list:
+    with caplog.at_level(logging.WARNING):
         config = manager.load()
 
     # Should still load successfully (not fail)
     assert config is not None
-    # Both models should be preserved (validation warnings only)
+
+    # Verify warnings were logged for each invalid model
+    warning_messages = [record.message for record in caplog.records if record.levelname == "WARNING"]
+    assert len(warning_messages) >= 3, f"Expected at least 3 warnings, got: {warning_messages}"
+
+    # Verify specific error types were caught
+    all_warnings = " ".join(warning_messages)
+    assert "invalid-missing-fields" in all_warnings, "Should warn about missing fields"
+    assert "invalid-bad-quant" in all_warnings or "Invalid quantization" in all_warnings, "Should warn about bad quantization"
+    assert "invalid-negative-params" in all_warnings or "positive number" in all_warnings, "Should warn about negative params"
+
+    # Verify valid model is preserved
     assert "valid-model" in config.custom_models
-    assert "invalid-model" in config.custom_models

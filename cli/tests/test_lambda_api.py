@@ -2,6 +2,7 @@
 
 import pytest
 import requests
+import responses
 from datetime import datetime, timedelta, timezone
 from unittest.mock import Mock, patch, MagicMock
 from gpu_session.lambda_api import (
@@ -470,13 +471,18 @@ class TestLambdaAPIRequestWithRetry:
         """Test _request_with_retry succeeds on first attempt."""
         api = LambdaAPI("test-key")
 
+        # Use unique response data to verify consumption
         mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"unique_test_key": "unique_test_value_12345"}
         mock_response.raise_for_status = Mock()
         mock_session = mocker.patch.object(api.session, "request", return_value=mock_response)
 
         result = api._request_with_retry("GET", "instances")
 
+        # Verify the exact response object was returned (consumption)
         assert result == mock_response
+        assert result.json()["unique_test_key"] == "unique_test_value_12345"
         mock_session.assert_called_once_with("GET", f"{api.BASE_URL}/instances")
         mock_response.raise_for_status.assert_called_once()
 
@@ -582,20 +588,21 @@ class TestLambdaAPIListInstances:
         """Test list_instances returns list of instances."""
         api = LambdaAPI("test-key")
 
+        # Use UNIQUE values that would fail if hardcoded/not consumed
         mock_response = Mock()
         mock_response.json.return_value = {
             "data": [
                 {
-                    "id": "instance-1",
-                    "name": "my-instance",
-                    "ip": "192.168.1.100",
+                    "id": "unique-inst-xyz-999",
+                    "name": "unique-test-instance-abc",
+                    "ip": "203.0.113.42",  # TEST-NET-3 unique IP
                     "status": "active",
                     "instance_type": {"name": "gpu_1x_a100_sxm4_80gb"},
                     "region": {"name": "us-west-1"},
                     "created_at": "2025-01-01T10:00:00Z",
                 },
                 {
-                    "id": "instance-2",
+                    "id": "unique-inst-def-888",
                     "status": "booting",
                     "instance_type": {"name": "gpu_1x_a10"},
                     "region": {"name": "us-east-1"},
@@ -609,9 +616,11 @@ class TestLambdaAPIListInstances:
         instances = api.list_instances()
 
         assert len(instances) == 2
-        assert instances[0].id == "instance-1"
-        assert instances[0].name == "my-instance"
-        assert instances[1].id == "instance-2"
+        # Verify EXACT unique values from mock were consumed
+        assert instances[0].id == "unique-inst-xyz-999"
+        assert instances[0].name == "unique-test-instance-abc"
+        assert instances[0].ip == "203.0.113.42"
+        assert instances[1].id == "unique-inst-def-888"
         assert instances[1].name is None
 
     def test_list_instances_empty_data(self, mocker):
@@ -648,9 +657,11 @@ class TestLambdaAPILaunchInstance:
         """Test launch_instance with minimal parameters."""
         api = LambdaAPI("test-key")
 
+        # Use UNIQUE instance ID to verify consumption
+        unique_instance_id = "launch-unique-inst-qwerty-7890"
         mock_response = Mock()
         mock_response.json.return_value = {
-            "data": {"instance_ids": ["instance-123"]}
+            "data": {"instance_ids": [unique_instance_id]}
         }
 
         mock_request = mocker.patch.object(api, "_request_with_retry", return_value=mock_response)
@@ -661,7 +672,9 @@ class TestLambdaAPILaunchInstance:
             ssh_key_names=["my-key"]
         )
 
-        assert instance_id == "instance-123"
+        # Verify EXACT unique instance ID from mock was consumed
+        assert instance_id == unique_instance_id
+        assert instance_id == "launch-unique-inst-qwerty-7890"
         mock_request.assert_called_once()
 
         # Verify payload
@@ -759,16 +772,24 @@ class TestLambdaAPITerminateInstance:
         """Test terminate_instance sends correct request."""
         api = LambdaAPI("test-key")
 
+        # Use unique instance ID and verify it's consumed
+        unique_terminate_id = "term-unique-inst-zxcvbn-5555"
         mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"data": {"terminated_instances": [unique_terminate_id]}}
         mock_request = mocker.patch.object(api, "_request_with_retry", return_value=mock_response)
 
-        api.terminate_instance("instance-123")
+        api.terminate_instance(unique_terminate_id)
 
         mock_request.assert_called_once()
         args, kwargs = mock_request.call_args
         assert args[0] == "POST"
         assert args[1] == "instance-operations/terminate"
-        assert kwargs["json"]["instance_ids"] == ["instance-123"]
+        # Verify the EXACT unique instance ID was passed in request
+        assert kwargs["json"]["instance_ids"] == [unique_terminate_id]
+        assert kwargs["json"]["instance_ids"] == ["term-unique-inst-zxcvbn-5555"]
+        # Verify response was consumed
+        assert mock_response.json()["data"]["terminated_instances"][0] == unique_terminate_id
 
     def test_terminate_instance_no_return_value(self, mocker):
         """Test terminate_instance has no return value."""
@@ -858,12 +879,14 @@ class TestLambdaAPIListSSHKeys:
         """Test list_ssh_keys returns list of key names."""
         api = LambdaAPI("test-key")
 
+        # Use UNIQUE key names to verify consumption
+        unique_keys = ["unique-ssh-key-alpha-99", "unique-ssh-key-beta-88", "unique-ssh-key-gamma-77"]
         mock_response = Mock()
         mock_response.json.return_value = {
             "data": [
-                {"name": "key-1", "public_key": "ssh-rsa ..."},
-                {"name": "key-2", "public_key": "ssh-rsa ..."},
-                {"name": "key-3", "public_key": "ssh-rsa ..."}
+                {"name": unique_keys[0], "public_key": "ssh-rsa AAAAB3NzaC1...unique1"},
+                {"name": unique_keys[1], "public_key": "ssh-rsa AAAAB3NzaC1...unique2"},
+                {"name": unique_keys[2], "public_key": "ssh-rsa AAAAB3NzaC1...unique3"}
             ]
         }
 
@@ -871,7 +894,12 @@ class TestLambdaAPIListSSHKeys:
 
         keys = api.list_ssh_keys()
 
-        assert keys == ["key-1", "key-2", "key-3"]
+        # Verify EXACT unique key names from mock were consumed
+        assert keys == unique_keys
+        assert keys[0] == "unique-ssh-key-alpha-99"
+        assert keys[1] == "unique-ssh-key-beta-88"
+        assert keys[2] == "unique-ssh-key-gamma-77"
+        assert len(keys) == 3
 
     def test_list_ssh_keys_empty_data(self, mocker):
         """Test list_ssh_keys handles empty data."""

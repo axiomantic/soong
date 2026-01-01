@@ -59,14 +59,32 @@ class TestGetRecommendedGpuLlama8b:
         assert gpu_info["vram_gb"] == 40
 
     def test_does_not_over_provision(self):
-        """Should not recommend 48GB+ GPU for small model."""
+        """Should recommend optimal GPU, not over-provision."""
+        from tests.helpers.assertions import assert_optimal_selection
+
         gpu = get_recommended_gpu("llama-3.1-8b")
+        config = get_model_config("llama-3.1-8b")
 
         assert gpu is not None
+        assert config is not None
+
         gpu_info = KNOWN_GPUS[gpu]
 
-        # Should be 40GB, not 48GB+
-        assert gpu_info["vram_gb"] <= 40
+        # Must meet minimum requirement
+        assert gpu_info["vram_gb"] >= config.min_vram_gb, \
+            f"GPU {gpu} has {gpu_info['vram_gb']}GB but needs {config.min_vram_gb}GB"
+
+        # Should not over-provision excessively (no more than 8GB headroom)
+        assert gpu_info["vram_gb"] <= config.min_vram_gb + 8, \
+            f"GPU {gpu} has {gpu_info['vram_gb']}GB which over-provisions {config.min_vram_gb}GB requirement"
+
+        # Verify it's the cheapest viable option
+        assert_optimal_selection(
+            selected=gpu,
+            viable_options=list(KNOWN_GPUS.keys()),
+            cost_key=lambda g: KNOWN_GPUS[g]["vram_gb"],  # Lower VRAM = cheaper
+            requirement_check=lambda g: KNOWN_GPUS[g]["vram_gb"] >= config.min_vram_gb
+        )
 
 
 class TestGetRecommendedGpuQwen32b:
