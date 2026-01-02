@@ -4,7 +4,7 @@ Choose, configure, and add custom AI models for your GPU instances.
 
 ## Overview
 
-gpu-session supports multiple AI models with different characteristics:
+soong supports multiple AI models with different characteristics:
 
 - **Pre-configured models**: Ready to use with known VRAM requirements
 - **Custom models**: Add your own models with manual VRAM calculation
@@ -15,7 +15,7 @@ gpu-session supports multiple AI models with different characteristics:
 View all available models:
 
 ```bash
-gpu-session models
+soong models
 ```
 
 ```
@@ -41,7 +41,7 @@ Models are sorted by VRAM requirement (cheapest first).
 Get comprehensive information about a specific model:
 
 ```bash
-gpu-session models info deepseek-r1-70b
+soong models info deepseek-r1-70b
 ```
 
 ```
@@ -211,7 +211,7 @@ Add models not in the pre-configured list:
 ### Interactive Mode
 
 ```bash
-gpu-session models add
+soong models add
 ```
 
 The CLI prompts for details:
@@ -236,7 +236,7 @@ Model 'mistral-nemo-12b' added successfully!
 For scripting, use flags:
 
 ```bash
-gpu-session models add \
+soong models add \
   --name mistral-nemo-12b \
   --hf-path mistralai/Mistral-Nemo-Instruct-2407 \
   --params 12 \
@@ -315,7 +315,7 @@ For 44.5 GB estimated, minimum 48 GB GPU recommended (A6000).
 
 ## GPU Recommendations
 
-gpu-session automatically recommends the **cheapest GPU** that fits a model:
+soong automatically recommends the **cheapest GPU** that fits a model:
 
 ```mermaid
 graph TD
@@ -342,7 +342,7 @@ graph TD
 Delete a custom model from configuration:
 
 ```bash
-gpu-session models remove mistral-nemo-12b
+soong models remove mistral-nemo-12b
 ```
 
 With confirmation:
@@ -354,7 +354,7 @@ With confirmation:
 Skip confirmation with `--yes`:
 
 ```bash
-gpu-session models remove mistral-nemo-12b --yes
+soong models remove mistral-nemo-12b --yes
 ```
 
 !!! warning "Built-in Models"
@@ -402,7 +402,7 @@ graph TD
 Use pre-configured models first:
 
 ```bash
-gpu-session start --model qwen2.5-coder-32b
+soong start --model qwen2.5-coder-32b
 ```
 
 Only add custom models when necessary.
@@ -422,10 +422,10 @@ When cost is a concern, use INT4 quantization:
 
 ```bash
 # Instead of FP16 (46 GB, $0.80/hr)
-gpu-session start --model qwen2.5-coder-32b
+soong start --model qwen2.5-coder-32b
 
 # Use INT4 (26 GB, $0.60/hr)
-gpu-session start --model qwen2.5-coder-32b-int4
+soong start --model qwen2.5-coder-32b-int4
 ```
 
 Quality loss is typically ~5%, acceptable for most tasks.
@@ -444,7 +444,7 @@ Before adding a custom model permanently:
 
 ```bash
 # Test with SGLang directly on instance
-gpu-session ssh
+soong ssh
 
 ubuntu@instance:~$ python -m sglang.launch_server \
   --model mistralai/Mistral-Nemo-Instruct-2407 \
@@ -462,13 +462,13 @@ If it works, then add to config.
 
 ```
 Error: Model 'custom-model' not found.
-Use 'gpu-session models' to see available models.
+Use 'soong models' to see available models.
 ```
 
 **Solution**: List models and check spelling:
 
 ```bash
-gpu-session models
+soong models
 ```
 
 ### Invalid Quantization
@@ -480,7 +480,7 @@ Error: Invalid quantization 'fp8'. Must be one of: fp32, fp16, int8, int4
 **Solution**: Use a valid quantization level:
 
 ```bash
-gpu-session models add \
+soong models add \
   --name my-model \
   --quantization fp16  # Valid
 ```
@@ -496,13 +496,13 @@ Warning: Selected GPU has 24GB but model needs ~46GB
 **Solution**: Use a larger GPU:
 
 ```bash
-gpu-session start --model qwen2.5-coder-32b --gpu gpu_1x_a6000
+soong start --model qwen2.5-coder-32b --gpu gpu_1x_a6000
 ```
 
 Or use a quantized version:
 
 ```bash
-gpu-session start --model qwen2.5-coder-32b-int4  # Needs only 26GB
+soong start --model qwen2.5-coder-32b-int4  # Needs only 26GB
 ```
 
 ### Model Won't Load on Instance
@@ -524,8 +524,8 @@ OutOfMemoryError: CUDA out of memory
 
 1. Increase VRAM estimate in custom model:
    ```bash
-   gpu-session models remove my-model
-   gpu-session models add --params 35  # Was 32, bump up
+   soong models remove my-model
+   soong models add --params 35  # Was 32, bump up
    ```
 
 2. Use a larger GPU or INT4 quantization

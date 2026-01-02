@@ -5,7 +5,7 @@ import requests
 import responses
 from datetime import datetime, timedelta, timezone
 from unittest.mock import Mock, patch, MagicMock
-from gpu_session.lambda_api import (
+from soong.lambda_api import (
     InstanceType,
     Instance,
     LambdaAPI,

@@ -1,7 +1,7 @@
 """Tests for config.py configuration management."""
 
 import pytest
-from gpu_session.config import validate_custom_model, Config, LambdaConfig, StatusDaemonConfig
+from soong.config import validate_custom_model, Config, LambdaConfig, StatusDaemonConfig
 
 
 def test_validate_custom_model_valid():
@@ -114,7 +114,7 @@ def test_config_custom_models_can_be_provided():
 
 def test_config_save_includes_custom_models(tmp_path):
     """Test Config.save() writes custom_models to YAML."""
-    from gpu_session.config import ConfigManager
+    from soong.config import ConfigManager
 
     # Create config with custom models
     custom_models = {
@@ -148,7 +148,7 @@ def test_config_save_includes_custom_models(tmp_path):
 
 def test_config_load_reads_custom_models(tmp_path):
     """Test Config.load() reads custom_models from YAML."""
-    from gpu_session.config import ConfigManager
+    from soong.config import ConfigManager
     import yaml
 
     # Create YAML with custom_models
@@ -182,7 +182,7 @@ def test_config_load_reads_custom_models(tmp_path):
 
 def test_config_load_defaults_to_empty_dict_when_missing(tmp_path):
     """Test Config.load() defaults custom_models to empty dict if missing from YAML."""
-    from gpu_session.config import ConfigManager
+    from soong.config import ConfigManager
     import yaml
 
     # Create YAML without custom_models
@@ -206,7 +206,7 @@ def test_config_load_defaults_to_empty_dict_when_missing(tmp_path):
 
 def test_config_roundtrip_preserves_custom_models(tmp_path):
     """Test save then load preserves custom_models exactly."""
-    from gpu_session.config import ConfigManager
+    from soong.config import ConfigManager
 
     # Create config with custom models
     custom_models = {
@@ -244,7 +244,7 @@ def test_config_roundtrip_preserves_custom_models(tmp_path):
 
 def test_config_load_validates_custom_models(tmp_path, caplog):
     """Test Config.load() validates custom models and logs warnings for invalid ones."""
-    from gpu_session.config import ConfigManager
+    from soong.config import ConfigManager
     import yaml
     import logging
 

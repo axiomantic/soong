@@ -1,6 +1,6 @@
 # GPU Types Reference
 
-Complete reference for Lambda Labs GPU types available through `gpu-session`.
+Complete reference for Lambda Labs GPU types available through `soong`.
 
 ## Overview
 
@@ -78,7 +78,7 @@ Price: ~$0.80/hr
 - ✅ Llama 3.1 70B (INT4)
 - ✅ All smaller models
 
-**Regions:** Limited availability, check `gpu-session available`
+**Regions:** Limited availability, check `soong available`
 
 ---
 
@@ -120,7 +120,7 @@ Price: ~$1.29/hr
 - All 70B models (FP16 and INT4)
 - 32B models at full precision (FP16)
 - Most flexible option
-- Default for `gpu-session`
+- Default for `soong`
 
 **Compatible Models:**
 - ✅ **All models in registry**
@@ -190,7 +190,7 @@ RAM: 1 TB
 ## Multi-GPU Instances
 
 !!! warning "Multi-GPU Support"
-    Multi-GPU instances require distributed inference setup (e.g., vLLM, Ray). Not currently automated in `gpu-session`.
+    Multi-GPU instances require distributed inference setup (e.g., vLLM, Ray). Not currently automated in `soong`.
 
 ### 2x A100 (80 GB Total)
 
@@ -296,7 +296,7 @@ RAM: 7.8 TB
 GPU availability varies by region and time. Check current availability:
 
 ```bash
-gpu-session available
+soong available
 ```
 
 ### Typical Availability (by region)
@@ -447,7 +447,7 @@ Need model > 70B?
 Yes, but requires setup:
 - vLLM supports tensor parallelism
 - Ray supports pipeline parallelism
-- Not currently automated in `gpu-session`
+- Not currently automated in `soong`
 
 ### What's the difference between PCIe and SXM?
 

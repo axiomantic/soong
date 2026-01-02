@@ -4,13 +4,13 @@ import pytest
 from unittest.mock import Mock, MagicMock
 from rich.console import Console
 from io import StringIO
-from gpu_session.models import KNOWN_GPUS
+from soong.models import KNOWN_GPUS
 
 
 def test_gpu_oversized_warning_shown(mocker):
     """Test that configure wizard shows warning when GPU is oversized (>1.5x needed)."""
     # Import the function we want to test (doesn't exist yet - will fail)
-    from gpu_session.cli import show_gpu_size_warning
+    from soong.cli import show_gpu_size_warning
 
     # Capture console output
     output = StringIO()
@@ -57,7 +57,7 @@ def test_gpu_oversized_warning_shown(mocker):
 
 def test_no_warning_when_gpu_appropriately_sized(mocker):
     """Test no warning shown when GPU is the cheapest viable option."""
-    from gpu_session.cli import show_gpu_size_warning
+    from soong.cli import show_gpu_size_warning
     from io import StringIO
     from rich.console import Console
 

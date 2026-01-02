@@ -1,6 +1,6 @@
 # Architecture Documentation
 
-This section provides technical documentation of the gpu-session CLI system architecture, design decisions, and implementation details.
+This section provides technical documentation of the soong CLI system architecture, design decisions, and implementation details.
 
 ## Contents
 
@@ -9,7 +9,7 @@ This section provides technical documentation of the gpu-session CLI system arch
 
 ## Overview
 
-The gpu-session CLI is a production-ready system for managing GPU instances on Lambda Labs. It provides a robust CLI interface backed by a distributed architecture that emphasizes:
+The soong CLI is a production-ready system for managing GPU instances on Lambda Labs. It provides a robust CLI interface backed by a distributed architecture that emphasizes:
 
 - **Reliability**: Retry logic with exponential backoff for API calls
 - **Cost Control**: Multiple layers of protection against runaway costs
@@ -19,7 +19,7 @@ The gpu-session CLI is a production-ready system for managing GPU instances on L
 
 ## Key Components
 
-1. **CLI Tool** (`gpu-session`) - Python-based command-line interface
+1. **CLI Tool** (`soong`) - Python-based command-line interface
 2. **Lambda API Client** - HTTP client with retry logic and error handling
 3. **SSH Tunnel Manager** - Manages port forwarding for remote services
 4. **Instance Manager** - Lifecycle management and status polling

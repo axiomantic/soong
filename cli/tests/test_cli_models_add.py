@@ -9,8 +9,8 @@ Following TDD methodology:
 
 import pytest
 from typer.testing import CliRunner
-from gpu_session.cli import app
-from gpu_session.config import ConfigManager
+from soong.cli import app
+from soong.config import ConfigManager
 
 
 @pytest.fixture
@@ -41,7 +41,7 @@ def config_manager_with_config(tmp_path, monkeypatch, sample_config):
     mgr.save(sample_config)
 
     # Patch the global config_manager in cli module
-    from gpu_session import cli
+    from soong import cli
     monkeypatch.setattr(cli, "config_manager", mgr)
 
     return mgr
@@ -269,7 +269,7 @@ class TestModelsAddEdgeCases:
 
         # Patch the global config_manager instance
         mgr = ConfigManager()
-        from gpu_session import cli
+        from soong import cli
         monkeypatch.setattr(cli, "config_manager", mgr)
 
         result = runner.invoke(app, [

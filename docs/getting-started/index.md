@@ -1,12 +1,12 @@
 # Getting Started
 
-Welcome to GPU Session CLI! This guide will walk you through everything you need to launch and manage Lambda Labs GPU instances.
+Welcome to Soong CLI! This guide will walk you through everything you need to launch and manage Lambda Labs GPU instances.
 
 ---
 
 ## Overview
 
-Getting started with GPU Session CLI involves four simple steps:
+Getting started with Soong CLI involves four simple steps:
 
 1. **Prerequisites**: Set up your Lambda Labs account and gather required credentials
 2. **Installation**: Install the CLI tool on your local machine
@@ -31,7 +31,7 @@ Getting started with GPU Session CLI involves four simple steps:
 
     ---
 
-    Install GPU Session CLI and verify your installation.
+    Install Soong CLI and verify your installation.
 
     **Time**: 2-3 minutes
 

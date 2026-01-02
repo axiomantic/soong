@@ -1,6 +1,6 @@
 # Reference Documentation
 
-Complete technical reference for the `gpu-session` CLI tool.
+Complete technical reference for the `soong` CLI tool.
 
 ## Documentation Sections
 
@@ -19,9 +19,9 @@ Available GPU types with VRAM specifications and pricing information.
 ## Quick Links
 
 - **Getting Started**: See the [Quick Start Guide](../getting-started/quick-start.md)
-- **Configuration**: Run `gpu-session configure` or see [configuration reference](configuration-file.md)
-- **Model Selection**: Use `gpu-session models` or see [model registry](models.md)
-- **Available GPUs**: Check `gpu-session available` or see [GPU types](gpu-types.md)
+- **Configuration**: Run `soong configure` or see [configuration reference](configuration-file.md)
+- **Model Selection**: Use `soong models` or see [model registry](models.md)
+- **Available GPUs**: Check `soong available` or see [GPU types](gpu-types.md)
 
 ## Configuration Location
 
@@ -35,8 +35,8 @@ File permissions are automatically set to `0600` (owner read/write only) for sec
 
 ## API Integration
 
-`gpu-session` uses the [Lambda Labs API](https://cloud.lambdalabs.com/api/v1/docs) for instance management. You'll need a Lambda Labs API key to use this tool.
+`soong` uses the [Lambda Labs API](https://cloud.lambdalabs.com/api/v1/docs) for instance management. You'll need a Lambda Labs API key to use this tool.
 
 ## Version Information
 
-This reference documentation is for `gpu-session` version 0.1.0+.
+This reference documentation is for `soong` version 0.1.0+.

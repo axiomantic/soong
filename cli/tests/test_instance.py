@@ -2,8 +2,8 @@
 
 import pytest
 from unittest.mock import Mock, patch, call
-from gpu_session.instance import InstanceManager
-from gpu_session.lambda_api import LambdaAPIError, Instance
+from soong.instance import InstanceManager
+from soong.lambda_api import LambdaAPIError, Instance
 
 
 @pytest.fixture
@@ -480,7 +480,7 @@ def test_wait_for_ready_displays_progress_updates(
     mock_progress.__enter__ = mocker.Mock(return_value=mock_progress)
     mock_progress.__exit__ = mocker.Mock(return_value=None)
 
-    with patch("gpu_session.instance.Progress", return_value=mock_progress):
+    with patch("soong.instance.Progress", return_value=mock_progress):
         result = instance_manager.wait_for_ready("i-pending-456", timeout_seconds=60)
 
     assert result == mock_active_instance

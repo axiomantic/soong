@@ -1,6 +1,6 @@
 # Contributing Guide
 
-Thank you for your interest in contributing to gpu-session CLI! This guide will help you get started with development, testing, and submitting contributions.
+Thank you for your interest in contributing to soong CLI! This guide will help you get started with development, testing, and submitting contributions.
 
 ## Contents
 
@@ -25,7 +25,7 @@ pip install -e ".[test]"
 pytest
 
 # Run the CLI in development mode
-gpu-session --help
+soong --help
 ```
 
 ## Project Structure
@@ -33,7 +33,7 @@ gpu-session --help
 ```
 cli/
 ├── src/
-│   └── gpu_session/
+│   └── soong/
 │       ├── __init__.py
 │       ├── cli.py              # CLI commands and interface
 │       ├── config.py           # Configuration management
@@ -74,7 +74,7 @@ All new features and bug fixes should include tests. See [Testing](testing.md) f
 pytest
 
 # Run with coverage report
-pytest --cov=gpu_session --cov-report=term-missing
+pytest --cov=soong --cov-report=term-missing
 
 # Run specific test file
 pytest tests/test_models.py

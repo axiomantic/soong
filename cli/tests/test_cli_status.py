@@ -8,9 +8,9 @@ from typer.testing import CliRunner
 from rich.console import Console
 from io import StringIO
 
-from gpu_session.cli import app, show_termination_history, show_stopped_instances
-from gpu_session.lambda_api import Instance, InstanceType, LambdaAPIError
-from gpu_session.history import HistoryEvent
+from soong.cli import app, show_termination_history, show_stopped_instances
+from soong.lambda_api import Instance, InstanceType, LambdaAPIError
+from soong.history import HistoryEvent
 
 
 runner = CliRunner()
@@ -28,7 +28,7 @@ def test_show_termination_history_displays_table(mocker):
     """
     output = StringIO()
     test_console = Console(file=output, force_terminal=True)
-    mocker.patch("gpu_session.cli.console", test_console)
+    mocker.patch("soong.cli.console", test_console)
 
     events = [
         HistoryEvent(
@@ -73,7 +73,7 @@ def test_show_termination_history_empty_list(mocker):
     """Test show_termination_history handles empty events list."""
     output = StringIO()
     test_console = Console(file=output, force_terminal=True)
-    mocker.patch("gpu_session.cli.console", test_console)
+    mocker.patch("soong.cli.console", test_console)
 
     show_termination_history([], hours=24)
 
@@ -86,7 +86,7 @@ def test_show_termination_history_watchdog_reason_red(mocker):
     """Test show_termination_history colors watchdog reason in red."""
     output = StringIO()
     test_console = Console(file=output, force_terminal=True)
-    mocker.patch("gpu_session.cli.console", test_console)
+    mocker.patch("soong.cli.console", test_console)
 
     events = [
         HistoryEvent(
@@ -112,7 +112,7 @@ def test_show_termination_history_idle_reason_yellow(mocker):
     """Test show_termination_history colors idle reason in yellow."""
     output = StringIO()
     test_console = Console(file=output, force_terminal=True)
-    mocker.patch("gpu_session.cli.console", test_console)
+    mocker.patch("soong.cli.console", test_console)
 
     events = [
         HistoryEvent(
@@ -136,7 +136,7 @@ def test_show_termination_history_lease_reason_orange(mocker):
     """Test show_termination_history colors lease reason in orange."""
     output = StringIO()
     test_console = Console(file=output, force_terminal=True)
-    mocker.patch("gpu_session.cli.console", test_console)
+    mocker.patch("soong.cli.console", test_console)
 
     events = [
         HistoryEvent(
@@ -163,7 +163,7 @@ def test_show_termination_history_formats_uptime_hours_and_minutes(mocker):
     """
     output = StringIO()
     test_console = Console(file=output, force_terminal=True)
-    mocker.patch("gpu_session.cli.console", test_console)
+    mocker.patch("soong.cli.console", test_console)
 
     # Pattern #4 fix: Use non-round number to verify it's actually calculated
     unique_uptime = 197  # 3h 17m - unusual value that would fail if hardcoded
@@ -193,7 +193,7 @@ def test_show_termination_history_formats_uptime_minutes_only(mocker):
     """Test show_termination_history formats uptime with minutes only."""
     output = StringIO()
     test_console = Console(file=output, force_terminal=True)
-    mocker.patch("gpu_session.cli.console", test_console)
+    mocker.patch("soong.cli.console", test_console)
 
     events = [
         HistoryEvent(
@@ -218,7 +218,7 @@ def test_show_termination_history_formats_timestamp(mocker):
     """Test show_termination_history formats timestamp correctly."""
     output = StringIO()
     test_console = Console(file=output, force_terminal=True)
-    mocker.patch("gpu_session.cli.console", test_console)
+    mocker.patch("soong.cli.console", test_console)
 
     events = [
         HistoryEvent(
@@ -251,7 +251,7 @@ def test_show_stopped_instances_displays_table(mocker):
     """
     output = StringIO()
     test_console = Console(file=output, force_terminal=True)
-    mocker.patch("gpu_session.cli.console", test_console)
+    mocker.patch("soong.cli.console", test_console)
 
     instances = [
         Instance(
@@ -296,7 +296,7 @@ def test_show_stopped_instances_empty_list(mocker):
     """Test show_stopped_instances handles empty list."""
     output = StringIO()
     test_console = Console(file=output, force_terminal=True)
-    mocker.patch("gpu_session.cli.console", test_console)
+    mocker.patch("soong.cli.console", test_console)
 
     show_stopped_instances([])
 
@@ -308,7 +308,7 @@ def test_show_stopped_instances_filters_to_stopped_only(mocker):
     """Test show_stopped_instances filters to stopped/terminated instances."""
     output = StringIO()
     test_console = Console(file=output, force_terminal=True)
-    mocker.patch("gpu_session.cli.console", test_console)
+    mocker.patch("soong.cli.console", test_console)
 
     instances = [
         Instance(
@@ -343,7 +343,7 @@ def test_show_stopped_instances_formats_created_at(mocker):
     """Test show_stopped_instances formats created_at timestamp."""
     output = StringIO()
     test_console = Console(file=output, force_terminal=True)
-    mocker.patch("gpu_session.cli.console", test_console)
+    mocker.patch("soong.cli.console", test_console)
 
     instances = [
         Instance(
@@ -374,10 +374,10 @@ def test_status_displays_running_instances(mocker, sample_config):
 
     Pattern #2 & #3 fix: Verify row structure with exact matching.
     """
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api_class = mocker.patch("soong.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
     now = datetime.now(timezone.utc)
@@ -411,7 +411,7 @@ def test_status_displays_running_instances(mocker, sample_config):
     ]
 
     # Mock datetime.utcnow - need to mock the class to return our datetime
-    mock_datetime = mocker.patch("gpu_session.cli.datetime")
+    mock_datetime = mocker.patch("soong.cli.datetime")
     mock_datetime.utcnow.return_value = now
     mock_datetime.fromisoformat = datetime.fromisoformat
 
@@ -440,10 +440,10 @@ def test_status_displays_running_instances(mocker, sample_config):
 
 def test_status_no_instances_found(mocker, sample_config):
     """Test 'gpu-session status' when no instances exist."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api_class = mocker.patch("soong.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
     mock_api.list_instances.return_value = []
@@ -456,10 +456,10 @@ def test_status_no_instances_found(mocker, sample_config):
 
 def test_status_specific_instance_id(mocker, sample_config):
     """Test 'gpu-session status --instance-id' shows specific instance."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api_class = mocker.patch("soong.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
     now = datetime.now(timezone.utc)
@@ -477,7 +477,7 @@ def test_status_specific_instance_id(mocker, sample_config):
 
     mock_api.list_instance_types.return_value = []
 
-    mock_datetime = mocker.patch("gpu_session.cli.datetime")
+    mock_datetime = mocker.patch("soong.cli.datetime")
     mock_datetime.utcnow.return_value = now
     mock_datetime.fromisoformat = datetime.fromisoformat
 
@@ -492,10 +492,10 @@ def test_status_specific_instance_id(mocker, sample_config):
 
 def test_status_instance_not_found(mocker, sample_config):
     """Test 'gpu-session status --instance-id' handles instance not found."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api_class = mocker.patch("soong.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
     mock_api.get_instance.return_value = None
@@ -508,13 +508,13 @@ def test_status_instance_not_found(mocker, sample_config):
 
 def test_status_with_history_flag(mocker, sample_config):
     """Test 'gpu-session status --history' shows termination history."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api_class = mocker.patch("soong.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
-    mock_history_mgr_class = mocker.patch("gpu_session.cli.HistoryManager")
+    mock_history_mgr_class = mocker.patch("soong.cli.HistoryManager")
     mock_history_mgr = mock_history_mgr_class.return_value
 
     events = [
@@ -540,13 +540,13 @@ def test_status_with_history_flag(mocker, sample_config):
 
 def test_status_with_history_and_worker_url(mocker, sample_config):
     """Test 'gpu-session status --history --worker-url' syncs from worker."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api_class = mocker.patch("soong.cli.LambdaAPI")
     mock_api_class.return_value
 
-    mock_history_mgr_class = mocker.patch("gpu_session.cli.HistoryManager")
+    mock_history_mgr_class = mocker.patch("soong.cli.HistoryManager")
     mock_history_mgr = mock_history_mgr_class.return_value
 
     events = [
@@ -578,10 +578,10 @@ def test_status_with_history_and_worker_url(mocker, sample_config):
 
 def test_status_with_stopped_flag(mocker, sample_config):
     """Test 'gpu-session status --stopped' shows stopped instances."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api_class = mocker.patch("soong.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
     mock_api.list_instances.return_value = [
@@ -605,10 +605,10 @@ def test_status_with_stopped_flag(mocker, sample_config):
 
 def test_status_calculates_uptime_correctly(mocker, sample_config):
     """Test 'gpu-session status' calculates uptime correctly."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api_class = mocker.patch("soong.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
     now = datetime.now(timezone.utc)
@@ -630,7 +630,7 @@ def test_status_calculates_uptime_correctly(mocker, sample_config):
 
     mock_api.list_instance_types.return_value = []
 
-    mock_datetime = mocker.patch("gpu_session.cli.datetime")
+    mock_datetime = mocker.patch("soong.cli.datetime")
     mock_datetime.utcnow.return_value = now
     mock_datetime.fromisoformat = datetime.fromisoformat
 
@@ -642,10 +642,10 @@ def test_status_calculates_uptime_correctly(mocker, sample_config):
 
 def test_status_shows_expired_time_left_in_red(mocker, sample_config):
     """Test 'gpu-session status' shows expired lease in red."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api_class = mocker.patch("soong.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
     now = datetime.now(timezone.utc)
@@ -669,7 +669,7 @@ def test_status_shows_expired_time_left_in_red(mocker, sample_config):
 
     mock_api.list_instance_types.return_value = []
 
-    mock_datetime = mocker.patch("gpu_session.cli.datetime")
+    mock_datetime = mocker.patch("soong.cli.datetime")
     mock_datetime.utcnow.return_value = now
     mock_datetime.fromisoformat = datetime.fromisoformat
 
@@ -681,10 +681,10 @@ def test_status_shows_expired_time_left_in_red(mocker, sample_config):
 
 def test_status_shows_expiring_soon_in_yellow(mocker, sample_config):
     """Test 'gpu-session status' shows expiring soon (<1h) in yellow."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api_class = mocker.patch("soong.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
     now = datetime.now(timezone.utc)
@@ -708,7 +708,7 @@ def test_status_shows_expiring_soon_in_yellow(mocker, sample_config):
 
     mock_api.list_instance_types.return_value = []
 
-    mock_datetime = mocker.patch("gpu_session.cli.datetime")
+    mock_datetime = mocker.patch("soong.cli.datetime")
     mock_datetime.utcnow.return_value = now
     mock_datetime.fromisoformat = datetime.fromisoformat
 
@@ -720,10 +720,10 @@ def test_status_shows_expiring_soon_in_yellow(mocker, sample_config):
 
 def test_status_shows_safe_time_left_in_green(mocker, sample_config):
     """Test 'gpu-session status' shows safe time left (>1h) in green."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api_class = mocker.patch("soong.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
     now = datetime.now(timezone.utc)
@@ -747,7 +747,7 @@ def test_status_shows_safe_time_left_in_green(mocker, sample_config):
 
     mock_api.list_instance_types.return_value = []
 
-    mock_datetime = mocker.patch("gpu_session.cli.datetime")
+    mock_datetime = mocker.patch("soong.cli.datetime")
     mock_datetime.utcnow.return_value = now
     mock_datetime.fromisoformat = datetime.fromisoformat
 
@@ -762,10 +762,10 @@ def test_status_calculates_current_cost(mocker, sample_config):
 
     Pattern #4 fix: Use unique values to verify calculation is consumed.
     """
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api_class = mocker.patch("soong.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
     now = datetime.now(timezone.utc)
@@ -803,7 +803,7 @@ def test_status_calculates_current_cost(mocker, sample_config):
         )
     ]
 
-    mock_datetime = mocker.patch("gpu_session.cli.datetime")
+    mock_datetime = mocker.patch("soong.cli.datetime")
     mock_datetime.utcnow.return_value = now
     mock_datetime.fromisoformat = datetime.fromisoformat
 
@@ -823,10 +823,10 @@ def test_status_calculates_total_cost(mocker, sample_config):
 
     Pattern #4 fix: Use unique values to verify total cost calculation.
     """
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api_class = mocker.patch("soong.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
     now = datetime.now(timezone.utc)
@@ -864,7 +864,7 @@ def test_status_calculates_total_cost(mocker, sample_config):
         )
     ]
 
-    mock_datetime = mocker.patch("gpu_session.cli.datetime")
+    mock_datetime = mocker.patch("soong.cli.datetime")
     mock_datetime.utcnow.return_value = now
     mock_datetime.fromisoformat = datetime.fromisoformat
 
@@ -883,10 +883,10 @@ def test_status_multiple_instances_total_cost(mocker, sample_config):
 
     Pattern #4 fix: Use unique values to verify multi-instance total.
     """
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api_class = mocker.patch("soong.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
     now = datetime.now(timezone.utc)
@@ -942,7 +942,7 @@ def test_status_multiple_instances_total_cost(mocker, sample_config):
         ),
     ]
 
-    mock_datetime = mocker.patch("gpu_session.cli.datetime")
+    mock_datetime = mocker.patch("soong.cli.datetime")
     mock_datetime.utcnow.return_value = now
     mock_datetime.fromisoformat = datetime.fromisoformat
 
@@ -966,10 +966,10 @@ def test_status_handles_api_error(mocker, sample_config):
 
     Pattern #6 fix: Verify specific error message propagates correctly.
     """
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api_class = mocker.patch("soong.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
     # Pattern #6 fix: Use unique error message to verify it's not swallowed
@@ -992,10 +992,10 @@ def test_status_filters_to_running_only(mocker, sample_config):
 
     Pattern #2 & #3 fix: Verify filtering with row structure validation.
     """
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api_class = mocker.patch("soong.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
     now = datetime.now(timezone.utc)
@@ -1037,7 +1037,7 @@ def test_status_filters_to_running_only(mocker, sample_config):
 
     mock_api.list_instance_types.return_value = []
 
-    mock_datetime = mocker.patch("gpu_session.cli.datetime")
+    mock_datetime = mocker.patch("soong.cli.datetime")
     mock_datetime.utcnow.return_value = now
     mock_datetime.fromisoformat = datetime.fromisoformat
 
@@ -1067,10 +1067,10 @@ def test_status_filters_to_running_only(mocker, sample_config):
 
 def test_status_handles_missing_pricing(mocker, sample_config):
     """Test 'gpu-session status' handles missing pricing gracefully."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api_class = mocker.patch("soong.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
     now = datetime.now(timezone.utc)
@@ -1091,7 +1091,7 @@ def test_status_handles_missing_pricing(mocker, sample_config):
     # Return empty pricing list
     mock_api.list_instance_types.return_value = []
 
-    mock_datetime = mocker.patch("gpu_session.cli.datetime")
+    mock_datetime = mocker.patch("soong.cli.datetime")
     mock_datetime.utcnow.return_value = now
     mock_datetime.fromisoformat = datetime.fromisoformat
 
@@ -1104,10 +1104,10 @@ def test_status_handles_missing_pricing(mocker, sample_config):
 
 def test_status_no_running_instances_shows_help_text(mocker, sample_config):
     """Test 'gpu-session status' shows help when no running instances."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api_class = mocker.patch("soong.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
     mock_api.list_instances.return_value = [
@@ -1132,10 +1132,10 @@ def test_status_no_running_instances_shows_help_text(mocker, sample_config):
 
 def test_status_expired_cost_highlighted_in_red(mocker, sample_config):
     """Test 'gpu-session status' highlights cost in red when lease expired."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api_class = mocker.patch("soong.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
     now = datetime.now(timezone.utc)
@@ -1169,7 +1169,7 @@ def test_status_expired_cost_highlighted_in_red(mocker, sample_config):
         )
     ]
 
-    mock_datetime = mocker.patch("gpu_session.cli.datetime")
+    mock_datetime = mocker.patch("soong.cli.datetime")
     mock_datetime.utcnow.return_value = now
     mock_datetime.fromisoformat = datetime.fromisoformat
 

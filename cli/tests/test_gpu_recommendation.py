@@ -1,7 +1,7 @@
 """Tests for GPU recommendation functions."""
 
 import pytest
-from gpu_session.models import (
+from soong.models import (
     get_recommended_gpu,
     get_model_config,
     ModelConfig,
@@ -139,7 +139,7 @@ class TestGetRecommendedGpuAllKnownModels:
 
     def test_all_models_have_recommendation(self):
         """Every known model should have a GPU recommendation."""
-        from gpu_session.models import KNOWN_MODELS
+        from soong.models import KNOWN_MODELS
 
         for model_id in KNOWN_MODELS.keys():
             gpu = get_recommended_gpu(model_id)
@@ -147,7 +147,7 @@ class TestGetRecommendedGpuAllKnownModels:
 
     def test_all_recommendations_are_valid_gpus(self):
         """All recommendations should be valid GPU names."""
-        from gpu_session.models import KNOWN_MODELS
+        from soong.models import KNOWN_MODELS
 
         for model_id in KNOWN_MODELS.keys():
             gpu = get_recommended_gpu(model_id)
@@ -155,7 +155,7 @@ class TestGetRecommendedGpuAllKnownModels:
 
     def test_recommended_gpu_has_sufficient_vram(self):
         """Recommended GPU should have enough VRAM for the model."""
-        from gpu_session.models import KNOWN_MODELS
+        from soong.models import KNOWN_MODELS
 
         for model_id in KNOWN_MODELS.keys():
             config = get_model_config(model_id)

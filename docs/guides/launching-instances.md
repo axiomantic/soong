@@ -7,7 +7,7 @@ Launch Lambda Labs GPU instances with the optimal configuration for your workloa
 Launch with default settings:
 
 ```bash
-gpu-session start
+soong start
 ```
 
 This uses your configured defaults for model, GPU type, region, and lease duration.
@@ -19,7 +19,7 @@ This uses your configured defaults for model, GPU type, region, and lease durati
 Override the default model with `--model`:
 
 ```bash
-gpu-session start --model deepseek-r1-70b
+soong start --model deepseek-r1-70b
 ```
 
 Available models:
@@ -39,7 +39,7 @@ See [Model Management](model-management.md) for detailed comparisons.
 Override the default GPU with `--gpu`:
 
 ```bash
-gpu-session start --model qwen2.5-coder-32b --gpu gpu_1x_a6000
+soong start --model qwen2.5-coder-32b --gpu gpu_1x_a6000
 ```
 
 !!! tip "GPU Selection"
@@ -62,7 +62,7 @@ gpu_1x_h100_pcie       # 80GB VRAM - fastest
 Override the default region with `--region`:
 
 ```bash
-gpu-session start --region us-west-2
+soong start --region us-west-2
 ```
 
 Available regions depend on GPU availability. Common regions:
@@ -73,14 +73,14 @@ Available regions depend on GPU availability. Common regions:
 - `us-south-1` (Texas)
 
 !!! note "Region Availability"
-    GPU availability varies by region. Use `gpu-session available` to see current capacity.
+    GPU availability varies by region. Use `soong available` to see current capacity.
 
 ### Setting Lease Duration
 
 Set lease duration (1-8 hours) with `--hours`:
 
 ```bash
-gpu-session start --hours 6
+soong start --hours 6
 ```
 
 !!! warning "Lease Limits"
@@ -91,7 +91,7 @@ gpu-session start --hours 6
 Assign a custom name with `--name`:
 
 ```bash
-gpu-session start --name "feature-branch-testing"
+soong start --name "feature-branch-testing"
 ```
 
 Names help identify instances when running multiple sessions.
@@ -105,7 +105,7 @@ sequenceDiagram
     participant Lambda API
     participant Instance
 
-    User->>CLI: gpu-session start
+    User->>CLI: soong start
     CLI->>CLI: Load configuration
     CLI->>Lambda API: Get instance type pricing
     CLI->>User: Show cost estimate
@@ -119,7 +119,7 @@ sequenceDiagram
 
 ### Cost Confirmation
 
-Before launching, gpu-session shows an estimate:
+Before launching, soong shows an estimate:
 
 ```
 ┌─────────────────────────────────────┐
@@ -141,7 +141,7 @@ Before launching, gpu-session shows an estimate:
 Skip confirmation with `--yes`:
 
 ```bash
-gpu-session start --yes
+soong start --yes
 ```
 
 ### Waiting for Instance Ready
@@ -149,19 +149,19 @@ gpu-session start --yes
 By default, the CLI waits for the instance to be ready:
 
 ```bash
-gpu-session start --wait  # default behavior
+soong start --wait  # default behavior
 ```
 
 Skip waiting to return immediately:
 
 ```bash
-gpu-session start --no-wait
+soong start --no-wait
 ```
 
 When waiting is disabled, check status manually:
 
 ```bash
-gpu-session status
+soong status
 ```
 
 ## Examples
@@ -171,7 +171,7 @@ gpu-session status
 Launch the most capable reasoning model:
 
 ```bash
-gpu-session start \
+soong start \
   --model deepseek-r1-70b \
   --gpu gpu_1x_a100_sxm4_80gb \
   --hours 4 \
@@ -185,7 +185,7 @@ gpu-session start \
 Use a fast, budget-friendly coding model:
 
 ```bash
-gpu-session start \
+soong start \
   --model qwen2.5-coder-32b-int4 \
   --gpu gpu_1x_a10 \
   --hours 2 \
@@ -199,7 +199,7 @@ gpu-session start \
 Use Qwen with 32K context window:
 
 ```bash
-gpu-session start \
+soong start \
   --model qwen2.5-coder-32b \
   --gpu gpu_1x_a6000 \
   --hours 6 \
@@ -216,8 +216,8 @@ Once launched, the CLI displays:
 Instance launched: a1b2c3d4
 Instance ready at 123.45.67.89
 
-SSH: gpu-session ssh
-Status: gpu-session status
+SSH: soong ssh
+Status: soong status
 ```
 
 Next steps:
@@ -238,17 +238,17 @@ Error launching instance: No capacity available in us-west-1
 
 1. Try a different region:
    ```bash
-   gpu-session start --region us-west-2
+   soong start --region us-west-2
    ```
 
 2. Check current availability:
    ```bash
-   gpu-session available
+   soong available
    ```
 
 3. Try a different GPU type (if model allows):
    ```bash
-   gpu-session start --gpu gpu_1x_rtx6000
+   soong start --gpu gpu_1x_rtx6000
    ```
 
 ### SSH Keys Not Found
@@ -275,15 +275,15 @@ Instance launch timed out
 
 1. Check instance status manually:
    ```bash
-   gpu-session status
+   soong status
    ```
 
 2. The instance may still be initializing. Wait 1-2 minutes and check again.
 
 3. If stuck in "booting" state for >5 minutes, terminate and relaunch:
    ```bash
-   gpu-session stop --yes
-   gpu-session start
+   soong stop --yes
+   soong start
    ```
 
 ### Cost Estimate Shows Different Price
@@ -298,7 +298,7 @@ Estimated cost: $4.80  # 4 × $1.20
 ```
 
 !!! warning "Actual Costs"
-    If you extend your lease or the instance runs beyond the lease (before auto-termination), costs will increase. Always monitor with `gpu-session status`.
+    If you extend your lease or the instance runs beyond the lease (before auto-termination), costs will increase. Always monitor with `soong status`.
 
 ## Best Practices
 
@@ -317,10 +317,10 @@ Begin with 2-4 hours and extend if needed. This prevents paying for unused time.
 
 ```bash
 # Start short
-gpu-session start --hours 2
+soong start --hours 2
 
 # Extend later if needed
-gpu-session extend 2
+soong extend 2
 ```
 
 ### Use --yes for Automation
@@ -328,7 +328,7 @@ gpu-session extend 2
 When scripting or automating launches:
 
 ```bash
-gpu-session start --yes --no-wait
+soong start --yes --no-wait
 ```
 
 ### Set Meaningful Names
@@ -336,9 +336,9 @@ gpu-session start --yes --no-wait
 Use descriptive names for multi-instance workflows:
 
 ```bash
-gpu-session start --name "frontend-dev-server"
-gpu-session start --name "backend-api-server"
-gpu-session start --name "ml-training-job"
+soong start --name "frontend-dev-server"
+soong start --name "backend-api-server"
+soong start --name "ml-training-job"
 ```
 
 ## Next Steps

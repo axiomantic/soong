@@ -1,6 +1,6 @@
 # Prerequisites
 
-Before installing GPU Session CLI, you'll need to set up your Lambda Labs account and gather the required credentials.
+Before installing Soong CLI, you'll need to set up your Lambda Labs account and gather the required credentials.
 
 ---
 
@@ -20,7 +20,7 @@ If you don't already have a Lambda Labs account:
 
 ## 2. Generate an API Key
 
-GPU Session CLI uses the Lambda Labs API to manage instances. You'll need an API key to authenticate.
+Soong CLI uses the Lambda Labs API to manage instances. You'll need an API key to authenticate.
 
 ### Steps to Generate an API Key
 
@@ -43,7 +43,7 @@ lam_1234567890abcdefghijklmnopqrstuvwxyz
 
 ## 3. Create and Upload SSH Keys
 
-GPU Session CLI uses SSH to connect to your instances. You'll need to upload your public SSH key to Lambda Labs.
+Soong CLI uses SSH to connect to your instances. You'll need to upload your public SSH key to Lambda Labs.
 
 ### Generate an SSH Key Pair (if you don't have one)
 
@@ -108,7 +108,7 @@ Lambda Labs instances are ephemeral—when stopped, all data is lost. A persiste
 7. Click **Create**
 
 !!! tip "Filesystem Naming"
-    Use a descriptive name—you'll reference it during GPU Session CLI configuration.
+    Use a descriptive name—you'll reference it during Soong CLI configuration.
 
 ### Filesystem Costs
 
@@ -134,7 +134,7 @@ Before proceeding, make sure you have:
 
 ## Next Steps
 
-Once you've completed all prerequisites, proceed to **[Installation](installation.md)** to install GPU Session CLI.
+Once you've completed all prerequisites, proceed to **[Installation](installation.md)** to install Soong CLI.
 
 ---
 

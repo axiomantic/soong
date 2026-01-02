@@ -1,6 +1,6 @@
 # Installation
 
-This guide covers installing GPU Session CLI on your local machine.
+This guide covers installing Soong CLI on your local machine.
 
 ---
 
@@ -32,7 +32,7 @@ Python 3.10.0  # or later
 ```
 
 !!! warning "Python Version"
-    GPU Session CLI requires Python 3.10 or later. If you have an older version, [download the latest Python](https://www.python.org/downloads/) before proceeding.
+    Soong CLI requires Python 3.10 or later. If you have an older version, [download the latest Python](https://www.python.org/downloads/) before proceeding.
 
 ---
 
@@ -44,8 +44,8 @@ Clone the repository and install in development mode:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/gpu-session.git
-cd gpu-session
+git clone https://github.com/yourusername/soong.git
+cd soong
 
 # Create a virtual environment (recommended)
 python -m venv venv
@@ -60,42 +60,42 @@ pip install -e .
 Once published to PyPI, you'll be able to install with:
 
 ```bash
-pip install gpu-session
+pip install soong
 ```
 
 ---
 
 ## Verify Installation
 
-After installation, verify that GPU Session CLI is working:
+After installation, verify that Soong CLI is working:
 
 ```bash
-gpu-session --version
+soong --version
 ```
 
 **Expected Output**:
 ```
-gpu-session version 1.0.0
+soong version 1.0.0
 ```
 
 ### Run the Help Command
 
 ```bash
-gpu-session --help
+soong --help
 ```
 
 **Expected Output**:
 ```
-Usage: gpu-session [OPTIONS] COMMAND [ARGS]...
+Usage: soong [OPTIONS] COMMAND [ARGS]...
 
-  GPU Session CLI - Manage Lambda Labs GPU instances
+  Soong CLI - Manage Lambda Labs GPU instances
 
 Options:
   --version  Show the version and exit.
   --help     Show this message and exit.
 
 Commands:
-  configure  Configure GPU Session CLI with Lambda Labs credentials
+  configure  Configure Soong CLI with Lambda Labs credentials
   start      Start a new GPU instance
   status     Show current instance status
   extend     Extend instance runtime
@@ -107,13 +107,13 @@ Commands:
 ```
 
 !!! success "Installation Complete"
-    If you see the help output, GPU Session CLI is installed correctly!
+    If you see the help output, Soong CLI is installed correctly!
 
 ---
 
 ## Troubleshooting
 
-### "command not found: gpu-session"
+### "command not found: soong"
 
 **Cause**: The installation directory isn't in your PATH.
 
@@ -192,17 +192,17 @@ pip install --user -e .
 
 ## Uninstalling
 
-To uninstall GPU Session CLI:
+To uninstall Soong CLI:
 
 ```bash
-pip uninstall gpu-session
+pip uninstall soong
 ```
 
 ---
 
 ## Next Steps
 
-Now that GPU Session CLI is installed, proceed to **[Configuration](configuration.md)** to set up your Lambda Labs credentials.
+Now that Soong CLI is installed, proceed to **[Configuration](configuration.md)** to set up your Lambda Labs credentials.
 
 ---
 

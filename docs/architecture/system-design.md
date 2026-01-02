@@ -1,13 +1,13 @@
 # System Design
 
-This document describes the overall architecture of the gpu-session CLI system, including component interactions, data flow, and design decisions.
+This document describes the overall architecture of the soong CLI system, including component interactions, data flow, and design decisions.
 
 ## High-Level Architecture
 
 ```mermaid
 graph TB
     subgraph "Local Machine"
-        CLI[CLI Tool<br/>gpu-session]
+        CLI[CLI Tool<br/>soong]
         Config[Config Manager<br/>~/.config/gpu-dashboard/]
         SSHMgr[SSH Tunnel Manager]
 
@@ -54,7 +54,7 @@ graph TB
 
 ### CLI Tool
 
-**Location:** `cli/src/gpu_session/cli.py`
+**Location:** `cli/src/soong/cli.py`
 
 **Responsibilities:**
 
@@ -88,7 +88,7 @@ def start(
 
 ### Lambda API Client
 
-**Location:** `cli/src/gpu_session/lambda_api.py`
+**Location:** `cli/src/soong/lambda_api.py`
 
 **Responsibilities:**
 
@@ -119,7 +119,7 @@ RETRY_BACKOFF_MULTIPLIER = 2
 
 ### Instance Manager
 
-**Location:** `cli/src/gpu_session/instance.py`
+**Location:** `cli/src/soong/instance.py`
 
 **Responsibilities:**
 
@@ -149,7 +149,7 @@ def wait_for_ready(instance_id: str, timeout_seconds: int = 600):
 
 ### SSH Tunnel Manager
 
-**Location:** `cli/src/gpu_session/ssh.py`
+**Location:** `cli/src/soong/ssh.py`
 
 **Responsibilities:**
 
@@ -175,7 +175,7 @@ Tunnel process ID stored in `~/.config/gpu-dashboard/tunnel.pid` for cleanup.
 
 ### Configuration Manager
 
-**Location:** `cli/src/gpu_session/config.py`
+**Location:** `cli/src/soong/config.py`
 
 **Responsibilities:**
 
@@ -248,7 +248,7 @@ sequenceDiagram
     participant Instance as GPU Instance
     participant Daemon as Status Daemon
 
-    User->>CLI: gpu-session start
+    User->>CLI: soong start
     CLI->>Config: Load configuration
     Config-->>CLI: API key, defaults
 
@@ -279,7 +279,7 @@ sequenceDiagram
 ### Launch Steps
 
 1. **User initiates launch**
-   - Command: `gpu-session start --model deepseek-r1-70b`
+   - Command: `soong start --model deepseek-r1-70b`
    - CLI loads configuration from YAML
 
 2. **API preparation**
@@ -306,7 +306,7 @@ sequenceDiagram
 6. **Confirmation**
    - CLI displays instance IP
    - Shows SSH and status commands
-   - User can connect via `gpu-session ssh`
+   - User can connect via `soong ssh`
 
 ## Data Flow: Status Query
 
@@ -318,7 +318,7 @@ sequenceDiagram
     participant Instance
     participant Daemon as Status Daemon
 
-    User->>CLI: gpu-session status
+    User->>CLI: soong status
 
     CLI->>API: GET /instances
     API-->>CLI: Instance list
@@ -487,7 +487,7 @@ Persistent filesystem mount is fast (1-2 seconds) because Lambda uses high-perfo
 ```bash
 cd cli
 pip install -e ".[test]"
-gpu-session configure
+soong configure
 ```
 
 ### Production Usage

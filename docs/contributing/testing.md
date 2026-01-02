@@ -1,6 +1,6 @@
 # Testing Guide
 
-This guide covers testing practices, running tests, and writing new tests for the gpu-session CLI.
+This guide covers testing practices, running tests, and writing new tests for the soong CLI.
 
 ## Overview
 
@@ -31,17 +31,17 @@ pytest -k "vram"  # Runs all tests with "vram" in name
 
 ```bash
 # Run with coverage
-pytest --cov=gpu_session
+pytest --cov=soong
 
 # Coverage with missing lines
-pytest --cov=gpu_session --cov-report=term-missing
+pytest --cov=soong --cov-report=term-missing
 
 # Generate HTML coverage report
-pytest --cov=gpu_session --cov-report=html
+pytest --cov=soong --cov-report=html
 # Open htmlcov/index.html in browser
 
 # Coverage for specific module
-pytest --cov=gpu_session.models tests/test_models.py
+pytest --cov=soong.models tests/test_models.py
 ```
 
 ### Test Output Options
@@ -127,7 +127,7 @@ Test individual functions in isolation:
 ```python
 def test_estimate_vram_llama_70b_int4():
     """Test VRAM estimation for Llama 3.1 70B with INT4 quantization."""
-    from gpu_session.models import estimate_vram, Quantization
+    from soong.models import estimate_vram, Quantization
 
     result = estimate_vram(
         params_billions=70,
@@ -161,7 +161,7 @@ Test CLI commands using `CliRunner`:
 def test_start_command_shows_cost_estimate(cli_runner, sample_config, mocker):
     """Test that start command shows cost estimate before launching."""
     # Setup mocks
-    mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
+    mocker.patch("soong.cli.get_config", return_value=sample_config)
 
     mock_api = mocker.Mock()
     mock_api.get_instance_type.return_value = mocker.Mock(
@@ -169,7 +169,7 @@ def test_start_command_shows_cost_estimate(cli_runner, sample_config, mocker):
         price_per_hour=1.29,
         estimate_cost=lambda h: 1.29 * h,
     )
-    mocker.patch("gpu_session.cli.LambdaAPI", return_value=mock_api)
+    mocker.patch("soong.cli.LambdaAPI", return_value=mock_api)
 
     # Mock user declining
     mocker.patch("questionary.confirm", return_value=mocker.Mock(ask=lambda: False))
@@ -215,7 +215,7 @@ def test_list_instances_success(mock_http, lambda_api_base_url):
     )
 
     # Call API
-    from gpu_session.lambda_api import LambdaAPI
+    from soong.lambda_api import LambdaAPI
     api = LambdaAPI("test_key")
     instances = api.list_instances()
 
@@ -243,7 +243,7 @@ def test_launch_instance_api_error(mock_http, lambda_api_base_url):
     )
 
     # Call API and expect error
-    from gpu_session.lambda_api import LambdaAPI, LambdaAPIError
+    from soong.lambda_api import LambdaAPI, LambdaAPIError
     api = LambdaAPI("test_key")
 
     with pytest.raises(LambdaAPIError, match="API request failed"):
@@ -298,7 +298,7 @@ def test_api_call(mock_http, lambda_api_base_url):
 ```python
 def test_command(cli_runner):
     """Use CLI runner fixture."""
-    from gpu_session.cli import app
+    from soong.cli import app
     result = cli_runner.invoke(app, ["command", "args"])
     assert result.exit_code == 0
 ```
@@ -350,7 +350,7 @@ def test_instance_launch(mocker):
 ```python
 def test_instance_launch_bad(mocker):
     """Don't mock internal helper functions."""
-    mocker.patch("gpu_session.instance._validate_config")  # Internal detail
+    mocker.patch("soong.instance._validate_config")  # Internal detail
     # This test is brittle and doesn't verify behavior
 ```
 
@@ -424,10 +424,10 @@ As of recent updates, the test suite achieves:
 
 ```bash
 # Generate coverage report
-pytest --cov=gpu_session --cov-report=term-missing
+pytest --cov=soong --cov-report=term-missing
 
 # See which lines are not covered
-pytest --cov=gpu_session --cov-report=html
+pytest --cov=soong --cov-report=html
 open htmlcov/index.html
 ```
 
@@ -436,7 +436,7 @@ open htmlcov/index.html
 **Find untested code:**
 
 ```bash
-pytest --cov=gpu_session --cov-report=term-missing | grep -A 5 "TOTAL"
+pytest --cov=soong --cov-report=term-missing | grep -A 5 "TOTAL"
 ```
 
 **Add tests for uncovered lines:**
@@ -445,7 +445,7 @@ pytest --cov=gpu_session --cov-report=term-missing | grep -A 5 "TOTAL"
 # Example: Testing error path
 def test_config_validation_invalid_quantization():
     """Test that invalid quantization raises ValueError."""
-    from gpu_session.config import validate_custom_model
+    from soong.config import validate_custom_model
 
     invalid_model = {
         "hf_path": "org/model",
@@ -497,7 +497,7 @@ jobs:
       - name: Run tests with coverage
         run: |
           cd cli
-          pytest --cov=gpu_session --cov-report=xml
+          pytest --cov=soong --cov-report=xml
 
       - name: Upload coverage
         uses: codecov/codecov-action@v3

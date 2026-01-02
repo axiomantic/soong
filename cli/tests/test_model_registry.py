@@ -1,7 +1,7 @@
 """Tests for model registry and known models."""
 
 import pytest
-from gpu_session.models import (
+from soong.models import (
     KNOWN_MODELS,
     MODEL_INFO,
     get_model_config,

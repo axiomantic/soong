@@ -104,17 +104,17 @@ Start with 2 hours, extend as needed:
 
 ```bash
 # Start short
-gpu-session start --hours 2  # $1.60
+soong start --hours 2  # $1.60
 
 # Extend if needed (only if still working)
-gpu-session extend 2  # +$1.60 total $3.20
+soong extend 2  # +$1.60 total $3.20
 ```
 
 **vs. starting with 4 hours**:
 
 ```bash
 # Start long
-gpu-session start --hours 4  # $3.20
+soong start --hours 4  # $3.20
 
 # Finish early, waste time
 # (Stop after 2.5 hours, wasted $1.20)
@@ -128,7 +128,7 @@ Set reminders to check status:
 
 ```bash
 # Every hour
-watch -n 3600 gpu-session status
+watch -n 3600 soong status
 ```
 
 Or add to shell prompt:
@@ -136,7 +136,7 @@ Or add to shell prompt:
 ```bash
 # Add to ~/.bashrc or ~/.zshrc
 gpu_status() {
-  gpu-session status 2>/dev/null | grep "Time Left" | awk '{print $NF}'
+  soong status 2>/dev/null | grep "Time Left" | awk '{print $NF}'
 }
 
 PS1='[GPU: $(gpu_status)] $ '
@@ -153,7 +153,7 @@ Time Left: 45m  # Yellow warning
 **Action**: Extend now, not at 5 minutes:
 
 ```bash
-gpu-session extend 2
+soong extend 2
 ```
 
 ## Development Workflow Optimization
@@ -205,10 +205,10 @@ Don't leave instances running overnight or during breaks:
 
 ```bash
 # Before lunch
-gpu-session stop --yes
+soong stop --yes
 
 # After lunch
-gpu-session start
+soong start
 ```
 
 **Savings**: $0.80/hr × 1 hour lunch = **$0.80 saved**
@@ -269,7 +269,7 @@ Always review cost estimates:
 **Skip if confident**:
 
 ```bash
-gpu-session start --yes
+soong start --yes
 ```
 
 ### During Session
@@ -277,7 +277,7 @@ gpu-session start --yes
 Monitor current and estimated total costs:
 
 ```bash
-gpu-session status
+soong status
 ```
 
 ```
@@ -402,10 +402,10 @@ Run multiple instances for parallel tasks:
 
 ```bash
 # Terminal 1
-gpu-session start --name "frontend" --model llama-3.1-8b --hours 2
+soong start --name "frontend" --model llama-3.1-8b --hours 2
 
 # Terminal 2
-gpu-session start --name "backend" --model llama-3.1-8b --hours 2
+soong start --name "backend" --model llama-3.1-8b --hours 2
 ```
 
 **Cost**: $2.40 total (2 × 2 hours × $0.60)
@@ -418,7 +418,7 @@ Add a cron job or script to auto-stop instances:
 
 ```bash
 # Stop all instances at 6 PM
-0 18 * * * gpu-session stop --yes
+0 18 * * * soong stop --yes
 ```
 
 **Benefit**: Never forget to stop instances.
@@ -429,7 +429,7 @@ Track your actual costs over time:
 
 ```bash
 # View termination history
-gpu-session status --history --history-hours 168  # Last week
+soong status --history --history-hours 168  # Last week
 ```
 
 ```

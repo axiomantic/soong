@@ -2,8 +2,8 @@
 
 import pytest
 from typer.testing import CliRunner
-from gpu_session.cli import app
-from gpu_session.models import KNOWN_MODELS
+from soong.cli import app
+from soong.models import KNOWN_MODELS
 
 
 runner = CliRunner()
@@ -12,7 +12,7 @@ runner = CliRunner()
 def test_models_list_displays_all_known_models(mocker, temp_config_dir, sample_config):
     """Test 'gpu-session models' lists all known models."""
     # Mock config manager
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
     result = runner.invoke(app, ["models"], catch_exceptions=False)
@@ -44,7 +44,7 @@ def test_models_list_displays_all_known_models(mocker, temp_config_dir, sample_c
 
 def test_models_list_shows_custom_model_count(mocker, temp_config_dir, custom_model_dict):
     """Test 'gpu-session models' shows custom model count."""
-    from gpu_session.config import Config, LambdaConfig, StatusDaemonConfig
+    from soong.config import Config, LambdaConfig, StatusDaemonConfig
 
     config = Config(
         lambda_config=LambdaConfig(api_key="test"),
@@ -52,7 +52,7 @@ def test_models_list_shows_custom_model_count(mocker, temp_config_dir, custom_mo
         custom_models={"my-custom-1": custom_model_dict},
     )
 
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = config
 
     result = runner.invoke(app, ["models"])
@@ -63,7 +63,7 @@ def test_models_list_shows_custom_model_count(mocker, temp_config_dir, custom_mo
 
 def test_models_info_displays_known_model_details(mocker, temp_config_dir, sample_config):
     """Test 'gpu-session models info <model-id>' displays detailed model information."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
     result = runner.invoke(app, ["models", "info", "deepseek-r1-70b"], catch_exceptions=False)
@@ -93,7 +93,7 @@ def test_models_info_displays_known_model_details(mocker, temp_config_dir, sampl
 
 def test_models_info_displays_vram_breakdown(mocker, temp_config_dir, sample_config):
     """Test 'gpu-session models info' displays detailed VRAM breakdown."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
     result = runner.invoke(app, ["models", "info", "qwen2.5-coder-32b"], catch_exceptions=False)
@@ -109,7 +109,7 @@ def test_models_info_displays_vram_breakdown(mocker, temp_config_dir, sample_con
 
 def test_models_info_model_not_found(mocker, temp_config_dir, sample_config):
     """Test 'gpu-session models info' with non-existent model ID."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
     result = runner.invoke(app, ["models", "info", "non-existent-model"])
@@ -121,7 +121,7 @@ def test_models_info_model_not_found(mocker, temp_config_dir, sample_config):
 
 def test_models_info_displays_notes(mocker, temp_config_dir, sample_config):
     """Test 'gpu-session models info' displays notes when present."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
     result = runner.invoke(app, ["models", "info", "deepseek-r1-70b"], catch_exceptions=False)
@@ -132,11 +132,11 @@ def test_models_info_displays_notes(mocker, temp_config_dir, sample_config):
 
 def test_models_info_displays_recommended_gpu_with_price(mocker, temp_config_dir, sample_config, mock_lambda_api):
     """Test 'gpu-session models info' displays recommended GPU with pricing."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
     # Mock LambdaAPI
-    mocker.patch("gpu_session.cli.LambdaAPI", return_value=mock_lambda_api)
+    mocker.patch("soong.cli.LambdaAPI", return_value=mock_lambda_api)
 
     result = runner.invoke(app, ["models", "info", "deepseek-r1-70b"], catch_exceptions=False)
 

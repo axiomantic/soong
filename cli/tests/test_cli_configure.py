@@ -15,9 +15,9 @@ The configure command is an interactive wizard that:
 import pytest
 from typer.testing import CliRunner
 from unittest.mock import Mock, MagicMock, call
-from gpu_session.cli import app
-from gpu_session.config import ConfigManager
-from gpu_session.lambda_api import LambdaAPIError
+from soong.cli import app
+from soong.config import ConfigManager
+from soong.lambda_api import LambdaAPIError
 import questionary
 import responses
 
@@ -138,7 +138,7 @@ def temp_config_manager(tmp_path, monkeypatch):
     mgr = ConfigManager()
 
     # Patch the global config_manager in cli module
-    from gpu_session import cli
+    from soong import cli
     monkeypatch.setattr(cli, "config_manager", mgr)
 
     return mgr
@@ -263,7 +263,7 @@ class TestConfigureAPIKey:
         mock_api_instance.list_instance_types.return_value = mock_instance_types
         mock_api_class.return_value = mock_api_instance
 
-        from gpu_session import cli
+        from soong import cli
         monkeypatch.setattr(cli, "LambdaAPI", mock_api_class)
 
         responses = iter([
@@ -470,7 +470,7 @@ class TestConfigureStatusToken:
         mock_api_instance.list_instance_types.return_value = mock_instance_types
         mock_api_class.return_value = mock_api_instance
 
-        from gpu_session import cli
+        from soong import cli
         monkeypatch.setattr(cli, "LambdaAPI", mock_api_class)
 
         responses = iter([
@@ -528,7 +528,7 @@ class TestConfigureModelSelection:
         mock_api_instance.list_instance_types.return_value = mock_instance_types
         mock_api_class.return_value = mock_api_instance
 
-        from gpu_session import cli
+        from soong import cli
         monkeypatch.setattr(cli, "LambdaAPI", mock_api_class)
 
         responses = iter([
@@ -581,7 +581,7 @@ class TestConfigureModelSelection:
         mock_api_instance.list_instance_types.return_value = mock_instance_types
         mock_api_class.return_value = mock_api_instance
 
-        from gpu_session import cli
+        from soong import cli
         monkeypatch.setattr(cli, "LambdaAPI", mock_api_class)
 
         responses = iter([
@@ -713,7 +713,7 @@ class TestConfigureGPUSelection:
         mock_api_instance.list_instance_types.return_value = mock_instance_types
         mock_api_class.return_value = mock_api_instance
 
-        from gpu_session import cli
+        from soong import cli
         monkeypatch.setattr(cli, "LambdaAPI", mock_api_class)
 
         # Select DeepSeek R1 70B which needs ~48GB
@@ -845,7 +845,7 @@ class TestConfigureGPUSelection:
         mock_api_instance.list_instance_types.return_value = mock_instance_types
         mock_api_class.return_value = mock_api_instance
 
-        from gpu_session import cli
+        from soong import cli
         monkeypatch.setattr(cli, "LambdaAPI", mock_api_class)
 
         responses = iter([
@@ -903,7 +903,7 @@ class TestConfigureRegionSelection:
         mock_api_instance.list_instance_types.return_value = mock_instance_types
         mock_api_class.return_value = mock_api_instance
 
-        from gpu_session import cli
+        from soong import cli
         monkeypatch.setattr(cli, "LambdaAPI", mock_api_class)
 
         responses = iter([
@@ -955,7 +955,7 @@ class TestConfigureRegionSelection:
         mock_api_instance.list_instance_types.return_value = []  # No instance types
         mock_api_class.return_value = mock_api_instance
 
-        from gpu_session import cli
+        from soong import cli
         monkeypatch.setattr(cli, "LambdaAPI", mock_api_class)
 
         responses = iter([
@@ -1010,7 +1010,7 @@ class TestConfigureFilesystem:
         mock_api_instance.list_instance_types.return_value = mock_instance_types
         mock_api_class.return_value = mock_api_instance
 
-        from gpu_session import cli
+        from soong import cli
         monkeypatch.setattr(cli, "LambdaAPI", mock_api_class)
 
         responses = iter([
@@ -1066,7 +1066,7 @@ class TestConfigureLeaseDuration:
         mock_api_instance.list_instance_types.return_value = mock_instance_types
         mock_api_class.return_value = mock_api_instance
 
-        from gpu_session import cli
+        from soong import cli
         monkeypatch.setattr(cli, "LambdaAPI", mock_api_class)
 
         responses = iter([
@@ -1123,7 +1123,7 @@ class TestConfigureSSHKey:
         mock_api_instance.list_instance_types.return_value = mock_instance_types
         mock_api_class.return_value = mock_api_instance
 
-        from gpu_session import cli
+        from soong import cli
         monkeypatch.setattr(cli, "LambdaAPI", mock_api_class)
 
         responses = iter([
@@ -1265,7 +1265,7 @@ class TestConfigureSaveAndSummary:
         mock_api_instance.list_instance_types.return_value = mock_instance_types
         mock_api_class.return_value = mock_api_instance
 
-        from gpu_session import cli
+        from soong import cli
         monkeypatch.setattr(cli, "LambdaAPI", mock_api_class)
 
         responses = iter([
@@ -1378,7 +1378,7 @@ class TestConfigureCancellation:
         mock_api_instance.list_instance_types.return_value = mock_instance_types
         mock_api_class.return_value = mock_api_instance
 
-        from gpu_session import cli
+        from soong import cli
         monkeypatch.setattr(cli, "LambdaAPI", mock_api_class)
 
         responses = iter([
@@ -1416,7 +1416,7 @@ class TestConfigureCancellation:
         mock_api_instance.list_instance_types.return_value = mock_instance_types
         mock_api_class.return_value = mock_api_instance
 
-        from gpu_session import cli
+        from soong import cli
         monkeypatch.setattr(cli, "LambdaAPI", mock_api_class)
 
         responses = iter([
@@ -1459,7 +1459,7 @@ class TestConfigureEdgeCases:
         mock_api_instance.list_instance_types.return_value = []  # Empty list
         mock_api_class.return_value = mock_api_instance
 
-        from gpu_session import cli
+        from soong import cli
         monkeypatch.setattr(cli, "LambdaAPI", mock_api_class)
 
         responses = iter([
@@ -1512,7 +1512,7 @@ class TestConfigureEdgeCases:
         mock_api_instance.list_instance_types.return_value = mock_instance_types
         mock_api_class.return_value = mock_api_instance
 
-        from gpu_session import cli
+        from soong import cli
         monkeypatch.setattr(cli, "LambdaAPI", mock_api_class)
 
         responses = iter([
@@ -1550,7 +1550,7 @@ class TestConfigureEdgeCases:
         mock_api_instance.list_instance_types.return_value = mock_instance_types
         mock_api_class.return_value = mock_api_instance
 
-        from gpu_session import cli
+        from soong import cli
         monkeypatch.setattr(cli, "LambdaAPI", mock_api_class)
 
         responses = iter([

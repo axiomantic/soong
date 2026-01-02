@@ -20,7 +20,7 @@ All traffic flows through a single encrypted SSH connection, eliminating the nee
 Start a tunnel to your active instance:
 
 ```bash
-gpu-session tunnel start
+soong tunnel start
 ```
 
 This forwards three ports by default:
@@ -36,7 +36,7 @@ This forwards three ports by default:
 ### Basic Usage
 
 ```bash
-gpu-session tunnel start
+soong tunnel start
 ```
 
 The tunnel runs in the **background** as a daemon process:
@@ -57,7 +57,7 @@ SSH tunnel started (PID: 12345)
 Override default ports:
 
 ```bash
-gpu-session tunnel start \
+soong tunnel start \
   --sglang-port 8001 \
   --n8n-port 5679 \
   --status-port 8081
@@ -70,7 +70,7 @@ This is useful when local ports are already in use.
 Connect to a specific instance (when running multiple):
 
 ```bash
-gpu-session tunnel start --instance-id a1b2c3d4
+soong tunnel start --instance-id a1b2c3d4
 ```
 
 ## How It Works
@@ -179,7 +179,7 @@ curl -X POST http://localhost:8080/extend \
 ## Checking Tunnel Status
 
 ```bash
-gpu-session tunnel status
+soong tunnel status
 ```
 
 **Output**:
@@ -197,7 +197,7 @@ Tunnel is not running
 ## Stopping a Tunnel
 
 ```bash
-gpu-session tunnel stop
+soong tunnel stop
 ```
 
 This terminates the background SSH process:
@@ -216,7 +216,7 @@ The PID file (`~/.config/gpu-dashboard/tunnel.pid`) is also removed.
 For interactive shell access (not tunneling), use:
 
 ```bash
-gpu-session ssh
+soong ssh
 ```
 
 This opens an interactive SSH session:
@@ -242,8 +242,8 @@ Tunnel already running. Stop it first.
 **Solution**: Stop the existing tunnel:
 
 ```bash
-gpu-session tunnel stop
-gpu-session tunnel start
+soong tunnel stop
+soong tunnel start
 ```
 
 ### Port Already in Use
@@ -258,7 +258,7 @@ Error starting tunnel: bind: Address already in use
 2. Use custom ports:
 
 ```bash
-gpu-session tunnel start --sglang-port 8001
+soong tunnel start --sglang-port 8001
 ```
 
 ### Tunnel Process Not Found
@@ -272,7 +272,7 @@ This happens when the tunnel died unexpectedly. The CLI cleans up the stale PID 
 **Solution**: Start a new tunnel:
 
 ```bash
-gpu-session tunnel start
+soong tunnel start
 ```
 
 ### SSH Connection Timeout
@@ -285,14 +285,14 @@ SSH tunnel command timed out
 
 1. Instance not ready yet:
    ```bash
-   gpu-session status  # Check if instance is "active"
+   soong status  # Check if instance is "active"
    ```
 
 2. Network issues or firewall blocking SSH (port 22)
 
 3. Incorrect SSH key:
    ```bash
-   gpu-session configure  # Reconfigure SSH key path
+   soong configure  # Reconfigure SSH key path
    ```
 
 ### Can't Access localhost:8000
@@ -301,12 +301,12 @@ SSH tunnel command timed out
 
 1. Verify tunnel is running:
    ```bash
-   gpu-session tunnel status
+   soong tunnel status
    ```
 
 2. Check if service is actually running on the instance:
    ```bash
-   gpu-session ssh
+   soong ssh
    ubuntu@instance:~$ curl localhost:8000/v1/models
    ```
 
@@ -324,14 +324,14 @@ Run tunnels to multiple instances on different port ranges:
 
 ```bash
 # Instance 1 (dev)
-gpu-session tunnel start \
+soong tunnel start \
   --instance-id a1b2c3d4 \
   --sglang-port 8000 \
   --n8n-port 5678 \
   --status-port 8080
 
 # Instance 2 (staging)
-gpu-session tunnel start \
+soong tunnel start \
   --instance-id x9y8z7w6 \
   --sglang-port 8100 \
   --n8n-port 5778 \
@@ -339,7 +339,7 @@ gpu-session tunnel start \
 ```
 
 !!! warning "One Tunnel at a Time"
-    The current implementation stores only one PID, so only one tunnel can be managed by `gpu-session tunnel`. For multiple tunnels, use raw SSH commands (see below).
+    The current implementation stores only one PID, so only one tunnel can be managed by `soong tunnel`. For multiple tunnels, use raw SSH commands (see below).
 
 ### Manual SSH Tunneling
 
@@ -417,7 +417,7 @@ curl http://localhost:8080/status \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
-The token is stored in `~/.config/gpu-session/config.json` and auto-generated during setup.
+The token is stored in `~/.config/soong/config.json` and auto-generated during setup.
 
 ## Best Practices
 
@@ -435,7 +435,7 @@ Instead of exposing services publicly, use SSH tunnels:
 Free up ports and resources:
 
 ```bash
-gpu-session tunnel stop
+soong tunnel stop
 ```
 
 ### Check Status Before Starting
@@ -443,10 +443,10 @@ gpu-session tunnel stop
 Avoid port conflicts:
 
 ```bash
-gpu-session tunnel status
+soong tunnel status
 # If running, stop first
-gpu-session tunnel stop
-gpu-session tunnel start
+soong tunnel stop
+soong tunnel start
 ```
 
 ### Use Instance-Specific Tunnels
@@ -454,7 +454,7 @@ gpu-session tunnel start
 When running multiple instances, specify which one:
 
 ```bash
-gpu-session tunnel start --instance-id a1b2c3d4
+soong tunnel start --instance-id a1b2c3d4
 ```
 
 ## Next Steps

@@ -1,10 +1,10 @@
 # Model Registry Reference
 
-Complete reference for built-in AI models supported by `gpu-session`.
+Complete reference for built-in AI models supported by `soong`.
 
 ## Overview
 
-`gpu-session` includes 7 pre-configured models optimized for different use cases. Each model includes:
+`soong` includes 7 pre-configured models optimized for different use cases. Each model includes:
 
 - **VRAM estimation** - Automatic calculation of memory requirements
 - **GPU recommendation** - Best GPU type for the model
@@ -393,10 +393,10 @@ You can add your own models using the CLI or config file.
 
 ```bash
 # Interactive
-gpu-session models add
+soong models add
 
 # With flags
-gpu-session models add \
+soong models add \
   --name my-model-70b \
   --hf-path myorg/custom-llama-70b \
   --params 70 \
@@ -426,10 +426,10 @@ See [Configuration Reference](configuration-file.md#custom_models) for full sche
 
 ```bash
 # List all models (built-in + custom)
-gpu-session models
+soong models
 
 # Get detailed info
-gpu-session models info deepseek-r1-70b
+soong models info deepseek-r1-70b
 ```
 
 ---
@@ -469,7 +469,7 @@ INT4 quantization (GPTQ/AWQ) allows 70B models to fit on 80GB GPUs with minimal 
 
 ### Can I use GGUF models?
 
-Currently, `gpu-session` uses SGLang which doesn't support GGUF. Models must be in HuggingFace Transformers format (safetensors).
+Currently, `soong` uses SGLang which doesn't support GGUF. Models must be in HuggingFace Transformers format (safetensors).
 
 ### What about LoRA adapters?
 

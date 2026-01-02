@@ -3,8 +3,8 @@
 import pytest
 from unittest.mock import Mock
 from typer.testing import CliRunner
-from gpu_session.cli import app
-from gpu_session.lambda_api import Instance
+from soong.cli import app
+from soong.lambda_api import Instance
 
 
 runner = CliRunner()
@@ -21,7 +21,7 @@ def mock_subprocess_for_tunnel(mocker):
     pgrep_result.returncode = 0
     pgrep_result.stdout = "12345"
 
-    mock_subprocess = mocker.patch("gpu_session.ssh.subprocess.run")
+    mock_subprocess = mocker.patch("soong.ssh.subprocess.run")
     mock_subprocess.side_effect = [ssh_result, pgrep_result]
 
     return mock_subprocess
@@ -63,18 +63,18 @@ def mock_instance_no_ip():
 
 def test_tunnel_start_success_with_instance_id(mocker, sample_config, mock_instance):
     """Test 'tunnel start' with specific instance_id successfully starts tunnel."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api = mocker.patch("soong.cli.LambdaAPI")
     mock_api.return_value.get_instance.return_value = mock_instance
 
-    mock_instance_mgr = mocker.patch("gpu_session.cli.InstanceManager")
+    mock_instance_mgr = mocker.patch("soong.cli.InstanceManager")
 
     # Mock at subprocess level
     mock_subprocess = mock_subprocess_for_tunnel(mocker)
 
-    mock_is_running = mocker.patch("gpu_session.ssh.SSHTunnelManager.is_tunnel_running")
+    mock_is_running = mocker.patch("soong.ssh.SSHTunnelManager.is_tunnel_running")
     mock_is_running.return_value = False
 
     result = runner.invoke(
@@ -103,18 +103,18 @@ def test_tunnel_start_success_with_instance_id(mocker, sample_config, mock_insta
 
 def test_tunnel_start_success_with_active_instance(mocker, sample_config, mock_instance):
     """Test 'tunnel start' without instance_id uses active instance."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api = mocker.patch("soong.cli.LambdaAPI")
 
-    mock_instance_mgr = mocker.patch("gpu_session.cli.InstanceManager")
+    mock_instance_mgr = mocker.patch("soong.cli.InstanceManager")
     mock_instance_mgr.return_value.get_active_instance.return_value = mock_instance
 
     # Mock at subprocess level
     mock_subprocess = mock_subprocess_for_tunnel(mocker)
 
-    mock_is_running = mocker.patch("gpu_session.ssh.SSHTunnelManager.is_tunnel_running")
+    mock_is_running = mocker.patch("soong.ssh.SSHTunnelManager.is_tunnel_running")
     mock_is_running.return_value = False
 
     result = runner.invoke(app, ["tunnel", "start"], catch_exceptions=False)
@@ -133,18 +133,18 @@ def test_tunnel_start_success_with_active_instance(mocker, sample_config, mock_i
 
 def test_tunnel_start_custom_sglang_port(mocker, sample_config, mock_instance):
     """Test 'tunnel start' with custom sglang_port."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api = mocker.patch("soong.cli.LambdaAPI")
     mock_api.return_value.get_instance.return_value = mock_instance
 
-    mock_instance_mgr = mocker.patch("gpu_session.cli.InstanceManager")
+    mock_instance_mgr = mocker.patch("soong.cli.InstanceManager")
 
     # Mock at subprocess level
     mock_subprocess = mock_subprocess_for_tunnel(mocker)
 
-    mock_is_running = mocker.patch("gpu_session.ssh.SSHTunnelManager.is_tunnel_running")
+    mock_is_running = mocker.patch("soong.ssh.SSHTunnelManager.is_tunnel_running")
     mock_is_running.return_value = False
 
     result = runner.invoke(
@@ -164,18 +164,18 @@ def test_tunnel_start_custom_sglang_port(mocker, sample_config, mock_instance):
 
 def test_tunnel_start_custom_n8n_port(mocker, sample_config, mock_instance):
     """Test 'tunnel start' with custom n8n_port."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api = mocker.patch("soong.cli.LambdaAPI")
     mock_api.return_value.get_instance.return_value = mock_instance
 
-    mock_instance_mgr = mocker.patch("gpu_session.cli.InstanceManager")
+    mock_instance_mgr = mocker.patch("soong.cli.InstanceManager")
 
     # Mock at subprocess level
     mock_subprocess = mock_subprocess_for_tunnel(mocker)
 
-    mock_is_running = mocker.patch("gpu_session.ssh.SSHTunnelManager.is_tunnel_running")
+    mock_is_running = mocker.patch("soong.ssh.SSHTunnelManager.is_tunnel_running")
     mock_is_running.return_value = False
 
     result = runner.invoke(
@@ -195,18 +195,18 @@ def test_tunnel_start_custom_n8n_port(mocker, sample_config, mock_instance):
 
 def test_tunnel_start_custom_status_port(mocker, sample_config, mock_instance):
     """Test 'tunnel start' with custom status_port."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api = mocker.patch("soong.cli.LambdaAPI")
     mock_api.return_value.get_instance.return_value = mock_instance
 
-    mock_instance_mgr = mocker.patch("gpu_session.cli.InstanceManager")
+    mock_instance_mgr = mocker.patch("soong.cli.InstanceManager")
 
     # Mock at subprocess level
     mock_subprocess = mock_subprocess_for_tunnel(mocker)
 
-    mock_is_running = mocker.patch("gpu_session.ssh.SSHTunnelManager.is_tunnel_running")
+    mock_is_running = mocker.patch("soong.ssh.SSHTunnelManager.is_tunnel_running")
     mock_is_running.return_value = False
 
     result = runner.invoke(
@@ -226,18 +226,18 @@ def test_tunnel_start_custom_status_port(mocker, sample_config, mock_instance):
 
 def test_tunnel_start_all_custom_ports(mocker, sample_config, mock_instance):
     """Test 'tunnel start' with all custom ports."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api = mocker.patch("soong.cli.LambdaAPI")
     mock_api.return_value.get_instance.return_value = mock_instance
 
-    mock_instance_mgr = mocker.patch("gpu_session.cli.InstanceManager")
+    mock_instance_mgr = mocker.patch("soong.cli.InstanceManager")
 
     # Mock at subprocess level
     mock_subprocess = mock_subprocess_for_tunnel(mocker)
 
-    mock_is_running = mocker.patch("gpu_session.ssh.SSHTunnelManager.is_tunnel_running")
+    mock_is_running = mocker.patch("soong.ssh.SSHTunnelManager.is_tunnel_running")
     mock_is_running.return_value = False
 
     result = runner.invoke(
@@ -268,14 +268,14 @@ def test_tunnel_start_all_custom_ports(mocker, sample_config, mock_instance):
 
 def test_tunnel_start_no_instance_found_with_id(mocker, sample_config):
     """Test 'tunnel start' exits when instance_id not found."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api = mocker.patch("soong.cli.LambdaAPI")
     mock_api.return_value.get_instance.return_value = None
 
-    mock_instance_mgr = mocker.patch("gpu_session.cli.InstanceManager")
-    mock_ssh_mgr = mocker.patch("gpu_session.cli.SSHTunnelManager")
+    mock_instance_mgr = mocker.patch("soong.cli.InstanceManager")
+    mock_ssh_mgr = mocker.patch("soong.cli.SSHTunnelManager")
 
     result = runner.invoke(
         app,
@@ -289,15 +289,15 @@ def test_tunnel_start_no_instance_found_with_id(mocker, sample_config):
 
 def test_tunnel_start_no_active_instance(mocker, sample_config):
     """Test 'tunnel start' exits when no active instance found."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api = mocker.patch("soong.cli.LambdaAPI")
 
-    mock_instance_mgr = mocker.patch("gpu_session.cli.InstanceManager")
+    mock_instance_mgr = mocker.patch("soong.cli.InstanceManager")
     mock_instance_mgr.return_value.get_active_instance.return_value = None
 
-    mock_ssh_mgr = mocker.patch("gpu_session.cli.SSHTunnelManager")
+    mock_ssh_mgr = mocker.patch("soong.cli.SSHTunnelManager")
 
     result = runner.invoke(app, ["tunnel", "start"])
 
@@ -308,14 +308,14 @@ def test_tunnel_start_no_active_instance(mocker, sample_config):
 
 def test_tunnel_start_instance_no_ip(mocker, sample_config, mock_instance_no_ip):
     """Test 'tunnel start' exits when instance has no IP address."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api = mocker.patch("soong.cli.LambdaAPI")
     mock_api.return_value.get_instance.return_value = mock_instance_no_ip
 
-    mock_instance_mgr = mocker.patch("gpu_session.cli.InstanceManager")
-    mock_ssh_mgr = mocker.patch("gpu_session.cli.SSHTunnelManager")
+    mock_instance_mgr = mocker.patch("soong.cli.InstanceManager")
+    mock_ssh_mgr = mocker.patch("soong.cli.SSHTunnelManager")
 
     result = runner.invoke(
         app,
@@ -329,18 +329,18 @@ def test_tunnel_start_instance_no_ip(mocker, sample_config, mock_instance_no_ip)
 
 def test_tunnel_start_calls_start_tunnel(mocker, sample_config, mock_instance):
     """Test 'tunnel start' constructs correct SSH command with all required flags."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api = mocker.patch("soong.cli.LambdaAPI")
     mock_api.return_value.get_instance.return_value = mock_instance
 
-    mock_instance_mgr = mocker.patch("gpu_session.cli.InstanceManager")
+    mock_instance_mgr = mocker.patch("soong.cli.InstanceManager")
 
     # Mock at subprocess level to verify SSH command construction
     mock_subprocess = mock_subprocess_for_tunnel(mocker)
 
-    mock_is_running = mocker.patch("gpu_session.ssh.SSHTunnelManager.is_tunnel_running")
+    mock_is_running = mocker.patch("soong.ssh.SSHTunnelManager.is_tunnel_running")
     mock_is_running.return_value = False
 
     result = runner.invoke(
@@ -368,15 +368,15 @@ def test_tunnel_start_calls_start_tunnel(mocker, sample_config, mock_instance):
 
 def test_tunnel_start_failure_exits_1(mocker, sample_config, mock_instance):
     """Test 'tunnel start' exits with code 1 when start_tunnel fails."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api = mocker.patch("soong.cli.LambdaAPI")
     mock_api.return_value.get_instance.return_value = mock_instance
 
-    mock_instance_mgr = mocker.patch("gpu_session.cli.InstanceManager")
+    mock_instance_mgr = mocker.patch("soong.cli.InstanceManager")
 
-    mock_ssh_mgr = mocker.patch("gpu_session.cli.SSHTunnelManager")
+    mock_ssh_mgr = mocker.patch("soong.cli.SSHTunnelManager")
     mock_ssh_mgr.return_value.start_tunnel.return_value = False
 
     result = runner.invoke(
@@ -389,18 +389,18 @@ def test_tunnel_start_failure_exits_1(mocker, sample_config, mock_instance):
 
 def test_tunnel_start_default_ports(mocker, sample_config, mock_instance):
     """Test 'tunnel start' uses default ports when none specified."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api = mocker.patch("soong.cli.LambdaAPI")
     mock_api.return_value.get_instance.return_value = mock_instance
 
-    mock_instance_mgr = mocker.patch("gpu_session.cli.InstanceManager")
+    mock_instance_mgr = mocker.patch("soong.cli.InstanceManager")
 
     # Mock at subprocess level
     mock_subprocess = mock_subprocess_for_tunnel(mocker)
 
-    mock_is_running = mocker.patch("gpu_session.ssh.SSHTunnelManager.is_tunnel_running")
+    mock_is_running = mocker.patch("soong.ssh.SSHTunnelManager.is_tunnel_running")
     mock_is_running.return_value = False
 
     result = runner.invoke(
@@ -420,18 +420,18 @@ def test_tunnel_start_default_ports(mocker, sample_config, mock_instance):
 
 def test_tunnel_start_passes_correct_remote_ports(mocker, sample_config, mock_instance):
     """Test 'tunnel start' always passes correct remote ports regardless of local ports."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api = mocker.patch("soong.cli.LambdaAPI")
     mock_api.return_value.get_instance.return_value = mock_instance
 
-    mock_instance_mgr = mocker.patch("gpu_session.cli.InstanceManager")
+    mock_instance_mgr = mocker.patch("soong.cli.InstanceManager")
 
     # Mock at subprocess level
     mock_subprocess = mock_subprocess_for_tunnel(mocker)
 
-    mock_is_running = mocker.patch("gpu_session.ssh.SSHTunnelManager.is_tunnel_running")
+    mock_is_running = mocker.patch("soong.ssh.SSHTunnelManager.is_tunnel_running")
     mock_is_running.return_value = False
 
     result = runner.invoke(
@@ -465,10 +465,10 @@ def test_tunnel_start_passes_correct_remote_ports(mocker, sample_config, mock_in
 
 def test_tunnel_stop_success(mocker, sample_config):
     """Test 'tunnel stop' successfully stops tunnel."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_ssh_mgr = mocker.patch("gpu_session.cli.SSHTunnelManager")
+    mock_ssh_mgr = mocker.patch("soong.cli.SSHTunnelManager")
     mock_ssh_mgr.return_value.stop_tunnel.return_value = True
 
     result = runner.invoke(app, ["tunnel", "stop"], catch_exceptions=False)
@@ -479,10 +479,10 @@ def test_tunnel_stop_success(mocker, sample_config):
 
 def test_tunnel_stop_failure_exits_1(mocker, sample_config):
     """Test 'tunnel stop' exits with code 1 when stop_tunnel fails."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_ssh_mgr = mocker.patch("gpu_session.cli.SSHTunnelManager")
+    mock_ssh_mgr = mocker.patch("soong.cli.SSHTunnelManager")
     mock_ssh_mgr.return_value.stop_tunnel.return_value = False
 
     result = runner.invoke(app, ["tunnel", "stop"])
@@ -492,10 +492,10 @@ def test_tunnel_stop_failure_exits_1(mocker, sample_config):
 
 def test_tunnel_stop_calls_stop_tunnel(mocker, sample_config):
     """Test 'tunnel stop' calls SSHTunnelManager.stop_tunnel."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_ssh_mgr = mocker.patch("gpu_session.cli.SSHTunnelManager")
+    mock_ssh_mgr = mocker.patch("soong.cli.SSHTunnelManager")
     mock_ssh_mgr.return_value.stop_tunnel.return_value = True
 
     result = runner.invoke(app, ["tunnel", "stop"], catch_exceptions=False)
@@ -510,11 +510,11 @@ def test_tunnel_stop_calls_stop_tunnel(mocker, sample_config):
 
 def test_tunnel_status_running(mocker, sample_config):
     """Test 'tunnel status' shows correct message and exit code when tunnel is active."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
     # Mock SSHTunnelManager at CLI level
-    mock_ssh_mgr = mocker.patch("gpu_session.cli.SSHTunnelManager")
+    mock_ssh_mgr = mocker.patch("soong.cli.SSHTunnelManager")
     mock_ssh_mgr.return_value.is_tunnel_running.return_value = True
 
     result = runner.invoke(app, ["tunnel", "status"], catch_exceptions=False)
@@ -533,11 +533,11 @@ def test_tunnel_status_running(mocker, sample_config):
 
 def test_tunnel_status_not_running(mocker, sample_config):
     """Test 'tunnel status' shows correct message and exit code when tunnel is inactive."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
     # Mock SSHTunnelManager at CLI level
-    mock_ssh_mgr = mocker.patch("gpu_session.cli.SSHTunnelManager")
+    mock_ssh_mgr = mocker.patch("soong.cli.SSHTunnelManager")
     mock_ssh_mgr.return_value.is_tunnel_running.return_value = False
 
     result = runner.invoke(app, ["tunnel", "status"], catch_exceptions=False)
@@ -556,11 +556,11 @@ def test_tunnel_status_not_running(mocker, sample_config):
 
 def test_tunnel_status_calls_is_tunnel_running(mocker, sample_config):
     """Test 'tunnel status' calls SSHTunnelManager with correct SSH key path."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
     # Mock SSHTunnelManager at CLI level
-    mock_ssh_mgr = mocker.patch("gpu_session.cli.SSHTunnelManager")
+    mock_ssh_mgr = mocker.patch("soong.cli.SSHTunnelManager")
     mock_ssh_mgr.return_value.is_tunnel_running.return_value = True
 
     result = runner.invoke(app, ["tunnel", "status"], catch_exceptions=False)
@@ -579,10 +579,10 @@ def test_tunnel_status_calls_is_tunnel_running(mocker, sample_config):
 
 def test_tunnel_start_invalid_port_below_range(mocker, sample_config, mock_instance):
     """Test 'tunnel start' rejects ports below valid range (< 1)."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api = mocker.patch("soong.cli.LambdaAPI")
     mock_api.return_value.get_instance.return_value = mock_instance
 
     # Attempt to use invalid port (0)
@@ -597,10 +597,10 @@ def test_tunnel_start_invalid_port_below_range(mocker, sample_config, mock_insta
 
 def test_tunnel_start_invalid_port_above_range(mocker, sample_config, mock_instance):
     """Test 'tunnel start' rejects ports above valid range (> 65535)."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api = mocker.patch("soong.cli.LambdaAPI")
     mock_api.return_value.get_instance.return_value = mock_instance
 
     # Attempt to use invalid port (65536)
@@ -615,18 +615,18 @@ def test_tunnel_start_invalid_port_above_range(mocker, sample_config, mock_insta
 
 def test_tunnel_start_port_boundary_low(mocker, sample_config, mock_instance):
     """Test 'tunnel start' accepts minimum valid port (1)."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api = mocker.patch("soong.cli.LambdaAPI")
     mock_api.return_value.get_instance.return_value = mock_instance
 
-    mock_instance_mgr = mocker.patch("gpu_session.cli.InstanceManager")
+    mock_instance_mgr = mocker.patch("soong.cli.InstanceManager")
 
     # Mock at subprocess level
     mock_subprocess = mock_subprocess_for_tunnel(mocker)
 
-    mock_is_running = mocker.patch("gpu_session.ssh.SSHTunnelManager.is_tunnel_running")
+    mock_is_running = mocker.patch("soong.ssh.SSHTunnelManager.is_tunnel_running")
     mock_is_running.return_value = False
 
     result = runner.invoke(
@@ -644,18 +644,18 @@ def test_tunnel_start_port_boundary_low(mocker, sample_config, mock_instance):
 
 def test_tunnel_start_port_boundary_high(mocker, sample_config, mock_instance):
     """Test 'tunnel start' accepts maximum valid port (65535)."""
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
-    mock_api = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api = mocker.patch("soong.cli.LambdaAPI")
     mock_api.return_value.get_instance.return_value = mock_instance
 
-    mock_instance_mgr = mocker.patch("gpu_session.cli.InstanceManager")
+    mock_instance_mgr = mocker.patch("soong.cli.InstanceManager")
 
     # Mock at subprocess level
     mock_subprocess = mock_subprocess_for_tunnel(mocker)
 
-    mock_is_running = mocker.patch("gpu_session.ssh.SSHTunnelManager.is_tunnel_running")
+    mock_is_running = mocker.patch("soong.ssh.SSHTunnelManager.is_tunnel_running")
     mock_is_running.return_value = False
 
     result = runner.invoke(

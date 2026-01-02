@@ -9,7 +9,7 @@ This 5-minute tutorial will walk you through launching your first GPU instance, 
 Before starting this tutorial, make sure you've completed:
 
 - [x] [Prerequisites](prerequisites.md) - Lambda Labs account setup
-- [x] [Installation](installation.md) - GPU Session CLI installed
+- [x] [Installation](installation.md) - Soong CLI installed
 - [x] [Configuration](configuration.md) - CLI configured with credentials
 
 ---
@@ -19,7 +19,7 @@ Before starting this tutorial, make sure you've completed:
 First, let's see what models are available:
 
 ```bash
-gpu-session models --limit 10
+soong models --limit 10
 ```
 
 **Expected Output**:
@@ -37,11 +37,11 @@ meta-llama/Meta-Llama-3-70B            140 GB
 ```
 
 !!! tip "Model Recommendations"
-    Use `gpu-session models --recommend <model-name>` to get instance type recommendations based on VRAM requirements.
+    Use `soong models --recommend <model-name>` to get instance type recommendations based on VRAM requirements.
 
 **Example**:
 ```bash
-gpu-session models --recommend meta-llama/Llama-2-7b-hf
+soong models --recommend meta-llama/Llama-2-7b-hf
 ```
 
 **Output**:
@@ -62,12 +62,12 @@ Recommended instance types:
 Launch a GPU instance with your chosen model:
 
 ```bash
-gpu-session start --model meta-llama/Llama-2-7b-hf
+soong start --model meta-llama/Llama-2-7b-hf
 ```
 
 **What happens**:
 
-1. GPU Session CLI requests an instance from Lambda Labs
+1. Soong CLI requests an instance from Lambda Labs
 2. Lambda Labs provisions the GPU instance
 3. The instance boots and becomes accessible
 4. SSH tunnels are automatically configured
@@ -94,9 +94,9 @@ SSH Tunnels:
   Local Port 5678 → Instance Port 5678 (n8n)
   Local Port 8080 → Instance Port 8080 (Status Daemon)
 
-To connect: gpu-session ssh
-To check status: gpu-session status
-To stop: gpu-session stop
+To connect: soong ssh
+To check status: soong status
+To stop: soong stop
 ```
 
 !!! info "Instance Startup Time"
@@ -108,13 +108,13 @@ You can override defaults with command-line flags:
 
 ```bash
 # Specify instance type
-gpu-session start --model meta-llama/Llama-2-7b-hf --instance-type gpu_1x_a100
+soong start --model meta-llama/Llama-2-7b-hf --instance-type gpu_1x_a100
 
 # Set max runtime to 4 hours
-gpu-session start --model meta-llama/Llama-2-7b-hf --max-hours 4
+soong start --model meta-llama/Llama-2-7b-hf --max-hours 4
 
 # Combine multiple options
-gpu-session start \
+soong start \
   --model deepseek-ai/DeepSeek-R1 \
   --instance-type gpu_1x_h100_pcie \
   --max-hours 6 \
@@ -128,7 +128,7 @@ gpu-session start \
 View your running instance details:
 
 ```bash
-gpu-session status
+soong status
 ```
 
 **Expected Output**:
@@ -166,11 +166,11 @@ Ports:
 SSH into your running instance:
 
 ```bash
-gpu-session ssh
+soong ssh
 ```
 
 **What happens**:
-1. GPU Session CLI connects using your configured SSH key
+1. Soong CLI connects using your configured SSH key
 2. You're logged into the instance as the default user
 3. Your persistent filesystem is mounted at `/home/ubuntu/workspace` (if configured)
 
@@ -220,7 +220,7 @@ exit
 
 ## Step 5: Access Services via SSH Tunnels
 
-GPU Session CLI automatically sets up SSH tunnels to common ports. You can access these services from your local machine:
+Soong CLI automatically sets up SSH tunnels to common ports. You can access these services from your local machine:
 
 ### SGLang Inference Server (Port 8000)
 
@@ -243,7 +243,7 @@ curl http://localhost:8080/status
 ```
 
 !!! tip "Tunnel Management"
-    SSH tunnels are automatically created when you start an instance. Use `gpu-session tunnel` to manually manage tunnels if needed.
+    SSH tunnels are automatically created when you start an instance. Use `soong tunnel` to manually manage tunnels if needed.
 
 ---
 
@@ -252,7 +252,7 @@ curl http://localhost:8080/status
 If you need more time before the instance auto-stops:
 
 ```bash
-gpu-session extend --hours 2
+soong extend --hours 2
 ```
 
 **Expected Output**:
@@ -273,7 +273,7 @@ New Details:
 When you're done, stop the instance to avoid additional charges:
 
 ```bash
-gpu-session stop
+soong stop
 ```
 
 **Expected Output**:
@@ -300,19 +300,19 @@ Here's a complete workflow from start to finish:
 
 ```bash
 # 1. Check available models
-gpu-session models --limit 5
+soong models --limit 5
 
 # 2. Get recommendations for a specific model
-gpu-session models --recommend meta-llama/Llama-2-7b-hf
+soong models --recommend meta-llama/Llama-2-7b-hf
 
 # 3. Start instance with the model
-gpu-session start --model meta-llama/Llama-2-7b-hf
+soong start --model meta-llama/Llama-2-7b-hf
 
 # 4. Check status
-gpu-session status
+soong status
 
 # 5. SSH into instance
-gpu-session ssh
+soong ssh
 
 # (Inside instance) Verify GPU
 nvidia-smi
@@ -324,10 +324,10 @@ python train_model.py
 exit
 
 # 6. (Optional) Extend runtime if needed
-gpu-session extend --hours 1
+soong extend --hours 1
 
 # 7. Stop instance when done
-gpu-session stop
+soong stop
 ```
 
 ---
@@ -355,7 +355,7 @@ Costs depend on the instance type and runtime:
 | gpu_1x_a100 | 40GB | $1.10 | $2.20 |
 | gpu_1x_h100_pcie | 80GB | $2.99 | $5.98 |
 
-See `gpu-session available` for current pricing.
+See `soong available` for current pricing.
 
 ### What happens if I forget to stop an instance?
 
@@ -375,4 +375,4 @@ Use a persistent filesystem (configured during setup). Any data stored in `/home
 ---
 
 !!! success "Congratulations!"
-    You've successfully launched and managed your first GPU instance with GPU Session CLI!
+    You've successfully launched and managed your first GPU instance with Soong CLI!

@@ -4,8 +4,8 @@ import pytest
 import responses
 from typer.testing import CliRunner
 from unittest.mock import Mock, patch, MagicMock
-from gpu_session.cli import app
-from gpu_session.lambda_api import Instance, InstanceType, LambdaAPIError
+from soong.cli import app
+from soong.lambda_api import Instance, InstanceType, LambdaAPIError
 from tests.helpers.assertions import (
     assert_table_row,
     assert_json_consumed,
@@ -68,15 +68,15 @@ class TestExtendCommand:
         This ensures the actual HTTP call is made to the correct URL with correct method.
         """
         # Setup mocks for non-HTTP dependencies
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mock_lambda_api = mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
         mock_api_instance.get_instance.return_value = mock_instance
         mock_api_instance.get_instance_type.return_value = mock_instance_type
         mock_lambda_api.return_value = mock_api_instance
 
-        mocker.patch("gpu_session.cli.InstanceManager")
-        mock_questionary = mocker.patch("gpu_session.cli.questionary.confirm")
+        mocker.patch("soong.cli.InstanceManager")
+        mock_questionary = mocker.patch("soong.cli.questionary.confirm")
         mock_questionary.return_value.ask.return_value = True
 
         # Mock HTTP with responses library (Pattern #5 fix)
@@ -120,18 +120,18 @@ class TestExtendCommand:
         Pattern #5 fix: Use responses library for HTTP mocking.
         """
         # Setup mocks
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mock_lambda_api = mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
         mock_api_instance.get_instance_type.return_value = mock_instance_type
         mock_lambda_api.return_value = mock_api_instance
 
-        mock_instance_mgr = mocker.patch("gpu_session.cli.InstanceManager")
+        mock_instance_mgr = mocker.patch("soong.cli.InstanceManager")
         mock_mgr_instance = Mock()
         mock_mgr_instance.get_active_instance.return_value = mock_instance
         mock_instance_mgr.return_value = mock_mgr_instance
 
-        mock_questionary = mocker.patch("gpu_session.cli.questionary.confirm")
+        mock_questionary = mocker.patch("soong.cli.questionary.confirm")
         mock_questionary.return_value.ask.return_value = True
 
         # Mock HTTP with responses library (Pattern #5 fix)
@@ -166,15 +166,15 @@ class TestExtendCommand:
         Pattern #5 fix: Use responses library for HTTP mocking.
         """
         # Setup mocks
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mock_lambda_api = mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
         mock_api_instance.get_instance.return_value = mock_instance
         mock_api_instance.get_instance_type.return_value = mock_instance_type
         mock_lambda_api.return_value = mock_api_instance
 
-        mocker.patch("gpu_session.cli.InstanceManager")
-        mock_questionary = mocker.patch("gpu_session.cli.questionary.confirm")
+        mocker.patch("soong.cli.InstanceManager")
+        mock_questionary = mocker.patch("soong.cli.questionary.confirm")
         mock_questionary.return_value.ask.return_value = True
 
         # Mock HTTP with responses library
@@ -211,14 +211,14 @@ class TestExtendCommand:
         Pattern #5 fix: Use responses library for HTTP mocking.
         """
         # Setup mocks
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mock_lambda_api = mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
         mock_api_instance.get_instance.return_value = mock_instance
         mock_lambda_api.return_value = mock_api_instance
 
-        mocker.patch("gpu_session.cli.InstanceManager")
-        mock_questionary = mocker.patch("gpu_session.cli.questionary.confirm")
+        mocker.patch("soong.cli.InstanceManager")
+        mock_questionary = mocker.patch("soong.cli.questionary.confirm")
 
         # Mock HTTP with responses library
         expected_url = f"http://{mock_instance.ip}:{sample_config.status_daemon.port}/extend"
@@ -251,15 +251,15 @@ class TestExtendCommand:
     def test_extend_cancelled_by_user(self, sample_config, mock_instance, mock_instance_type, mocker):
         """Test cancelling extension when user declines confirmation."""
         # Setup mocks
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mock_lambda_api = mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
         mock_api_instance.get_instance.return_value = mock_instance
         mock_api_instance.get_instance_type.return_value = mock_instance_type
         mock_lambda_api.return_value = mock_api_instance
 
-        mocker.patch("gpu_session.cli.InstanceManager")
-        mock_questionary = mocker.patch("gpu_session.cli.questionary.confirm")
+        mocker.patch("soong.cli.InstanceManager")
+        mock_questionary = mocker.patch("soong.cli.questionary.confirm")
         mock_questionary.return_value.ask.return_value = False
 
         # Run command
@@ -272,13 +272,13 @@ class TestExtendCommand:
     def test_extend_no_instance_found_with_id(self, sample_config, mocker):
         """Test extend when instance ID not found."""
         # Setup mocks
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mock_lambda_api = mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
         mock_api_instance.get_instance.return_value = None
         mock_lambda_api.return_value = mock_api_instance
 
-        mocker.patch("gpu_session.cli.InstanceManager")
+        mocker.patch("soong.cli.InstanceManager")
 
         # Run command
         result = runner.invoke(app, ["extend", "4", "--instance-id", "nonexistent"])
@@ -290,10 +290,10 @@ class TestExtendCommand:
     def test_extend_no_instance_found_active(self, sample_config, mocker):
         """Test extend when no active instance exists."""
         # Setup mocks
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mocker.patch("soong.cli.LambdaAPI")
 
-        mock_instance_mgr = mocker.patch("gpu_session.cli.InstanceManager")
+        mock_instance_mgr = mocker.patch("soong.cli.InstanceManager")
         mock_mgr_instance = Mock()
         mock_mgr_instance.get_active_instance.return_value = None
         mock_instance_mgr.return_value = mock_mgr_instance
@@ -308,13 +308,13 @@ class TestExtendCommand:
     def test_extend_instance_no_ip(self, sample_config, mock_instance_no_ip, mocker):
         """Test extend when instance has no IP address."""
         # Setup mocks
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mock_lambda_api = mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
         mock_api_instance.get_instance.return_value = mock_instance_no_ip
         mock_lambda_api.return_value = mock_api_instance
 
-        mocker.patch("gpu_session.cli.InstanceManager")
+        mocker.patch("soong.cli.InstanceManager")
 
         # Run command
         result = runner.invoke(app, ["extend", "4", "--instance-id", "inst_def456uvw"])
@@ -331,13 +331,13 @@ class TestExtendCommand:
         This is the gold standard for testing HTTP requests.
         """
         # Setup mocks
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mock_lambda_api = mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
         mock_api_instance.get_instance.return_value = mock_instance
         mock_lambda_api.return_value = mock_api_instance
 
-        mocker.patch("gpu_session.cli.InstanceManager")
+        mocker.patch("soong.cli.InstanceManager")
 
         # Mock HTTP with responses library - the actual URL/method must match
         expected_url = f"http://{mock_instance.ip}:{sample_config.status_daemon.port}/extend"
@@ -380,13 +380,13 @@ class TestExtendCommand:
         import requests as req_lib
 
         # Setup mocks
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mock_lambda_api = mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
         mock_api_instance.get_instance.return_value = mock_instance
         mock_lambda_api.return_value = mock_api_instance
 
-        mocker.patch("gpu_session.cli.InstanceManager")
+        mocker.patch("soong.cli.InstanceManager")
 
         # Mock HTTP to raise connection error
         expected_url = f"http://{mock_instance.ip}:{sample_config.status_daemon.port}/extend"
@@ -412,13 +412,13 @@ class TestExtendCommand:
         import requests as req_lib
 
         # Setup mocks
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mock_lambda_api = mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
         mock_api_instance.get_instance.return_value = mock_instance
         mock_lambda_api.return_value = mock_api_instance
 
-        mocker.patch("gpu_session.cli.InstanceManager")
+        mocker.patch("soong.cli.InstanceManager")
 
         # Mock HTTP to raise timeout
         expected_url = f"http://{mock_instance.ip}:{sample_config.status_daemon.port}/extend"
@@ -445,8 +445,8 @@ class TestStopCommand:
         Pattern #7 fix: Verify state transition from active to terminated.
         """
         # Setup mocks
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mock_lambda_api = mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
 
         # Create terminated instance for state verification (Pattern #7 fix)
@@ -459,7 +459,7 @@ class TestStopCommand:
         mock_api_instance.terminate_instance.return_value = None
         mock_lambda_api.return_value = mock_api_instance
 
-        mocker.patch("gpu_session.cli.InstanceManager")
+        mocker.patch("soong.cli.InstanceManager")
 
         # Verify initial state is active (Pattern #7 fix)
         initial_instance = mock_api_instance.get_instance(mock_instance.id)
@@ -480,13 +480,13 @@ class TestStopCommand:
     def test_stop_success_with_active_instance(self, sample_config, mock_instance, mocker):
         """Test stopping active instance."""
         # Setup mocks
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mock_lambda_api = mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
         mock_api_instance.terminate_instance.return_value = None
         mock_lambda_api.return_value = mock_api_instance
 
-        mock_instance_mgr = mocker.patch("gpu_session.cli.InstanceManager")
+        mock_instance_mgr = mocker.patch("soong.cli.InstanceManager")
         mock_mgr_instance = Mock()
         mock_mgr_instance.get_active_instance.return_value = mock_instance
         mock_instance_mgr.return_value = mock_mgr_instance
@@ -502,15 +502,15 @@ class TestStopCommand:
     def test_stop_shows_confirmation(self, sample_config, mock_instance, mocker):
         """Test that stop command shows confirmation prompt."""
         # Setup mocks
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mock_lambda_api = mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
         mock_api_instance.get_instance.return_value = mock_instance
         mock_api_instance.terminate_instance.return_value = None
         mock_lambda_api.return_value = mock_api_instance
 
-        mocker.patch("gpu_session.cli.InstanceManager")
-        mock_confirm = mocker.patch("gpu_session.cli.typer.confirm", return_value=True)
+        mocker.patch("soong.cli.InstanceManager")
+        mock_confirm = mocker.patch("soong.cli.typer.confirm", return_value=True)
 
         # Run command without --yes flag
         result = runner.invoke(app, ["stop", "--instance-id", "inst_abc123xyz"])
@@ -522,15 +522,15 @@ class TestStopCommand:
     def test_stop_with_yes_flag_skips_confirmation(self, sample_config, mock_instance, mocker):
         """Test that --yes flag skips confirmation."""
         # Setup mocks
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mock_lambda_api = mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
         mock_api_instance.get_instance.return_value = mock_instance
         mock_api_instance.terminate_instance.return_value = None
         mock_lambda_api.return_value = mock_api_instance
 
-        mocker.patch("gpu_session.cli.InstanceManager")
-        mock_confirm = mocker.patch("gpu_session.cli.typer.confirm")
+        mocker.patch("soong.cli.InstanceManager")
+        mock_confirm = mocker.patch("soong.cli.typer.confirm")
 
         # Run command with --yes flag
         result = runner.invoke(app, ["stop", "--instance-id", "inst_abc123xyz", "--yes"])
@@ -542,14 +542,14 @@ class TestStopCommand:
     def test_stop_cancelled_by_user(self, sample_config, mock_instance, mocker):
         """Test cancelling stop when user declines confirmation."""
         # Setup mocks
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mock_lambda_api = mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
         mock_api_instance.get_instance.return_value = mock_instance
         mock_lambda_api.return_value = mock_api_instance
 
-        mocker.patch("gpu_session.cli.InstanceManager")
-        mock_confirm = mocker.patch("gpu_session.cli.typer.confirm", return_value=False)
+        mocker.patch("soong.cli.InstanceManager")
+        mock_confirm = mocker.patch("soong.cli.typer.confirm", return_value=False)
 
         # Run command without --yes flag
         result = runner.invoke(app, ["stop", "--instance-id", "inst_abc123xyz"])
@@ -562,13 +562,13 @@ class TestStopCommand:
     def test_stop_no_instance_found_with_id(self, sample_config, mocker):
         """Test stop when instance ID not found."""
         # Setup mocks
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mock_lambda_api = mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
         mock_api_instance.get_instance.return_value = None
         mock_lambda_api.return_value = mock_api_instance
 
-        mocker.patch("gpu_session.cli.InstanceManager")
+        mocker.patch("soong.cli.InstanceManager")
 
         # Run command
         result = runner.invoke(app, ["stop", "--instance-id", "nonexistent", "--yes"])
@@ -580,10 +580,10 @@ class TestStopCommand:
     def test_stop_no_instance_found_active(self, sample_config, mocker):
         """Test stop when no active instance exists."""
         # Setup mocks
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mocker.patch("soong.cli.LambdaAPI")
 
-        mock_instance_mgr = mocker.patch("gpu_session.cli.InstanceManager")
+        mock_instance_mgr = mocker.patch("soong.cli.InstanceManager")
         mock_mgr_instance = Mock()
         mock_mgr_instance.get_active_instance.return_value = None
         mock_instance_mgr.return_value = mock_mgr_instance
@@ -598,14 +598,14 @@ class TestStopCommand:
     def test_stop_api_error(self, sample_config, mock_instance, mocker):
         """Test handling of API error during termination."""
         # Setup mocks
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mock_lambda_api = mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
         mock_api_instance.get_instance.return_value = mock_instance
         mock_api_instance.terminate_instance.side_effect = LambdaAPIError("API Error: Unable to terminate")
         mock_lambda_api.return_value = mock_api_instance
 
-        mocker.patch("gpu_session.cli.InstanceManager")
+        mocker.patch("soong.cli.InstanceManager")
 
         # Run command with --yes to skip confirmation
         result = runner.invoke(app, ["stop", "--instance-id", "inst_abc123xyz", "--yes"])
@@ -627,15 +627,15 @@ class TestSSHCommand:
         Full SSH command verification is in test_ssh.py.
         """
         # Setup mocks
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mock_lambda_api = mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
         mock_api_instance.get_instance.return_value = mock_instance
         mock_lambda_api.return_value = mock_api_instance
 
-        mocker.patch("gpu_session.cli.InstanceManager")
+        mocker.patch("soong.cli.InstanceManager")
 
-        mock_ssh_mgr = mocker.patch("gpu_session.cli.SSHTunnelManager")
+        mock_ssh_mgr = mocker.patch("soong.cli.SSHTunnelManager")
         mock_ssh_instance = Mock()
         mock_ssh_mgr.return_value = mock_ssh_instance
 
@@ -659,15 +659,15 @@ class TestSSHCommand:
     def test_ssh_success_with_active_instance(self, sample_config, mock_instance, mocker):
         """Test SSH into active instance."""
         # Setup mocks
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mocker.patch("soong.cli.LambdaAPI")
 
-        mock_instance_mgr = mocker.patch("gpu_session.cli.InstanceManager")
+        mock_instance_mgr = mocker.patch("soong.cli.InstanceManager")
         mock_mgr_instance = Mock()
         mock_mgr_instance.get_active_instance.return_value = mock_instance
         mock_instance_mgr.return_value = mock_mgr_instance
 
-        mock_ssh_mgr = mocker.patch("gpu_session.cli.SSHTunnelManager")
+        mock_ssh_mgr = mocker.patch("soong.cli.SSHTunnelManager")
         mock_ssh_instance = Mock()
         mock_ssh_mgr.return_value = mock_ssh_instance
 
@@ -682,14 +682,14 @@ class TestSSHCommand:
     def test_ssh_no_instance_found_with_id(self, sample_config, mocker):
         """Test SSH when instance ID not found."""
         # Setup mocks
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mock_lambda_api = mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
         mock_api_instance.get_instance.return_value = None
         mock_lambda_api.return_value = mock_api_instance
 
-        mocker.patch("gpu_session.cli.InstanceManager")
-        mocker.patch("gpu_session.cli.SSHTunnelManager")
+        mocker.patch("soong.cli.InstanceManager")
+        mocker.patch("soong.cli.SSHTunnelManager")
 
         # Run command
         result = runner.invoke(app, ["ssh", "--instance-id", "nonexistent"])
@@ -701,15 +701,15 @@ class TestSSHCommand:
     def test_ssh_no_instance_found_active(self, sample_config, mocker):
         """Test SSH when no active instance exists."""
         # Setup mocks
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mocker.patch("soong.cli.LambdaAPI")
 
-        mock_instance_mgr = mocker.patch("gpu_session.cli.InstanceManager")
+        mock_instance_mgr = mocker.patch("soong.cli.InstanceManager")
         mock_mgr_instance = Mock()
         mock_mgr_instance.get_active_instance.return_value = None
         mock_instance_mgr.return_value = mock_mgr_instance
 
-        mocker.patch("gpu_session.cli.SSHTunnelManager")
+        mocker.patch("soong.cli.SSHTunnelManager")
 
         # Run command
         result = runner.invoke(app, ["ssh"])
@@ -721,14 +721,14 @@ class TestSSHCommand:
     def test_ssh_instance_no_ip(self, sample_config, mock_instance_no_ip, mocker):
         """Test SSH when instance has no IP address."""
         # Setup mocks
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mock_lambda_api = mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
         mock_api_instance.get_instance.return_value = mock_instance_no_ip
         mock_lambda_api.return_value = mock_api_instance
 
-        mocker.patch("gpu_session.cli.InstanceManager")
-        mocker.patch("gpu_session.cli.SSHTunnelManager")
+        mocker.patch("soong.cli.InstanceManager")
+        mocker.patch("soong.cli.SSHTunnelManager")
 
         # Run command
         result = runner.invoke(app, ["ssh", "--instance-id", "inst_def456uvw"])
@@ -740,15 +740,15 @@ class TestSSHCommand:
     def test_ssh_calls_connect_ssh(self, sample_config, mock_instance, mocker):
         """Test that SSH command calls connect_ssh with correct IP."""
         # Setup mocks
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mock_lambda_api = mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
         mock_api_instance.get_instance.return_value = mock_instance
         mock_lambda_api.return_value = mock_api_instance
 
-        mocker.patch("gpu_session.cli.InstanceManager")
+        mocker.patch("soong.cli.InstanceManager")
 
-        mock_ssh_mgr = mocker.patch("gpu_session.cli.SSHTunnelManager")
+        mock_ssh_mgr = mocker.patch("soong.cli.SSHTunnelManager")
         mock_ssh_instance = Mock()
         mock_ssh_mgr.return_value = mock_ssh_instance
 
@@ -767,8 +767,8 @@ class TestAvailableCommand:
     def test_available_displays_gpu_types(self, sample_config, mocker):
         """Test that available command displays GPU types."""
         # Setup mocks
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mock_lambda_api = mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
         mock_api_instance.list_instance_types.return_value = {
             "gpu_1x_a100_sxm4_80gb": {
@@ -805,8 +805,8 @@ class TestAvailableCommand:
     def test_available_shows_regions(self, sample_config, mocker):
         """Test that available command shows regions with capacity."""
         # Setup mocks
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mock_lambda_api = mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
         mock_api_instance.list_instance_types.return_value = {
             "gpu_1x_a100_sxm4_80gb": {
@@ -833,8 +833,8 @@ class TestAvailableCommand:
     def test_available_shows_availability(self, sample_config, mocker):
         """Test that available command shows availability status."""
         # Setup mocks
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mock_lambda_api = mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
         mock_api_instance.list_instance_types.return_value = {
             "gpu_1x_a100_sxm4_80gb": {
@@ -868,8 +868,8 @@ class TestAvailableCommand:
     def test_available_shows_recommended_models(self, sample_config, mocker):
         """Test that available command shows recommended models."""
         # Setup mocks
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mock_lambda_api = mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
         mock_api_instance.list_instance_types.return_value = {}
         mock_lambda_api.return_value = mock_api_instance
@@ -886,8 +886,8 @@ class TestAvailableCommand:
     def test_available_api_error(self, sample_config, mocker):
         """Test handling of API error when listing instance types."""
         # Setup mocks
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mock_lambda_api = mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
         mock_api_instance.list_instance_types.side_effect = LambdaAPIError("API Error: Unable to list types")
         mock_lambda_api.return_value = mock_api_instance
@@ -903,8 +903,8 @@ class TestAvailableCommand:
     def test_available_empty_types(self, sample_config, mocker):
         """Test available command with no GPU types available."""
         # Setup mocks
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mock_lambda_api = mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
         mock_api_instance.list_instance_types.return_value = {}
         mock_lambda_api.return_value = mock_api_instance
@@ -921,8 +921,8 @@ class TestAvailableCommand:
     def test_available_no_available_regions(self, sample_config, mocker):
         """Test available command when GPU type has no available regions."""
         # Setup mocks
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mock_lambda_api = mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
         mock_api_instance.list_instance_types.return_value = {
             "gpu_8x_h100_sxm5": {
@@ -949,8 +949,8 @@ class TestAvailableCommand:
     def test_available_mixed_region_availability(self, sample_config, mocker):
         """Test available command with mixed region availability."""
         # Setup mocks
-        mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
-        mock_lambda_api = mocker.patch("gpu_session.cli.LambdaAPI")
+        mocker.patch("soong.cli.get_config", return_value=sample_config)
+        mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
         mock_api_instance.list_instance_types.return_value = {
             "gpu_1x_a100_sxm4_80gb": {

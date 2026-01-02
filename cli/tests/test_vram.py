@@ -1,7 +1,7 @@
 """Tests for VRAM calculation functions."""
 
 import pytest
-from gpu_session.models import (
+from soong.models import (
     Quantization,
     ModelConfig,
     estimate_vram,

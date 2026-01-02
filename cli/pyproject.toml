@@ -3,9 +3,11 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "gpu-session"
+name = "soong"
 version = "0.1.0"
-description = "GPU session management for Lambda Labs"
+description = "Summon GPU instances for AI agent workflows"
+authors = [{name = "Axiomantic", email = "axiomantic@pm.me"}]
+license = {text = "MIT"}
 requires-python = ">=3.10"
 dependencies = [
     "typer>=0.9.0,<1.0.0",
@@ -14,6 +16,22 @@ dependencies = [
     "pyyaml>=6.0.0,<7.0.0",
     "questionary>=2.0.0,<3.0.0",
 ]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: System :: Distributed Computing",
+]
+
+[project.urls]
+Homepage = "https://github.com/axiomantic/soong"
+Repository = "https://github.com/axiomantic/soong"
+Documentation = "https://github.com/axiomantic/soong#readme"
 
 [project.optional-dependencies]
 test = [
@@ -24,7 +42,7 @@ test = [
 ]
 
 [project.scripts]
-gpu-session = "gpu_session.cli:main"
+soong = "soong.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/gpu_session"]
+packages = ["src/soong"]

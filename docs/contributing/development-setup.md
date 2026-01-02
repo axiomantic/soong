@@ -1,6 +1,6 @@
 # Development Setup
 
-This guide walks you through setting up a local development environment for gpu-session CLI.
+This guide walks you through setting up a local development environment for soong CLI.
 
 ## Prerequisites
 
@@ -84,15 +84,15 @@ This installs:
 
 ```bash
 # Check that CLI is available
-gpu-session --help
+soong --help
 
 # Should show:
-# Usage: gpu-session [OPTIONS] COMMAND [ARGS]...
+# Usage: soong [OPTIONS] COMMAND [ARGS]...
 ```
 
 ```bash
 # Check Python imports
-python -c "from gpu_session import cli, models, config; print('OK')"
+python -c "from soong import cli, models, config; print('OK')"
 
 # Should print: OK
 ```
@@ -102,7 +102,7 @@ python -c "from gpu_session import cli, models, config; print('OK')"
 If you want to test against the real Lambda API:
 
 ```bash
-gpu-session configure
+soong configure
 ```
 
 Enter:
@@ -187,19 +187,19 @@ pip install black flake8 mypy
 **Format code:**
 
 ```bash
-black src/gpu_session tests
+black src/soong tests
 ```
 
 **Check style:**
 
 ```bash
-flake8 src/gpu_session tests --max-line-length=88 --extend-ignore=E203
+flake8 src/soong tests --max-line-length=88 --extend-ignore=E203
 ```
 
 **Type checking:**
 
 ```bash
-mypy src/gpu_session --ignore-missing-imports
+mypy src/soong --ignore-missing-imports
 ```
 
 ## Running the CLI in Development Mode
@@ -207,9 +207,9 @@ mypy src/gpu_session --ignore-missing-imports
 Since you installed with `-e`, any changes to the source code are immediately reflected:
 
 ```bash
-# Edit src/gpu_session/cli.py
+# Edit src/soong/cli.py
 # Then immediately test:
-gpu-session --help
+soong --help
 ```
 
 ### Testing Changes
@@ -217,21 +217,21 @@ gpu-session --help
 **Method 1: Direct invocation**
 
 ```bash
-gpu-session status
-gpu-session start --help
+soong status
+soong start --help
 ```
 
 **Method 2: Python module**
 
 ```bash
-python -m gpu_session.cli status
+python -m soong.cli status
 ```
 
 **Method 3: Testing individual functions**
 
 ```python
 # In Python REPL
-from gpu_session.models import estimate_vram, Quantization
+from soong.models import estimate_vram, Quantization
 
 result = estimate_vram(70, Quantization.INT4, 8192)
 print(result)
@@ -243,7 +243,7 @@ Understanding the codebase:
 
 ```
 cli/
-├── src/gpu_session/          # Main package
+├── src/soong/          # Main package
 │   ├── __init__.py           # Package initialization
 │   ├── cli.py                # CLI commands (Typer app)
 │   ├── config.py             # Configuration management
@@ -310,7 +310,7 @@ cli/
 pytest
 
 # With coverage
-pytest --cov=gpu_session --cov-report=html
+pytest --cov=soong --cov-report=html
 
 # Specific test file
 pytest tests/test_models.py
@@ -346,7 +346,7 @@ def my_command(
 ```python
 def test_my_command_success(cli_runner, sample_config, mocker):
     """Test my_command with valid input."""
-    mocker.patch("gpu_session.cli.get_config", return_value=sample_config)
+    mocker.patch("soong.cli.get_config", return_value=sample_config)
     result = cli_runner.invoke(app, ["my-command", "test-arg"])
     assert result.exit_code == 0
     assert "Success!" in result.output
@@ -406,7 +406,7 @@ def test_api_call(mock_http, lambda_api_base_url):
 
 ### Import Errors
 
-**Problem:** `ModuleNotFoundError: No module named 'gpu_session'`
+**Problem:** `ModuleNotFoundError: No module named 'soong'`
 
 **Solution:**
 

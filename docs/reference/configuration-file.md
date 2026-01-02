@@ -1,6 +1,6 @@
 # Configuration File Reference
 
-Complete reference for the `gpu-session` YAML configuration file.
+Complete reference for the `soong` YAML configuration file.
 
 ## File Location
 
@@ -142,7 +142,7 @@ See [Model Registry](models.md) for built-in models, or use custom model IDs fro
 
 - Minimum: 1 hour
 - Maximum: 8 hours (Lambda Labs limit)
-- Can be extended later with `gpu-session extend`
+- Can be extended later with `soong extend`
 
 ---
 
@@ -215,16 +215,16 @@ custom_models:
 
 ```bash
 # Add via CLI (interactive)
-gpu-session models add
+soong models add
 
 # Add via CLI (flags)
-gpu-session models add --name my-model --hf-path org/model --params 70 --quantization int4 --context 8192
+soong models add --name my-model --hf-path org/model --params 70 --quantization int4 --context 8192
 
 # Remove custom model
-gpu-session models remove my-model
+soong models remove my-model
 
 # List all models (shows custom ones too)
-gpu-session models
+soong models
 ```
 
 ---
@@ -347,20 +347,20 @@ custom_models:
 ${EDITOR:-nano} ~/.config/gpu-dashboard/config.yaml
 
 # Validate after editing
-gpu-session status
+soong status
 ```
 
 ### Via CLI
 
 ```bash
 # Re-run configuration wizard
-gpu-session configure
+soong configure
 
 # Add custom models
-gpu-session models add
+soong models add
 
 # Remove custom models
-gpu-session models remove my-model
+soong models remove my-model
 ```
 
 ---
@@ -375,7 +375,7 @@ gpu-session models remove my-model
 
 1. Check key at: https://cloud.lambdalabs.com/api-keys
 2. Ensure no extra whitespace in YAML
-3. Re-run `gpu-session configure`
+3. Re-run `soong configure`
 
 ### Filesystem Not Found
 

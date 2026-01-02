@@ -1,8 +1,8 @@
-site_name: gpu-session
-site_url: https://elijahr.github.io/my-ai/
+site_name: Soong
+site_url: https://axiomantic.github.io/soong/
 site_description: GPU session management for Lambda Labs - CLI and automation tools
-repo_url: https://github.com/elijahr/my-ai
-repo_name: my-ai
+repo_url: https://github.com/axiomantic/soong
+repo_name: soong
 edit_uri: edit/main/docs/
 
 theme:

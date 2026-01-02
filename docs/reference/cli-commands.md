@@ -1,6 +1,6 @@
 # CLI Commands Reference
 
-Complete reference for all `gpu-session` commands, flags, and options.
+Complete reference for all `soong` commands, flags, and options.
 
 ## Global Options
 
@@ -17,7 +17,7 @@ All commands support these global options:
 Interactive configuration wizard to set up Lambda Labs credentials and defaults.
 
 ```bash
-gpu-session configure
+soong configure
 ```
 
 **What it does:**
@@ -36,9 +36,9 @@ gpu-session configure
 **Example:**
 
 ```bash
-$ gpu-session configure
+$ soong configure
 ╭─────────────────────────────────────────────╮
-│ GPU Session Configuration Wizard           │
+│ Soong Configuration Wizard           │
 │                                             │
 │ This will guide you through setting up     │
 │ your Lambda Labs credentials and defaults. │
@@ -64,7 +64,7 @@ Configuration saved!
 Launch a new GPU instance with specified model and configuration.
 
 ```bash
-gpu-session start [OPTIONS]
+soong start [OPTIONS]
 ```
 
 **Options:**
@@ -83,16 +83,16 @@ gpu-session start [OPTIONS]
 
 ```bash
 # Start with defaults
-gpu-session start
+soong start
 
 # Start with specific model
-gpu-session start --model qwen2.5-coder-32b
+soong start --model qwen2.5-coder-32b
 
 # Start with custom GPU and skip confirmation
-gpu-session start --gpu gpu_1x_h100_pcie --yes
+soong start --gpu gpu_1x_h100_pcie --yes
 
 # Start with all custom options
-gpu-session start \
+soong start \
   --model deepseek-r1-70b \
   --gpu gpu_1x_a100_sxm4_80gb \
   --region us-east-1 \
@@ -100,7 +100,7 @@ gpu-session start \
   --name my-coding-session
 
 # Quick start without waiting
-gpu-session start --no-wait
+soong start --no-wait
 ```
 
 **Output:**
@@ -128,8 +128,8 @@ Launching instance...
 Instance launched: i-abc123def456
 Instance ready at 203.0.113.42
 
-SSH: gpu-session ssh
-Status: gpu-session status
+SSH: soong ssh
+Status: soong status
 ```
 
 ---
@@ -139,7 +139,7 @@ Status: gpu-session status
 Show status of running instances with uptime, cost, and lease information.
 
 ```bash
-gpu-session status [OPTIONS]
+soong status [OPTIONS]
 ```
 
 **Options:**
@@ -156,22 +156,22 @@ gpu-session status [OPTIONS]
 
 ```bash
 # Show running instances
-gpu-session status
+soong status
 
 # Show specific instance
-gpu-session status --instance-id i-abc123
+soong status --instance-id i-abc123
 
 # Show termination history (last 24 hours)
-gpu-session status --history
+soong status --history
 
 # Show last 48 hours of history
-gpu-session status --history --history-hours 48
+soong status --history --history-hours 48
 
 # Show stopped instances
-gpu-session status --stopped
+soong status --stopped
 
 # Sync history from Cloudflare Worker
-gpu-session status --history --worker-url https://worker.example.com
+soong status --history --worker-url https://worker.example.com
 ```
 
 **Output:**
@@ -192,7 +192,7 @@ GPU Instances
 Extend the lease duration of a running instance.
 
 ```bash
-gpu-session extend HOURS [OPTIONS]
+soong extend HOURS [OPTIONS]
 ```
 
 **Arguments:**
@@ -212,13 +212,13 @@ gpu-session extend HOURS [OPTIONS]
 
 ```bash
 # Extend active instance by 2 hours
-gpu-session extend 2
+soong extend 2
 
 # Extend specific instance
-gpu-session extend 3 --instance-id i-abc123
+soong extend 3 --instance-id i-abc123
 
 # Quick extend without confirmation
-gpu-session extend 1 --yes
+soong extend 1 --yes
 ```
 
 **Output:**
@@ -248,7 +248,7 @@ New shutdown time: 2025-01-01T18:30:00Z
 Terminate a running instance.
 
 ```bash
-gpu-session stop [OPTIONS]
+soong stop [OPTIONS]
 ```
 
 **Options:**
@@ -262,13 +262,13 @@ gpu-session stop [OPTIONS]
 
 ```bash
 # Stop active instance (with confirmation)
-gpu-session stop
+soong stop
 
 # Stop specific instance
-gpu-session stop --instance-id i-abc123
+soong stop --instance-id i-abc123
 
 # Force stop without confirmation
-gpu-session stop --yes
+soong stop --yes
 ```
 
 ---
@@ -278,7 +278,7 @@ gpu-session stop --yes
 SSH into a running instance.
 
 ```bash
-gpu-session ssh [OPTIONS]
+soong ssh [OPTIONS]
 ```
 
 **Options:**
@@ -291,10 +291,10 @@ gpu-session ssh [OPTIONS]
 
 ```bash
 # SSH to active instance
-gpu-session ssh
+soong ssh
 
 # SSH to specific instance
-gpu-session ssh --instance-id i-abc123
+soong ssh --instance-id i-abc123
 ```
 
 **Notes:**
@@ -310,7 +310,7 @@ gpu-session ssh --instance-id i-abc123
 Show available GPU types and their current capacity.
 
 ```bash
-gpu-session available
+soong available
 ```
 
 **No options** - displays all GPU types with availability.
@@ -343,7 +343,7 @@ Commands for managing AI models.
 List all available models with VRAM requirements.
 
 ```bash
-gpu-session models
+soong models
 ```
 
 **Output:**
@@ -372,7 +372,7 @@ Custom models: 0 configured
 Display detailed information about a specific model.
 
 ```bash
-gpu-session models info MODEL_ID
+soong models info MODEL_ID
 ```
 
 **Arguments:**
@@ -385,10 +385,10 @@ gpu-session models info MODEL_ID
 
 ```bash
 # Show DeepSeek-R1 details
-gpu-session models info deepseek-r1-70b
+soong models info deepseek-r1-70b
 
 # Show Qwen2.5 Coder details
-gpu-session models info qwen2.5-coder-32b
+soong models info qwen2.5-coder-32b
 ```
 
 **Output:**
@@ -434,13 +434,13 @@ Notes: Chain-of-thought reasoning. Slower but more accurate.
 Add a custom model to configuration.
 
 ```bash
-gpu-session models add [OPTIONS]
+soong models add [OPTIONS]
 ```
 
 **Interactive Mode** (no flags):
 
 ```bash
-gpu-session models add
+soong models add
 ```
 
 Prompts for: name, HuggingFace path, parameters, quantization, context length.
@@ -459,10 +459,10 @@ Prompts for: name, HuggingFace path, parameters, quantization, context length.
 
 ```bash
 # Interactive mode
-gpu-session models add
+soong models add
 
 # Flag mode
-gpu-session models add \
+soong models add \
   --name my-custom-70b \
   --hf-path myorg/custom-model-70b \
   --params 70 \
@@ -477,7 +477,7 @@ gpu-session models add \
 Remove a custom model from configuration.
 
 ```bash
-gpu-session models remove MODEL_ID [OPTIONS]
+soong models remove MODEL_ID [OPTIONS]
 ```
 
 **Arguments:**
@@ -496,10 +496,10 @@ gpu-session models remove MODEL_ID [OPTIONS]
 
 ```bash
 # Remove with confirmation
-gpu-session models remove my-custom-model
+soong models remove my-custom-model
 
 # Quick remove
-gpu-session models remove my-custom-model --yes
+soong models remove my-custom-model --yes
 ```
 
 **Notes:**
@@ -518,7 +518,7 @@ Commands for SSH tunnel management.
 Start SSH tunnel to instance with port forwarding.
 
 ```bash
-gpu-session tunnel start [OPTIONS]
+soong tunnel start [OPTIONS]
 ```
 
 **Options:**
@@ -534,13 +534,13 @@ gpu-session tunnel start [OPTIONS]
 
 ```bash
 # Start with defaults
-gpu-session tunnel start
+soong tunnel start
 
 # Custom local ports
-gpu-session tunnel start --sglang-port 9000 --n8n-port 6000
+soong tunnel start --sglang-port 9000 --n8n-port 6000
 
 # Tunnel to specific instance
-gpu-session tunnel start --instance-id i-abc123
+soong tunnel start --instance-id i-abc123
 ```
 
 **Port Mappings:**
@@ -558,7 +558,7 @@ gpu-session tunnel start --instance-id i-abc123
 Stop the active SSH tunnel.
 
 ```bash
-gpu-session tunnel stop
+soong tunnel stop
 ```
 
 **No options.**
@@ -570,7 +570,7 @@ gpu-session tunnel stop
 Check if SSH tunnel is running.
 
 ```bash
-gpu-session tunnel status
+soong tunnel status
 ```
 
 **No options.**
@@ -601,7 +601,7 @@ Tunnel is not running
 
 ## Environment Variables
 
-Currently, `gpu-session` does not use environment variables. All configuration is in `~/.config/gpu-dashboard/config.yaml`.
+Currently, `soong` does not use environment variables. All configuration is in `~/.config/gpu-dashboard/config.yaml`.
 
 ---
 
@@ -617,14 +617,14 @@ Commonly used command shortcuts:
 
 ```bash
 # Quick status check
-alias gs='gpu-session status'
+alias gs='soong status'
 
 # Quick SSH
-alias gsh='gpu-session ssh'
+alias gsh='soong ssh'
 
 # Start and SSH in one go
-gpu-session start && gpu-session ssh
+soong start && soong ssh
 
 # Extend by 1 hour without confirmation
-gpu-session extend 1 -y
+soong extend 1 -y
 ```

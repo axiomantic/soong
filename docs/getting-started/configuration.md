@@ -1,15 +1,15 @@
 # Configuration
 
-After installing GPU Session CLI, you'll need to configure it with your Lambda Labs credentials and preferences.
+After installing Soong CLI, you'll need to configure it with your Lambda Labs credentials and preferences.
 
 ---
 
 ## Running the Configuration Wizard
 
-GPU Session CLI includes an interactive configuration wizard that guides you through setup:
+Soong CLI includes an interactive configuration wizard that guides you through setup:
 
 ```bash
-gpu-session configure
+soong configure
 ```
 
 The wizard will prompt you for the following information:
@@ -87,7 +87,7 @@ The wizard will prompt you for the following information:
 - `gpu_1x_a100` - Single A100 GPU (40GB VRAM)
 - `gpu_1x_h100_pcie` - Single H100 GPU (80GB VRAM)
 
-**See all options**: Run `gpu-session available` after configuration
+**See all options**: Run `soong available` after configuration
 
 !!! tip "Choosing an Instance Type"
     Start with `gpu_1x_a10` for smaller models. You can override this when launching instances with the `--instance-type` flag.
@@ -126,7 +126,7 @@ The wizard will prompt you for the following information:
 **Unlimited**: Enter `0` for no time limit
 
 !!! tip "Cost Control"
-    Setting a default max hours helps prevent forgetting to stop instances. You can always extend the runtime with `gpu-session extend`.
+    Setting a default max hours helps prevent forgetting to stop instances. You can always extend the runtime with `soong extend`.
 
 ---
 
@@ -158,7 +158,7 @@ default_max_hours: 2
 To update your configuration, run the wizard again:
 
 ```bash
-gpu-session configure
+soong configure
 ```
 
 The wizard will display your current values and allow you to change them.
@@ -190,10 +190,10 @@ After configuration, verify your settings:
 
 ```bash
 # Check that you can list available instance types
-gpu-session available
+soong available
 
 # Check that you can list models
-gpu-session models --limit 5
+soong models --limit 5
 ```
 
 **Expected Output**:
@@ -223,7 +223,7 @@ Available models:
 **Solution**:
 1. Go to [cloud.lambdalabs.com](https://cloud.lambdalabs.com) → Account Settings → API Keys
 2. Generate a new API key
-3. Run `gpu-session configure` and enter the new key
+3. Run `soong configure` and enter the new key
 
 ---
 
@@ -235,7 +235,7 @@ Available models:
 1. Verify the path is correct: `ls -la ~/.ssh/`
 2. If the key doesn't exist, generate one: `ssh-keygen -t ed25519`
 3. Upload the public key to Lambda Labs
-4. Run `gpu-session configure` with the correct path
+4. Run `soong configure` with the correct path
 
 ---
 
@@ -259,13 +259,13 @@ chmod 0600 ~/.config/gpu-dashboard/config.yaml
 1. Check your filesystems: [cloud.lambdalabs.com](https://cloud.lambdalabs.com) → Storage → Filesystems
 2. Verify the name matches exactly
 3. If using a filesystem, make sure your default region matches the filesystem region
-4. Run `gpu-session configure` to update the settings
+4. Run `soong configure` to update the settings
 
 ---
 
 ## Next Steps
 
-Now that GPU Session CLI is configured, proceed to the **[Quick Start Guide](quick-start.md)** to launch your first GPU instance!
+Now that Soong CLI is configured, proceed to the **[Quick Start Guide](quick-start.md)** to launch your first GPU instance!
 
 ---
 

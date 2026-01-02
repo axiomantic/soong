@@ -45,14 +45,14 @@ class ConfigManager:
         """Get Lambda API key from config."""
         config = self.load()
         if not config:
-            raise ValueError("Configuration not found. Run 'gpu-session configure' first.")
+            raise ValueError("Configuration not found. Run 'soong configure' first.")
         return config.get("lambda", {}).get("api_key", "")
 
     def get_status_token(self) -> str:
         """Get status daemon token from config."""
         config = self.load()
         if not config:
-            raise ValueError("Configuration not found. Run 'gpu-session configure' first.")
+            raise ValueError("Configuration not found. Run 'soong configure' first.")
         return config.get("status_daemon", {}).get("token", "")
 
 

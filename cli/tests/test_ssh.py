@@ -4,7 +4,7 @@ import pytest
 import signal
 from pathlib import Path
 from unittest.mock import Mock, MagicMock
-from gpu_session.ssh import SSHTunnelManager
+from soong.ssh import SSHTunnelManager
 from tests.helpers.assertions import assert_exact_command, assert_ssh_command
 
 
@@ -78,7 +78,7 @@ def test_start_tunnel_success(tunnel_manager, instance_ip, mocker):
     """Test start_tunnel successfully starts SSH tunnel."""
     # Mock dependencies
     mocker.patch.object(tunnel_manager, "is_tunnel_running", return_value=False)
-    mock_subprocess = mocker.patch("gpu_session.ssh.subprocess.run")
+    mock_subprocess = mocker.patch("soong.ssh.subprocess.run")
     mock_subprocess.return_value = Mock(returncode=0, stderr="")
 
     # Use unique PID to prove consumption (Pattern #4 fix)
@@ -125,7 +125,7 @@ def test_start_tunnel_success(tunnel_manager, instance_ip, mocker):
 def test_start_tunnel_success_without_pid(tunnel_manager, instance_ip, mocker):
     """Test start_tunnel succeeds even if PID not found."""
     mocker.patch.object(tunnel_manager, "is_tunnel_running", return_value=False)
-    mock_subprocess = mocker.patch("gpu_session.ssh.subprocess.run")
+    mock_subprocess = mocker.patch("soong.ssh.subprocess.run")
     mock_subprocess.return_value = Mock(returncode=0, stderr="")
     mocker.patch.object(tunnel_manager, "_find_tunnel_pid", return_value=None)
 
@@ -145,7 +145,7 @@ def test_start_tunnel_success_without_pid(tunnel_manager, instance_ip, mocker):
 def test_start_tunnel_ssh_command_failed(tunnel_manager, instance_ip, mocker):
     """Test start_tunnel handles SSH command failure."""
     mocker.patch.object(tunnel_manager, "is_tunnel_running", return_value=False)
-    mock_subprocess = mocker.patch("gpu_session.ssh.subprocess.run")
+    mock_subprocess = mocker.patch("soong.ssh.subprocess.run")
     mock_subprocess.return_value = Mock(
         returncode=255,
         stderr="Permission denied (publickey)."
@@ -166,7 +166,7 @@ def test_start_tunnel_ssh_command_failed(tunnel_manager, instance_ip, mocker):
 def test_start_tunnel_timeout(tunnel_manager, instance_ip, mocker):
     """Test start_tunnel handles timeout."""
     mocker.patch.object(tunnel_manager, "is_tunnel_running", return_value=False)
-    mock_subprocess = mocker.patch("gpu_session.ssh.subprocess.run")
+    mock_subprocess = mocker.patch("soong.ssh.subprocess.run")
     mock_subprocess.side_effect = __import__("subprocess").TimeoutExpired(
         cmd="ssh", timeout=30
     )
@@ -183,7 +183,7 @@ def test_start_tunnel_timeout(tunnel_manager, instance_ip, mocker):
 def test_start_tunnel_unexpected_exception(tunnel_manager, instance_ip, mocker):
     """Test start_tunnel handles unexpected exceptions."""
     mocker.patch.object(tunnel_manager, "is_tunnel_running", return_value=False)
-    mock_subprocess = mocker.patch("gpu_session.ssh.subprocess.run")
+    mock_subprocess = mocker.patch("soong.ssh.subprocess.run")
     mock_subprocess.side_effect = OSError("Network unreachable")
 
     result = tunnel_manager.start_tunnel(
@@ -198,7 +198,7 @@ def test_start_tunnel_unexpected_exception(tunnel_manager, instance_ip, mocker):
 def test_start_tunnel_default_username(tunnel_manager, instance_ip, mocker):
     """Test start_tunnel uses default username 'ubuntu'."""
     mocker.patch.object(tunnel_manager, "is_tunnel_running", return_value=False)
-    mock_subprocess = mocker.patch("gpu_session.ssh.subprocess.run")
+    mock_subprocess = mocker.patch("soong.ssh.subprocess.run")
     mock_subprocess.return_value = Mock(returncode=0, stderr="")
     mocker.patch.object(tunnel_manager, "_find_tunnel_pid", return_value=12345)
 
@@ -230,7 +230,7 @@ def test_start_tunnel_default_username(tunnel_manager, instance_ip, mocker):
 def test_start_tunnel_creates_pid_file_directory(tunnel_manager, instance_ip, mocker, tmp_path):
     """Test start_tunnel creates PID file directory if missing."""
     mocker.patch.object(tunnel_manager, "is_tunnel_running", return_value=False)
-    mock_subprocess = mocker.patch("gpu_session.ssh.subprocess.run")
+    mock_subprocess = mocker.patch("soong.ssh.subprocess.run")
     mock_subprocess.return_value = Mock(returncode=0, stderr="")
     mocker.patch.object(tunnel_manager, "_find_tunnel_pid", return_value=12345)
 
@@ -264,7 +264,7 @@ def test_stop_tunnel_success(tunnel_manager, mocker):
     tunnel_manager.tunnel_pid_file.write_text(str(unique_pid))
 
     # Mock os.kill
-    mock_kill = mocker.patch("gpu_session.ssh.os.kill")
+    mock_kill = mocker.patch("soong.ssh.os.kill")
 
     result = tunnel_manager.stop_tunnel()
 
@@ -289,7 +289,7 @@ def test_stop_tunnel_process_not_found(tunnel_manager, mocker):
     tunnel_manager.tunnel_pid_file.write_text("99999")
 
     # Mock os.kill to raise ProcessLookupError
-    mock_kill = mocker.patch("gpu_session.ssh.os.kill")
+    mock_kill = mocker.patch("soong.ssh.os.kill")
     mock_kill.side_effect = ProcessLookupError()
 
     result = tunnel_manager.stop_tunnel()
@@ -312,7 +312,7 @@ def test_stop_tunnel_permission_error(tunnel_manager, mocker):
     """Test stop_tunnel handles permission errors."""
     tunnel_manager.tunnel_pid_file.write_text("12345")
 
-    mock_kill = mocker.patch("gpu_session.ssh.os.kill")
+    mock_kill = mocker.patch("soong.ssh.os.kill")
     mock_kill.side_effect = PermissionError("Operation not permitted")
 
     result = tunnel_manager.stop_tunnel()
@@ -326,7 +326,7 @@ def test_stop_tunnel_whitespace_in_pid(tunnel_manager, mocker):
     """Test stop_tunnel handles whitespace in PID file."""
     tunnel_manager.tunnel_pid_file.write_text("  12345  \n")
 
-    mock_kill = mocker.patch("gpu_session.ssh.os.kill")
+    mock_kill = mocker.patch("soong.ssh.os.kill")
 
     result = tunnel_manager.stop_tunnel()
 
@@ -349,7 +349,7 @@ def test_is_tunnel_running_process_exists(tunnel_manager, mocker):
     tunnel_manager.tunnel_pid_file.write_text(str(unique_pid))
 
     # Mock os.kill to succeed (process exists)
-    mock_kill = mocker.patch("gpu_session.ssh.os.kill")
+    mock_kill = mocker.patch("soong.ssh.os.kill")
 
     result = tunnel_manager.is_tunnel_running()
 
@@ -370,7 +370,7 @@ def test_is_tunnel_running_process_not_found(tunnel_manager, mocker):
     tunnel_manager.tunnel_pid_file.write_text("99999")
 
     # Mock os.kill to raise ProcessLookupError
-    mock_kill = mocker.patch("gpu_session.ssh.os.kill")
+    mock_kill = mocker.patch("soong.ssh.os.kill")
     mock_kill.side_effect = ProcessLookupError()
 
     result = tunnel_manager.is_tunnel_running()
@@ -408,7 +408,7 @@ def test_find_tunnel_pid_success(tunnel_manager, instance_ip, mocker):
     """Test _find_tunnel_pid finds PID successfully."""
     # Use unique PID to prove consumption (Pattern #4 fix)
     unique_pid = 88776
-    mock_subprocess = mocker.patch("gpu_session.ssh.subprocess.run")
+    mock_subprocess = mocker.patch("soong.ssh.subprocess.run")
     mock_subprocess.return_value = Mock(
         returncode=0,
         stdout=f"{unique_pid}\n",
@@ -432,7 +432,7 @@ def test_find_tunnel_pid_success(tunnel_manager, instance_ip, mocker):
 
 def test_find_tunnel_pid_multiple_pids(tunnel_manager, instance_ip, mocker):
     """Test _find_tunnel_pid returns first PID when multiple found."""
-    mock_subprocess = mocker.patch("gpu_session.ssh.subprocess.run")
+    mock_subprocess = mocker.patch("soong.ssh.subprocess.run")
     mock_subprocess.return_value = Mock(
         returncode=0,
         stdout="12345\n67890\n",
@@ -445,7 +445,7 @@ def test_find_tunnel_pid_multiple_pids(tunnel_manager, instance_ip, mocker):
 
 def test_find_tunnel_pid_no_process_found(tunnel_manager, instance_ip, mocker):
     """Test _find_tunnel_pid returns None when no process found."""
-    mock_subprocess = mocker.patch("gpu_session.ssh.subprocess.run")
+    mock_subprocess = mocker.patch("soong.ssh.subprocess.run")
     mock_subprocess.return_value = Mock(
         returncode=1,  # pgrep returns 1 when no match
         stdout="",
@@ -458,7 +458,7 @@ def test_find_tunnel_pid_no_process_found(tunnel_manager, instance_ip, mocker):
 
 def test_find_tunnel_pid_empty_output(tunnel_manager, instance_ip, mocker):
     """Test _find_tunnel_pid handles empty output."""
-    mock_subprocess = mocker.patch("gpu_session.ssh.subprocess.run")
+    mock_subprocess = mocker.patch("soong.ssh.subprocess.run")
     mock_subprocess.return_value = Mock(
         returncode=0,
         stdout="   \n",
@@ -471,7 +471,7 @@ def test_find_tunnel_pid_empty_output(tunnel_manager, instance_ip, mocker):
 
 def test_find_tunnel_pid_timeout(tunnel_manager, instance_ip, mocker):
     """Test _find_tunnel_pid handles timeout."""
-    mock_subprocess = mocker.patch("gpu_session.ssh.subprocess.run")
+    mock_subprocess = mocker.patch("soong.ssh.subprocess.run")
     mock_subprocess.side_effect = __import__("subprocess").TimeoutExpired(
         cmd="pgrep", timeout=5
     )
@@ -483,7 +483,7 @@ def test_find_tunnel_pid_timeout(tunnel_manager, instance_ip, mocker):
 
 def test_find_tunnel_pid_exception(tunnel_manager, instance_ip, mocker):
     """Test _find_tunnel_pid handles exceptions gracefully."""
-    mock_subprocess = mocker.patch("gpu_session.ssh.subprocess.run")
+    mock_subprocess = mocker.patch("soong.ssh.subprocess.run")
     mock_subprocess.side_effect = OSError("Command not found")
 
     pid = tunnel_manager._find_tunnel_pid(instance_ip)
@@ -493,7 +493,7 @@ def test_find_tunnel_pid_exception(tunnel_manager, instance_ip, mocker):
 
 def test_find_tunnel_pid_invalid_output(tunnel_manager, instance_ip, mocker):
     """Test _find_tunnel_pid handles non-numeric output."""
-    mock_subprocess = mocker.patch("gpu_session.ssh.subprocess.run")
+    mock_subprocess = mocker.patch("soong.ssh.subprocess.run")
     mock_subprocess.return_value = Mock(
         returncode=0,
         stdout="not-a-number\n",
@@ -509,7 +509,7 @@ def test_find_tunnel_pid_invalid_output(tunnel_manager, instance_ip, mocker):
 
 def test_connect_ssh_success(tunnel_manager, instance_ip, mocker):
     """Test connect_ssh opens interactive SSH session successfully."""
-    mock_subprocess = mocker.patch("gpu_session.ssh.subprocess.run")
+    mock_subprocess = mocker.patch("soong.ssh.subprocess.run")
     mock_subprocess.return_value = Mock(returncode=0)
 
     result = tunnel_manager.connect_ssh(
@@ -539,7 +539,7 @@ def test_connect_ssh_success(tunnel_manager, instance_ip, mocker):
 
 def test_connect_ssh_default_username(tunnel_manager, instance_ip, mocker):
     """Test connect_ssh uses default username 'ubuntu'."""
-    mock_subprocess = mocker.patch("gpu_session.ssh.subprocess.run")
+    mock_subprocess = mocker.patch("soong.ssh.subprocess.run")
     mock_subprocess.return_value = Mock(returncode=0)
 
     tunnel_manager.connect_ssh(instance_ip=instance_ip)
@@ -561,7 +561,7 @@ def test_connect_ssh_default_username(tunnel_manager, instance_ip, mocker):
 
 def test_connect_ssh_failure(tunnel_manager, instance_ip, mocker):
     """Test connect_ssh handles SSH failure."""
-    mock_subprocess = mocker.patch("gpu_session.ssh.subprocess.run")
+    mock_subprocess = mocker.patch("soong.ssh.subprocess.run")
     mock_subprocess.return_value = Mock(returncode=255)
 
     result = tunnel_manager.connect_ssh(instance_ip=instance_ip)
@@ -571,7 +571,7 @@ def test_connect_ssh_failure(tunnel_manager, instance_ip, mocker):
 
 def test_connect_ssh_exception(tunnel_manager, instance_ip, mocker):
     """Test connect_ssh handles exceptions."""
-    mock_subprocess = mocker.patch("gpu_session.ssh.subprocess.run")
+    mock_subprocess = mocker.patch("soong.ssh.subprocess.run")
     mock_subprocess.side_effect = OSError("SSH command not found")
 
     result = tunnel_manager.connect_ssh(instance_ip=instance_ip)
@@ -581,7 +581,7 @@ def test_connect_ssh_exception(tunnel_manager, instance_ip, mocker):
 
 def test_connect_ssh_keyboard_interrupt(tunnel_manager, instance_ip, mocker):
     """Test connect_ssh handles user interrupt."""
-    mock_subprocess = mocker.patch("gpu_session.ssh.subprocess.run")
+    mock_subprocess = mocker.patch("soong.ssh.subprocess.run")
     mock_subprocess.side_effect = KeyboardInterrupt()
 
     result = tunnel_manager.connect_ssh(instance_ip=instance_ip)
@@ -595,7 +595,7 @@ def test_connect_ssh_keyboard_interrupt(tunnel_manager, instance_ip, mocker):
 def test_start_then_stop_tunnel_integration(tunnel_manager, instance_ip, mocker):
     """Test full start then stop tunnel workflow."""
     # Mock start_tunnel dependencies
-    mock_subprocess = mocker.patch("gpu_session.ssh.subprocess.run")
+    mock_subprocess = mocker.patch("soong.ssh.subprocess.run")
     mock_subprocess.return_value = Mock(returncode=0, stderr="")
     unique_pid = 54321
     mocker.patch.object(tunnel_manager, "_find_tunnel_pid", return_value=unique_pid)
@@ -609,7 +609,7 @@ def test_start_then_stop_tunnel_integration(tunnel_manager, instance_ip, mocker)
     assert start_result is True
 
     # Mock os.kill for is_tunnel_running check
-    mock_kill = mocker.patch("gpu_session.ssh.os.kill")
+    mock_kill = mocker.patch("soong.ssh.os.kill")
 
     # Verify tunnel is running
     assert tunnel_manager.is_tunnel_running() is True
@@ -628,7 +628,7 @@ def test_start_then_stop_tunnel_integration(tunnel_manager, instance_ip, mocker)
 def test_multiple_port_forwarding(tunnel_manager, instance_ip, mocker):
     """Test starting tunnel with multiple port forwards."""
     mocker.patch.object(tunnel_manager, "is_tunnel_running", return_value=False)
-    mock_subprocess = mocker.patch("gpu_session.ssh.subprocess.run")
+    mock_subprocess = mocker.patch("soong.ssh.subprocess.run")
     mock_subprocess.return_value = Mock(returncode=0, stderr="")
     mocker.patch.object(tunnel_manager, "_find_tunnel_pid", return_value=12345)
 
@@ -664,7 +664,7 @@ def test_multiple_port_forwarding(tunnel_manager, instance_ip, mocker):
 def test_ssh_options_in_commands(tunnel_manager, instance_ip, mocker):
     """Test SSH security options are present in commands."""
     mocker.patch.object(tunnel_manager, "is_tunnel_running", return_value=False)
-    mock_subprocess = mocker.patch("gpu_session.ssh.subprocess.run")
+    mock_subprocess = mocker.patch("soong.ssh.subprocess.run")
     mock_subprocess.return_value = Mock(returncode=0, stderr="")
     mocker.patch.object(tunnel_manager, "_find_tunnel_pid", return_value=12345)
 

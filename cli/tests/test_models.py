@@ -1,7 +1,7 @@
 """Tests for models.py VRAM calculation and model registry."""
 
 import pytest
-from gpu_session.models import ModelConfig, Quantization
+from soong.models import ModelConfig, Quantization
 
 
 def test_model_config_from_dict_valid(custom_model_dict):

@@ -21,8 +21,8 @@ Use descriptive scenario suffixes:
 
 import pytest
 from pathlib import Path
-from gpu_session.models import ModelConfig, Quantization
-from gpu_session.config import Config, LambdaConfig, StatusDaemonConfig, DefaultsConfig, SSHConfig
+from soong.models import ModelConfig, Quantization
+from soong.config import Config, LambdaConfig, StatusDaemonConfig, DefaultsConfig, SSHConfig
 
 
 @pytest.fixture

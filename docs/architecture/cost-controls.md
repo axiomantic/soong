@@ -1,6 +1,6 @@
 # Cost Controls
 
-The gpu-session CLI implements four layers of cost protection to prevent runaway expenses from GPU instances. These layers work together to provide defense-in-depth against forgotten instances, idle resources, and configuration errors.
+The soong CLI implements four layers of cost protection to prevent runaway expenses from GPU instances. These layers work together to provide defense-in-depth against forgotten instances, idle resources, and configuration errors.
 
 ## Overview
 
@@ -72,10 +72,10 @@ defaults:
 
 ```bash
 # 2-hour lease for quick task
-gpu-session start --hours 2
+soong start --hours 2
 
 # 8-hour lease for all-day work
-gpu-session start --hours 8
+soong start --hours 8
 ```
 
 **Extending Leases:**
@@ -84,7 +84,7 @@ Leases can be extended before they expire:
 
 ```bash
 # Extend by 2 hours
-gpu-session extend 2
+soong extend 2
 ```
 
 Or via the web dashboard at http://localhost:8092.
@@ -328,10 +328,10 @@ All terminations are logged with the following information:
 
 ```bash
 # Show last 24 hours of terminations
-gpu-session status --history
+soong status --history
 
 # Show last 7 days
-gpu-session status --history --history-hours 168
+soong status --history --history-hours 168
 ```
 
 ## Cost Estimation
@@ -339,7 +339,7 @@ gpu-session status --history --history-hours 168
 The CLI shows cost estimates before launching instances:
 
 ```bash
-$ gpu-session start --model deepseek-r1-70b
+$ soong start --model deepseek-r1-70b
 
 Cost Estimate
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -379,7 +379,7 @@ def show_cost_estimate(gpu_type, hours):
 The status command shows accumulated costs:
 
 ```bash
-$ gpu-session status
+$ soong status
 
 GPU Instances
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -419,13 +419,13 @@ This indicates the instance should have shut down but hasn't. Possible causes:
 
 ```bash
 # Short exploratory work (2 hours)
-gpu-session start --hours 2
+soong start --hours 2
 
 # Full development session (6 hours)
-gpu-session start --hours 6
+soong start --hours 6
 
 # Extend if you need more time
-gpu-session extend 2
+soong extend 2
 ```
 
 ### For Batch Jobs
@@ -458,7 +458,7 @@ If you need more than 8 hours:
 Set up alerting for costs:
 
 1. **Lambda billing alerts**: Configure in Lambda dashboard
-2. **History monitoring**: Check `gpu-session status --history` daily
+2. **History monitoring**: Check `soong status --history` daily
 3. **Budget tracking**: Set monthly GPU budget and track spending
 
 ## Emergency Shutdown
@@ -467,10 +467,10 @@ If you suspect an instance is running but shouldn't be:
 
 ```bash
 # List all instances
-gpu-session status
+soong status
 
 # Terminate immediately
-gpu-session stop --yes
+soong stop --yes
 ```
 
 Or via Lambda dashboard:
@@ -485,7 +485,7 @@ Or via Lambda dashboard:
 
 ```bash
 # Launch instance
-gpu-session start --hours 1
+soong start --hours 1
 
 # Wait 30 minutes without activity
 # Instance should auto-terminate
@@ -495,7 +495,7 @@ gpu-session start --hours 1
 
 ```bash
 # Launch with 1-hour lease
-gpu-session start --hours 1
+soong start --hours 1
 
 # Keep sending activity signals
 while true; do
@@ -511,12 +511,12 @@ done
 
 ```bash
 # Launch instance
-gpu-session start --hours 4
+soong start --hours 4
 
 # Extend multiple times
-gpu-session extend 2  # Total: 6 hours
-gpu-session extend 2  # Total: 8 hours
-gpu-session extend 1  # Should fail (exceeds maximum)
+soong extend 2  # Total: 6 hours
+soong extend 2  # Total: 8 hours
+soong extend 1  # Should fail (exceeds maximum)
 
 # Keep instance active
 # Should terminate after 8 hours regardless
@@ -537,7 +537,7 @@ journalctl -u status-daemon -n 50
 **Manually terminate:**
 
 ```bash
-gpu-session stop --yes
+soong stop --yes
 ```
 
 ### Lease Extension Failed
@@ -551,7 +551,7 @@ gpu-session stop --yes
 **Check total hours:**
 
 ```bash
-gpu-session status
+soong status
 # Look at "Time Left" and "Uptime" to calculate total
 ```
 
@@ -560,7 +560,7 @@ gpu-session status
 **Review history:**
 
 ```bash
-gpu-session status --history --history-hours 168
+soong status --history --history-hours 168
 ```
 
 **Check for:**
@@ -573,7 +573,7 @@ gpu-session status --history --history-hours 168
 
 Key files implementing cost controls:
 
-- `cli/src/gpu_session/cli.py` - Cost estimation, confirmation prompts
+- `cli/src/soong/cli.py` - Cost estimation, confirmation prompts
 - Status daemon (on instance) - Idle detection, lease management, hard timeout
 - Cloudflare Worker (optional) - External watchdog monitoring
 

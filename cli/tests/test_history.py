@@ -21,7 +21,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from gpu_session.history import HistoryEvent, HistoryManager
+from soong.history import HistoryEvent, HistoryManager
 
 
 @pytest.fixture

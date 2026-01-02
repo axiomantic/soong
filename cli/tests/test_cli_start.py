@@ -4,19 +4,19 @@ import pytest
 from unittest.mock import Mock
 from rich.console import Console
 from io import StringIO
-from gpu_session.lambda_api import InstanceType
+from soong.lambda_api import InstanceType
 
 
 def test_show_cost_estimate_displays_all_info(mocker):
     """Test show_cost_estimate displays GPU, rate, duration, and cost."""
-    from gpu_session.cli import show_cost_estimate
+    from soong.cli import show_cost_estimate
 
     # Capture console output
     output = StringIO()
     test_console = Console(file=output, force_terminal=True)
 
     # Patch the module console
-    mocker.patch("gpu_session.cli.console", test_console)
+    mocker.patch("soong.cli.console", test_console)
 
     # Create mock instance type
     instance_type = Mock(spec=InstanceType)
@@ -45,13 +45,13 @@ def test_show_cost_estimate_displays_all_info(mocker):
 
 def test_show_cost_estimate_returns_false_when_cancelled(mocker):
     """Test show_cost_estimate returns False when user cancels."""
-    from gpu_session.cli import show_cost_estimate
+    from soong.cli import show_cost_estimate
 
     # Capture console output
     output = StringIO()
     test_console = Console(file=output, force_terminal=True)
 
-    mocker.patch("gpu_session.cli.console", test_console)
+    mocker.patch("soong.cli.console", test_console)
 
     # Create mock instance type
     instance_type = Mock(spec=InstanceType)
@@ -72,16 +72,16 @@ def test_show_cost_estimate_returns_false_when_cancelled(mocker):
 def test_start_command_shows_cost_confirmation(mocker, sample_config):
     """Test 'gpu-session start' shows cost confirmation before launch."""
     from typer.testing import CliRunner
-    from gpu_session.cli import app
+    from soong.cli import app
 
     runner = CliRunner()
 
     # Mock config manager
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
     # Mock Lambda API
-    mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api_class = mocker.patch("soong.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
     # Create mock instance type
@@ -110,23 +110,23 @@ def test_start_command_shows_cost_confirmation(mocker, sample_config):
 def test_start_command_with_yes_flag_skips_confirmation(mocker, sample_config):
     """Test 'gpu-session start -y' skips cost confirmation."""
     from typer.testing import CliRunner
-    from gpu_session.cli import app
+    from soong.cli import app
 
     runner = CliRunner()
 
     # Mock config manager
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
     # Mock Lambda API
-    mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api_class = mocker.patch("soong.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
     mock_api.get_instance_type.return_value = None  # No pricing available
     mock_api.list_ssh_keys.return_value = ["test-key"]
     mock_api.launch_instance.return_value = "i-12345"
 
     # Mock instance manager
-    mock_mgr_class = mocker.patch("gpu_session.cli.InstanceManager")
+    mock_mgr_class = mocker.patch("soong.cli.InstanceManager")
     mock_mgr = mock_mgr_class.return_value
     mock_mgr.wait_for_ready.return_value = None  # Timeout (doesn't matter for this test)
 
@@ -146,16 +146,16 @@ def test_start_command_with_yes_flag_skips_confirmation(mocker, sample_config):
 def test_start_command_format_matches_requirement(mocker, sample_config):
     """Test cost confirmation shows: GPU, Rate, Duration, Estimated Cost, Prompt."""
     from typer.testing import CliRunner
-    from gpu_session.cli import app
+    from soong.cli import app
 
     runner = CliRunner()
 
     # Mock config manager
-    mock_manager = mocker.patch("gpu_session.cli.config_manager")
+    mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
     # Mock Lambda API
-    mock_api_class = mocker.patch("gpu_session.cli.LambdaAPI")
+    mock_api_class = mocker.patch("soong.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
     instance_type_mock = Mock(spec=InstanceType)
@@ -171,7 +171,7 @@ def test_start_command_format_matches_requirement(mocker, sample_config):
 
     # Mock instance launch
     mock_api.launch_instance.return_value = "i-test-123"
-    mock_mgr_class = mocker.patch("gpu_session.cli.InstanceManager")
+    mock_mgr_class = mocker.patch("soong.cli.InstanceManager")
     mock_mgr_class.return_value.wait_for_ready.return_value = Mock(ip="1.2.3.4")
 
     # Run start command

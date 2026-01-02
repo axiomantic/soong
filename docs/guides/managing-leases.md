@@ -19,7 +19,7 @@ Every GPU instance has a **lease** that defines how long it can run. Leases have
 View all running instances and their lease status:
 
 ```bash
-gpu-session status
+soong status
 ```
 
 ### Status Output
@@ -66,7 +66,7 @@ EXPIRED     # Red - lease expired
 Status also shows cost information:
 
 ```bash
-gpu-session status
+soong status
 ```
 
 ```
@@ -92,7 +92,7 @@ gpu-session status
 Extend an active instance to add more time:
 
 ```bash
-gpu-session extend 2  # Add 2 hours
+soong extend 2  # Add 2 hours
 ```
 
 ### Extension Limits
@@ -107,8 +107,8 @@ gpu-session extend 2  # Add 2 hours
 # Remaining: 1 hour
 # Max extension: 4 hours (to reach 8-hour total)
 
-gpu-session extend 4  # OK - brings total to 8 hours
-gpu-session extend 5  # Error - would exceed 8-hour limit
+soong extend 4  # OK - brings total to 8 hours
+soong extend 5  # Error - would exceed 8-hour limit
 ```
 
 ### Extension Cost Confirmation
@@ -136,7 +136,7 @@ Before extending, you'll see a cost estimate:
 Skip confirmation with `--yes`:
 
 ```bash
-gpu-session extend 2 --yes
+soong extend 2 --yes
 ```
 
 ### Extension Workflow
@@ -147,7 +147,7 @@ sequenceDiagram
     participant CLI
     participant Instance
 
-    User->>CLI: gpu-session extend 2
+    User->>CLI: soong extend 2
     CLI->>Instance: POST /extend
     Note over Instance: Calculate new expiry
     Instance-->>CLI: New shutdown time
@@ -161,7 +161,7 @@ Instances automatically terminate when:
 
 1. **Lease expires** - 8-hour maximum reached
 2. **Idle timeout** - 30 minutes of no activity
-3. **Manual stop** - You run `gpu-session stop`
+3. **Manual stop** - You run `soong stop`
 
 ### Idle Detection
 
@@ -195,7 +195,7 @@ When a lease expires:
 Manually terminate an instance:
 
 ```bash
-gpu-session stop
+soong stop
 ```
 
 With confirmation:
@@ -207,7 +207,7 @@ With confirmation:
 Skip confirmation with `--yes`:
 
 ```bash
-gpu-session stop --yes
+soong stop --yes
 ```
 
 !!! danger "Unsaved Work"
@@ -220,7 +220,7 @@ gpu-session stop --yes
 View why instances were terminated:
 
 ```bash
-gpu-session status --history
+soong status --history
 ```
 
 ```
@@ -238,7 +238,7 @@ gpu-session status --history
 Adjust time window:
 
 ```bash
-gpu-session status --history --history-hours 48  # Last 48 hours
+soong status --history --history-hours 48  # Last 48 hours
 ```
 
 ### Stopped Instances
@@ -246,7 +246,7 @@ gpu-session status --history --history-hours 48  # Last 48 hours
 View recently stopped instances:
 
 ```bash
-gpu-session status --stopped
+soong status --stopped
 ```
 
 ```
@@ -268,14 +268,14 @@ Check status every hour during active development:
 
 ```bash
 # Add to your workflow
-watch -n 3600 gpu-session status  # Check every hour
+watch -n 3600 soong status  # Check every hour
 ```
 
 Or set up a terminal status bar:
 
 ```bash
 # Simple status check
-alias gpu-status='gpu-session status'
+alias gpu-status='soong status'
 ```
 
 ### Extend Proactively
@@ -287,7 +287,7 @@ Don't wait until the last minute:
 Time Left: 45m  # Yellow warning
 
 # Extend immediately
-gpu-session extend 2
+soong extend 2
 ```
 
 ### Save Work to Persistent Storage
@@ -310,12 +310,12 @@ Instead of one 8-hour lease, use multiple shorter sessions:
 
 ```bash
 # Session 1: 2-4 hours
-gpu-session start --hours 2
+soong start --hours 2
 # ... work ...
-gpu-session stop
+soong stop
 
 # Session 2: 2-4 hours (later)
-gpu-session start --hours 2
+soong start --hours 2
 # ... more work ...
 ```
 
@@ -331,7 +331,7 @@ gpu-session start --hours 2
 Status may be cached. Wait 10-30 seconds and check again:
 
 ```bash
-sleep 30 && gpu-session status
+sleep 30 && soong status
 ```
 
 ### Can't Extend (Already at 8 Hours)
@@ -343,8 +343,8 @@ Error extending lease: Maximum lease duration reached (8 hours)
 **Solution**: You must stop the current instance and start a new one:
 
 ```bash
-gpu-session stop --yes
-gpu-session start --hours 4
+soong stop --yes
+soong start --hours 4
 ```
 
 ### Instance Terminated Unexpectedly
@@ -352,7 +352,7 @@ gpu-session start --hours 4
 Check termination history to see why:
 
 ```bash
-gpu-session status --history
+soong status --history
 ```
 
 Common reasons:
@@ -366,7 +366,7 @@ Common reasons:
 If the lease shows "EXPIRED" but cost is still increasing (red), the instance hasn't auto-terminated yet. Manually stop it:
 
 ```bash
-gpu-session stop --yes
+soong stop --yes
 ```
 
 ## Next Steps

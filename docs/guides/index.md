@@ -1,10 +1,10 @@
 # User Guides
 
-Comprehensive guides for common workflows and tasks with gpu-session CLI.
+Comprehensive guides for common workflows and tasks with soong CLI.
 
 ## Getting Started
 
-If you haven't configured gpu-session yet, start with the [Quick Start](../getting-started/quick-start.md) guide.
+If you haven't configured soong yet, start with the [Quick Start](../getting-started/quick-start.md) guide.
 
 ## Available Guides
 
@@ -70,7 +70,7 @@ See [Model Management](model-management.md) for detailed model comparisons.
 
 ## Cost Control Features
 
-gpu-session includes several safety mechanisms to prevent runaway costs:
+soong includes several safety mechanisms to prevent runaway costs:
 
 1. **Lease System** - All instances have a maximum 8-hour lease
 2. **Idle Detection** - Automatic shutdown after 30 minutes of inactivity
