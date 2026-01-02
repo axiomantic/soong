@@ -1721,9 +1721,13 @@
 </span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>venv
 </span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="nb">source</span><span class="w"> </span>venv/bin/activate<span class="w">  </span><span class="c1"># On Windows: venv\Scripts\activate</span>
 </span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="c1"># Install in editable mode with all dependencies</span>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="c1"># Install the CLI</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>./cli
 </span></code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Project Structure</p>
+<p>Soong is a monorepo containing multiple components (CLI, dashboard, worker). The Python CLI lives in the <code>cli/</code> subdirectory, which is why you install from <code>./cli</code> rather than the repository root.</p>
+</div>
 <h3 id="option-2-install-from-pypi-coming-soon">Option 2: Install from PyPI (Coming Soon)<a class="headerlink" href="#option-2-install-from-pypi-coming-soon" title="Anchor link to this section">&para;</a></h3>
 <p>Once published to PyPI, you'll be able to install with:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>pip<span class="w"> </span>install<span class="w"> </span>soong
@@ -1803,10 +1807,10 @@
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># Option 1: Virtual environment (recommended)</span>
 </span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>venv
 </span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="nb">source</span><span class="w"> </span>venv/bin/activate
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>./cli
 </span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>
 </span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="c1"># Option 2: User installation</span>
-</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>pip<span class="w"> </span>install<span class="w"> </span>--user<span class="w"> </span>-e<span class="w"> </span>.
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>pip<span class="w"> </span>install<span class="w"> </span>--user<span class="w"> </span>-e<span class="w"> </span>./cli
 </span></code></pre></div>
 <h3 id="dependencies-fail-to-install">Dependencies fail to install<a class="headerlink" href="#dependencies-fail-to-install" title="Anchor link to this section">&para;</a></h3>
 <p><strong>Solution</strong>: Make sure you have build tools installed:</p>
