@@ -11,7 +11,7 @@ Thank you for your interest in contributing to soong CLI! This guide will help y
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/my-ai.git
+git clone https://github.com/axiomantic/soong.git
 cd my-ai/cli
 
 # Create virtual environment
@@ -341,8 +341,8 @@ def test_launch(mocker):
 
 ## Getting Help
 
-- **Issues**: Check [GitHub Issues](https://github.com/yourusername/my-ai/issues)
-- **Discussions**: Join [GitHub Discussions](https://github.com/yourusername/my-ai/discussions)
+- **Issues**: Check [GitHub Issues](https://github.com/axiomantic/soong/issues)
+- **Discussions**: Join [GitHub Discussions](https://github.com/axiomantic/soong/discussions)
 - **Documentation**: Read the [full documentation](../index.md)
 
 ## Code of Conduct

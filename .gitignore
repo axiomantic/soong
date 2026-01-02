@@ -35,3 +35,7 @@ logs/
 # Git worktrees
 .worktrees/
 site/
+.coverage
+.envrc
+.swarm/
+cli/.coverage

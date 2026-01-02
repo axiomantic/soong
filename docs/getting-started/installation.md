@@ -44,7 +44,7 @@ Clone the repository and install in development mode:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/soong.git
+git clone https://github.com/axiomantic/soong.git
 cd soong
 
 # Create a virtual environment (recommended)

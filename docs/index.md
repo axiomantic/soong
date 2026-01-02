@@ -128,7 +128,7 @@ Traditional GPU instance management involves:
 
 ## Community & Support
 
-- **GitHub**: [Report issues or contribute](https://github.com/yourusername/soong)
+- **GitHub**: [Report issues or contribute](https://github.com/axiomantic/soong)
 - **Documentation**: You're here!
 - **Lambda Labs**: [Official documentation](https://docs.lambdalabs.com)
 

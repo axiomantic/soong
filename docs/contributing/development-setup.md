@@ -32,7 +32,7 @@ This guide walks you through setting up a local development environment for soon
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/my-ai.git
+git clone https://github.com/axiomantic/soong.git
 cd my-ai/cli
 ```
 
@@ -41,7 +41,7 @@ Or if you're forking:
 ```bash
 git clone https://github.com/YOUR_USERNAME/my-ai.git
 cd my-ai/cli
-git remote add upstream https://github.com/yourusername/my-ai.git
+git remote add upstream https://github.com/axiomantic/soong.git
 ```
 
 ### 2. Create Virtual Environment
@@ -468,8 +468,8 @@ chmod 600 ~/.config/gpu-dashboard/config.yaml
 
 If you encounter issues:
 
-1. Check [GitHub Issues](https://github.com/yourusername/my-ai/issues)
-2. Search [Discussions](https://github.com/yourusername/my-ai/discussions)
+1. Check [GitHub Issues](https://github.com/axiomantic/soong/issues)
+2. Search [Discussions](https://github.com/axiomantic/soong/discussions)
 3. Ask in project chat/Slack (if available)
 4. Create a new issue with:
    - Python version (`python --version`)
