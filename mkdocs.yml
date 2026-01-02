@@ -24,8 +24,6 @@ theme:
   features:
     - navigation.instant
     - navigation.tracking
-    - navigation.tabs
-    - navigation.tabs.sticky
     - navigation.sections
     - navigation.expand
     - navigation.path
@@ -54,7 +52,7 @@ extra:
 
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/elijahr/my-ai
+      link: https://github.com/axiomantic/soong
 
 markdown_extensions:
   - abbr
