@@ -487,15 +487,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-create-and-upload-ssh-keys" class="md-nav__link">
+  <a href="#3-create-and-upload-ssh-keys-optional" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Create and Upload SSH Keys
+        3. Create and Upload SSH Keys (Optional)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="3. Create and Upload SSH Keys">
+    <nav class="md-nav" aria-label="3. Create and Upload SSH Keys (Optional)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1518,15 +1518,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-create-and-upload-ssh-keys" class="md-nav__link">
+  <a href="#3-create-and-upload-ssh-keys-optional" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Create and Upload SSH Keys
+        3. Create and Upload SSH Keys (Optional)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="3. Create and Upload SSH Keys">
+    <nav class="md-nav" aria-label="3. Create and Upload SSH Keys (Optional)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1780,8 +1780,12 @@
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>lam_1234567890abcdefghijklmnopqrstuvwxyz
 </span></code></pre></div>
 <hr />
-<h2 id="3-create-and-upload-ssh-keys">3. Create and Upload SSH Keys<a class="headerlink" href="#3-create-and-upload-ssh-keys" title="Anchor link to this section">&para;</a></h2>
-<p>Soong CLI uses SSH to connect to your instances. You'll need to upload your public SSH key to Lambda Labs.</p>
+<h2 id="3-create-and-upload-ssh-keys-optional">3. Create and Upload SSH Keys (Optional)<a class="headerlink" href="#3-create-and-upload-ssh-keys-optional" title="Anchor link to this section">&para;</a></h2>
+<p>Soong CLI uses SSH to connect to your instances. If you don't have an SSH key uploaded to Lambda Labs, Soong will detect this when you try to launch an instance and prompt you to add one.</p>
+<div class="admonition tip">
+<p class="admonition-title">You can skip this step</p>
+<p>Soong will check for SSH keys when launching and guide you if none are found.</p>
+</div>
 <h3 id="generate-an-ssh-key-pair-if-you-dont-have-one">Generate an SSH Key Pair (if you don't have one)<a class="headerlink" href="#generate-an-ssh-key-pair-if-you-dont-have-one" title="Anchor link to this section">&para;</a></h3>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Linux/macOS</label><label for="__tabbed_1_2">Windows (PowerShell)</label></div>
 <div class="tabbed-content">
@@ -1858,8 +1862,7 @@
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Lambda Labs account with verified email</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Payment method added to your account</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Lambda Labs API key generated and saved</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> SSH key pair generated</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Public SSH key uploaded to Lambda Labs</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> SSH key pair (optional - Soong will prompt when needed)</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Persistent filesystem created (optional but recommended)</li>
 </ul>
 <hr />
