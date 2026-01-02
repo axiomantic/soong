@@ -33,16 +33,19 @@ This guide walks you through setting up a local development environment for soon
 
 ```bash
 git clone https://github.com/axiomantic/soong.git
-cd my-ai/cli
+cd soong/cli
 ```
 
 Or if you're forking:
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/my-ai.git
-cd my-ai/cli
+git clone https://github.com/YOUR_USERNAME/soong.git
+cd soong/cli
 git remote add upstream https://github.com/axiomantic/soong.git
 ```
+
+!!! note "Monorepo Structure"
+    Soong is a monorepo with multiple components: the Python CLI (`cli/`), a Flask dashboard (`dashboard/`), and a Cloudflare worker (`worker/`). Development commands run from the `cli/` subdirectory where `pyproject.toml` lives.
 
 ### 2. Create Virtual Environment
 

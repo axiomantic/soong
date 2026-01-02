@@ -880,19 +880,18 @@ def available():
         # Create table
         table = Table(title="Available GPU Types")
         table.add_column("GPU Type", style="cyan")
-        table.add_column("Regions", style="yellow")
-        table.add_column("Available", style="green")
+        table.add_column("Description", style="dim")
+        table.add_column("Price", style="yellow")
+        table.add_column("Regions", style="green")
 
-        for gpu_name, gpu_info in instance_types.items():
-            regions_available = []
-            for region_name, region_data in gpu_info.get("regions_with_capacity_available", {}).items():
-                if region_data.get("available", False):
-                    regions_available.append(region_name)
-
-            availability = "Yes" if regions_available else "No"
-            regions_str = ", ".join(regions_available) if regions_available else "-"
-
-            table.add_row(gpu_name, regions_str, availability)
+        for gpu in instance_types:
+            regions_str = ", ".join(gpu.regions_available) if gpu.regions_available else "[dim]-[/dim]"
+            table.add_row(
+                gpu.name,
+                gpu.description,
+                gpu.format_price(),
+                regions_str,
+            )
 
         console.print(table)
 

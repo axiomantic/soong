@@ -51,9 +51,12 @@ cd soong
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# Install in editable mode with all dependencies
-pip install -e .
+# Install the CLI
+pip install -e ./cli
 ```
+
+!!! note "Project Structure"
+    Soong is a monorepo containing multiple components (CLI, dashboard, worker). The Python CLI lives in the `cli/` subdirectory, which is why you install from `./cli` rather than the repository root.
 
 ### Option 2: Install from PyPI (Coming Soon)
 
@@ -161,10 +164,10 @@ brew install python3  # macOS with Homebrew
 # Option 1: Virtual environment (recommended)
 python -m venv venv
 source venv/bin/activate
-pip install -e .
+pip install -e ./cli
 
 # Option 2: User installation
-pip install --user -e .
+pip install --user -e ./cli
 ```
 
 ### Dependencies fail to install

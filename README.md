@@ -7,6 +7,8 @@ Soong is a CLI tool for managing Lambda Labs GPU instances. Launch, monitor, and
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
+![Soong CLI Demo](docs/assets/demo.gif)
+
 ## Features
 
 - **One-command instance launch** with model and GPU selection

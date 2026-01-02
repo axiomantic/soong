@@ -12,7 +12,7 @@ Thank you for your interest in contributing to soong CLI! This guide will help y
 ```bash
 # Clone the repository
 git clone https://github.com/axiomantic/soong.git
-cd my-ai/cli
+cd soong/cli  # CLI lives in subdirectory (monorepo)
 
 # Create virtual environment
 python3 -m venv venv
