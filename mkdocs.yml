@@ -1,0 +1,140 @@
+site_name: gpu-session
+site_url: https://elijahr.github.io/my-ai/
+site_description: GPU session management for Lambda Labs - CLI and automation tools
+repo_url: https://github.com/elijahr/my-ai
+repo_name: my-ai
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.indexes
+    - navigation.top
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+
+  icon:
+    repo: fontawesome/brands/github
+    logo: material/cloud-upload
+
+  font:
+    text: Roboto
+    code: Roboto Mono
+
+extra:
+  version:
+    provider: mike
+    default: stable
+
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/elijahr/my-ai
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      permalink_title: Anchor link to this section
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+plugins:
+  - search:
+      lang: en
+  - mike:
+      version_selector: true
+      css_dir: css
+      javascript_dir: js
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - getting-started/index.md
+    - Prerequisites: getting-started/prerequisites.md
+    - Installation: getting-started/installation.md
+    - Configuration: getting-started/configuration.md
+    - Quick Start: getting-started/quick-start.md
+  - User Guides:
+    - guides/index.md
+    - Launching Instances: guides/launching-instances.md
+    - Managing Leases: guides/managing-leases.md
+    - SSH & Tunneling: guides/ssh-tunneling.md
+    - Model Management: guides/model-management.md
+    - Cost Optimization: guides/cost-optimization.md
+  - Reference:
+    - reference/index.md
+    - CLI Commands: reference/cli-commands.md
+    - Configuration File: reference/configuration-file.md
+    - Models: reference/models.md
+    - GPU Types: reference/gpu-types.md
+  - Architecture:
+    - architecture/index.md
+    - System Design: architecture/system-design.md
+    - Cost Controls: architecture/cost-controls.md
+  - Contributing:
+    - contributing/index.md
+    - Development Setup: contributing/development-setup.md
+    - Testing: contributing/testing.md
+
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/extra.js
