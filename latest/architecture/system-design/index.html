@@ -1,0 +1,3025 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="GPU session management for Lambda Labs - CLI and automation tools">
+      
+      
+      
+        <link rel="canonical" href="https://axiomantic.github.io/soong/latest/architecture/system-design/">
+      
+      
+        <link rel="prev" href="../">
+      
+      
+        <link rel="next" href="../cost-controls/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>System Design - Soong</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#system-design" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Soong" class="md-header__button md-logo" aria-label="Soong" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11 20H6.5q-2.28 0-3.89-1.57Q1 16.85 1 14.58q0-1.95 1.17-3.48 1.18-1.53 3.08-1.95.63-2.3 2.5-3.72Q9.63 4 12 4q2.93 0 4.96 2.04Q19 8.07 19 11q1.73.2 2.86 1.5 1.14 1.28 1.14 3 0 1.88-1.31 3.19T18.5 20H13v-7.15l1.6 1.55L16 13l-4-4-4 4 1.4 1.4 1.6-1.55Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Soong
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              System Design
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/axiomantic/soong" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    soong
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../getting-started/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../guides/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  User Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../reference/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../contributing/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Contributing
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Soong" class="md-nav__button md-logo" aria-label="Soong" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11 20H6.5q-2.28 0-3.89-1.57Q1 16.85 1 14.58q0-1.95 1.17-3.48 1.18-1.53 3.08-1.95.63-2.3 2.5-3.72Q9.63 4 12 4q2.93 0 4.96 2.04Q19 8.07 19 11q1.73.2 2.86 1.5 1.14 1.28 1.14 3 0 1.88-1.31 3.19T18.5 20H13v-7.15l1.6 1.55L16 13l-4-4-4 4 1.4 1.4 1.6-1.55Z"/></svg>
+
+    </a>
+    Soong
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/axiomantic/soong" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    soong
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../getting-started/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/prerequisites/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Prerequisites
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../guides/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guides
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/launching-instances/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Launching Instances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/managing-leases/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Managing Leases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/ssh-tunneling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SSH & Tunneling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/model-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Management
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/cost-optimization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cost Optimization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../reference/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/cli-commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/configuration-file/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration File
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/gpu-types/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GPU Types
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Design
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#high-level-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        High-Level Architecture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#component-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Component Details
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Component Details">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cli-tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Tool
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lambda-api-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lambda API Client
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instance-manager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instance Manager
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ssh-tunnel-manager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SSH Tunnel Manager
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration-manager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Manager
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#status-daemon" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status Daemon
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-flow-instance-launch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Flow: Instance Launch
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data Flow: Instance Launch">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#launch-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Launch Steps
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-flow-status-query" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Flow: Status Query
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data Flow: Status Query">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-information-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status Information Sources
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cost-calculations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cost Calculations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Model
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Security Model">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#authentication-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authentication Layers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#secret-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secret Management
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#network-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Network Security
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Considerations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Considerations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#api-rate-limiting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Rate Limiting
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instance-boot-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instance Boot Time
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filesystem-mounting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Filesystem Mounting
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error Handling
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Error Handling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#api-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instance-states" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instance States
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ssh-tunnel-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SSH Tunnel Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deployment-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deployment Considerations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deployment Considerations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#local-development" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local Development
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#production-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Production Usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-user-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-User Setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#monitoring-and-observability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitoring and Observability
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Monitoring and Observability">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cli-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Logging
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instance-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instance Logs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#health-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Health Checks
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#future-enhancements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Future Enhancements
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Future Enhancements">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#planned-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Planned Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scalability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scalability
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cost-controls/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cost Controls
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../contributing/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contributing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/development-setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#high-level-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        High-Level Architecture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#component-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Component Details
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Component Details">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cli-tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Tool
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lambda-api-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lambda API Client
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instance-manager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instance Manager
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ssh-tunnel-manager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SSH Tunnel Manager
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration-manager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Manager
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#status-daemon" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status Daemon
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-flow-instance-launch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Flow: Instance Launch
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data Flow: Instance Launch">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#launch-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Launch Steps
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-flow-status-query" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Flow: Status Query
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data Flow: Status Query">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#status-information-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status Information Sources
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cost-calculations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cost Calculations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Model
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Security Model">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#authentication-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authentication Layers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#secret-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secret Management
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#network-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Network Security
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Considerations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Considerations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#api-rate-limiting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Rate Limiting
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instance-boot-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instance Boot Time
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filesystem-mounting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Filesystem Mounting
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error Handling
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Error Handling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#api-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instance-states" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instance States
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ssh-tunnel-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SSH Tunnel Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deployment-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deployment Considerations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deployment Considerations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#local-development" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local Development
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#production-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Production Usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-user-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-User Setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#monitoring-and-observability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitoring and Observability
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Monitoring and Observability">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cli-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Logging
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instance-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instance Logs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#health-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Health Checks
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#future-enhancements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Future Enhancements
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Future Enhancements">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#planned-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Planned Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scalability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scalability
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="Navigation" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../.." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    Home
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    Architecture
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="system-design">System Design<a class="headerlink" href="#system-design" title="Anchor link to this section">&para;</a></h1>
+<p>This document describes the overall architecture of the soong CLI system, including component interactions, data flow, and design decisions.</p>
+<h2 id="high-level-architecture">High-Level Architecture<a class="headerlink" href="#high-level-architecture" title="Anchor link to this section">&para;</a></h2>
+<pre class="mermaid"><code>graph TB
+    subgraph "Local Machine"
+        CLI[CLI Tool&lt;br/&gt;soong]
+        Config[Config Manager&lt;br/&gt;~/.config/gpu-dashboard/]
+        SSHMgr[SSH Tunnel Manager]
+
+        CLI --&gt; Config
+        CLI --&gt; SSHMgr
+    end
+
+    subgraph "Lambda Labs API"
+        API[REST API&lt;br/&gt;cloud.lambdalabs.com]
+    end
+
+    subgraph "GPU Instance"
+        StatusD[Status Daemon&lt;br/&gt;:8080]
+        SGLang[SGLang Server&lt;br/&gt;:8000]
+        N8N[n8n Workflows&lt;br/&gt;:5678]
+
+        StatusD -.monitors.-&gt; SGLang
+        StatusD -.monitors.-&gt; N8N
+    end
+
+    subgraph "Persistent Storage"
+        FS[Lambda Filesystem&lt;br/&gt;/lambda/nfs/coding-stack/]
+        Secrets[secrets/env.sh]
+        Projects[projects/]
+
+        FS --&gt; Secrets
+        FS --&gt; Projects
+    end
+
+    CLI --&gt;|Launch/Terminate| API
+    CLI --&gt;|Status Query| API
+    CLI --&gt;|SSH/Tunnel| StatusD
+
+    API --&gt;|Provision| GPU Instance
+    GPU Instance --&gt;|Mount| FS
+
+    style CLI fill:#e1f5ff
+    style StatusD fill:#fff3e0
+    style API fill:#f3e5f5
+    style FS fill:#e8f5e9</code></pre>
+<h2 id="component-details">Component Details<a class="headerlink" href="#component-details" title="Anchor link to this section">&para;</a></h2>
+<h3 id="cli-tool">CLI Tool<a class="headerlink" href="#cli-tool" title="Anchor link to this section">&para;</a></h3>
+<p><strong>Location:</strong> <code>cli/src/soong/cli.py</code></p>
+<p><strong>Responsibilities:</strong></p>
+<ul>
+<li>Parse user commands and arguments</li>
+<li>Load configuration from YAML</li>
+<li>Invoke Lambda API via LambdaAPI client</li>
+<li>Manage SSH tunnels</li>
+<li>Display rich terminal output</li>
+</ul>
+<p><strong>Key Features:</strong></p>
+<ul>
+<li>Interactive configuration wizard with intelligent defaults</li>
+<li>Cost estimation before instance launch</li>
+<li>Rich table display with color-coded status</li>
+<li>Progress indicators for long-running operations</li>
+<li>GPU/model recommendation system</li>
+</ul>
+<p><strong>Entry Point:</strong></p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nd">@app</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">model</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">gpu</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">region</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">hours</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">):</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Launch new GPU instance.&quot;&quot;&quot;</span>
+</span></code></pre></div>
+<h3 id="lambda-api-client">Lambda API Client<a class="headerlink" href="#lambda-api-client" title="Anchor link to this section">&para;</a></h3>
+<p><strong>Location:</strong> <code>cli/src/soong/lambda_api.py</code></p>
+<p><strong>Responsibilities:</strong></p>
+<ul>
+<li>HTTP communication with Lambda Labs API</li>
+<li>Retry logic with exponential backoff</li>
+<li>Response parsing and error handling</li>
+<li>Instance lifecycle operations</li>
+</ul>
+<p><strong>Retry Strategy:</strong></p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">RETRY_MAX_ATTEMPTS</span> <span class="o">=</span> <span class="mi">3</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">RETRY_BASE_DELAY</span> <span class="o">=</span> <span class="mi">1</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">RETRY_BACKOFF_MULTIPLIER</span> <span class="o">=</span> <span class="mi">2</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="c1"># Delays: 1s, 2s, 4s</span>
+</span></code></pre></div>
+<p><strong>Endpoints:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Method</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/instances</code></td>
+<td>GET</td>
+<td>List all instances</td>
+</tr>
+<tr>
+<td><code>/instance-operations/launch</code></td>
+<td>POST</td>
+<td>Launch new instance</td>
+</tr>
+<tr>
+<td><code>/instance-operations/terminate</code></td>
+<td>POST</td>
+<td>Terminate instance</td>
+</tr>
+<tr>
+<td><code>/instance-types</code></td>
+<td>GET</td>
+<td>List GPU types with pricing</td>
+</tr>
+<tr>
+<td><code>/ssh-keys</code></td>
+<td>GET</td>
+<td>List SSH keys</td>
+</tr>
+</tbody>
+</table>
+<h3 id="instance-manager">Instance Manager<a class="headerlink" href="#instance-manager" title="Anchor link to this section">&para;</a></h3>
+<p><strong>Location:</strong> <code>cli/src/soong/instance.py</code></p>
+<p><strong>Responsibilities:</strong></p>
+<ul>
+<li>Wait for instance to become ready</li>
+<li>Poll instance status</li>
+<li>Find active instances</li>
+</ul>
+<p><strong>Ready Criteria:</strong></p>
+<p>An instance is considered ready when:</p>
+<ol>
+<li>Status is <code>active</code></li>
+<li>IP address is assigned</li>
+<li>Not in terminal state (<code>terminated</code>, <code>unhealthy</code>)</li>
+</ol>
+<p><strong>Polling Logic:</strong></p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">wait_for_ready</span><span class="p">(</span><span class="n">instance_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">timeout_seconds</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">600</span><span class="p">):</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="n">poll_interval</span> <span class="o">=</span> <span class="mi">10</span>  <span class="c1"># seconds</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="k">while</span> <span class="n">elapsed</span> <span class="o">&lt;</span> <span class="n">timeout_seconds</span><span class="p">:</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>        <span class="n">instance</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">get_instance</span><span class="p">(</span><span class="n">instance_id</span><span class="p">)</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>        <span class="k">if</span> <span class="n">instance</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="s2">&quot;active&quot;</span> <span class="ow">and</span> <span class="n">instance</span><span class="o">.</span><span class="n">ip</span><span class="p">:</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>            <span class="k">return</span> <span class="n">instance</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">poll_interval</span><span class="p">)</span>
+</span></code></pre></div>
+<h3 id="ssh-tunnel-manager">SSH Tunnel Manager<a class="headerlink" href="#ssh-tunnel-manager" title="Anchor link to this section">&para;</a></h3>
+<p><strong>Location:</strong> <code>cli/src/soong/ssh.py</code></p>
+<p><strong>Responsibilities:</strong></p>
+<ul>
+<li>Start background SSH tunnels with port forwarding</li>
+<li>Stop tunnels gracefully</li>
+<li>Track tunnel PID for cleanup</li>
+<li>Interactive SSH sessions</li>
+</ul>
+<p><strong>Port Forwarding:</strong></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>ssh<span class="w"> </span>-N<span class="w"> </span>-f<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span>-L<span class="w"> </span><span class="m">8000</span>:localhost:8000<span class="w"> </span><span class="se">\ </span><span class="w"> </span><span class="c1"># SGLang</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span>-L<span class="w"> </span><span class="m">5678</span>:localhost:5678<span class="w"> </span><span class="se">\ </span><span class="w"> </span><span class="c1"># n8n</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span>-L<span class="w"> </span><span class="m">8080</span>:localhost:8080<span class="w"> </span><span class="se">\ </span><span class="w"> </span><span class="c1"># Status daemon</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span>-i<span class="w"> </span>~/.ssh/id_rsa<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span>ubuntu@&lt;instance-ip&gt;
+</span></code></pre></div>
+<p><strong>PID Tracking:</strong></p>
+<p>Tunnel process ID stored in <code>~/.config/gpu-dashboard/tunnel.pid</code> for cleanup.</p>
+<h3 id="configuration-manager">Configuration Manager<a class="headerlink" href="#configuration-manager" title="Anchor link to this section">&para;</a></h3>
+<p><strong>Location:</strong> <code>cli/src/soong/config.py</code></p>
+<p><strong>Responsibilities:</strong></p>
+<ul>
+<li>Load/save YAML configuration</li>
+<li>Validate custom model definitions</li>
+<li>Secure file permissions</li>
+</ul>
+<p><strong>Configuration Schema:</strong></p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">lambda</span><span class="p">:</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">api_key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span><span class="w">          </span><span class="c1"># Lambda API key</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="nt">default_region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span><span class="w">   </span><span class="c1"># e.g., &quot;us-west-1&quot;</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span><span class="nt">filesystem_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span><span class="w">  </span><span class="c1"># e.g., &quot;coding-stack&quot;</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="nt">status_daemon</span><span class="p">:</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">  </span><span class="nt">token</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span><span class="w">            </span><span class="c1"># Shared secret</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">  </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">int</span><span class="w">                </span><span class="c1"># Default: 8080</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="nt">defaults</span><span class="p">:</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">  </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span><span class="w">            </span><span class="c1"># Default model ID</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">  </span><span class="nt">gpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span><span class="w">              </span><span class="c1"># Default GPU type</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">  </span><span class="nt">lease_hours</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">int</span><span class="w">         </span><span class="c1"># Default: 4</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="nt">ssh</span><span class="p">:</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">  </span><span class="nt">key_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span><span class="w">         </span><span class="c1"># SSH private key path</span>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="nt">custom_models</span><span class="p">:</span>
+</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="w">  </span><span class="nt">&lt;model-id&gt;</span><span class="p">:</span>
+</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="w">    </span><span class="nt">hf_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+</span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="w">    </span><span class="nt">params_billions</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">float</span>
+</span><span id="__span-4-22"><a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="w">    </span><span class="nt">quantization</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+</span><span id="__span-4-23"><a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="w">    </span><span class="nt">context_length</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">int</span>
+</span></code></pre></div>
+<h3 id="status-daemon">Status Daemon<a class="headerlink" href="#status-daemon" title="Anchor link to this section">&para;</a></h3>
+<p><strong>Location:</strong> On GPU instance (deployed via cloud-init)</p>
+<p><strong>Responsibilities:</strong></p>
+<ul>
+<li>Health monitoring</li>
+<li>Lease management</li>
+<li>Idle detection</li>
+<li>Activity tracking</li>
+<li>Graceful shutdown</li>
+</ul>
+<p><strong>API Endpoints:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Method</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/health</code></td>
+<td>GET</td>
+<td>Health check</td>
+</tr>
+<tr>
+<td><code>/status</code></td>
+<td>GET</td>
+<td>Instance status</td>
+</tr>
+<tr>
+<td><code>/extend</code></td>
+<td>POST</td>
+<td>Extend lease</td>
+</tr>
+<tr>
+<td><code>/shutdown</code></td>
+<td>POST</td>
+<td>Graceful shutdown</td>
+</tr>
+<tr>
+<td><code>/activity</code></td>
+<td>POST</td>
+<td>Signal activity</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Authentication:</strong></p>
+<p>All endpoints require <code>Authorization: Bearer &lt;token&gt;</code> header.</p>
+<h2 id="data-flow-instance-launch">Data Flow: Instance Launch<a class="headerlink" href="#data-flow-instance-launch" title="Anchor link to this section">&para;</a></h2>
+<pre class="mermaid"><code>sequenceDiagram
+    participant User
+    participant CLI
+    participant Config
+    participant API as Lambda API
+    participant Instance as GPU Instance
+    participant Daemon as Status Daemon
+
+    User-&gt;&gt;CLI: soong start
+    CLI-&gt;&gt;Config: Load configuration
+    Config--&gt;&gt;CLI: API key, defaults
+
+    CLI-&gt;&gt;API: GET /instance-types
+    API--&gt;&gt;CLI: Pricing info
+
+    CLI-&gt;&gt;User: Show cost estimate
+    User-&gt;&gt;CLI: Confirm
+
+    CLI-&gt;&gt;API: POST /instance-operations/launch
+    API--&gt;&gt;CLI: Instance ID
+
+    CLI-&gt;&gt;API: GET /instances (poll)
+    API--&gt;&gt;CLI: Status: booting
+
+    Note over Instance: Cloud-init runs
+    Note over Instance: Mount filesystem
+    Note over Instance: Deploy services
+
+    API--&gt;&gt;CLI: Status: active, IP assigned
+
+    CLI-&gt;&gt;Daemon: GET /health
+    Daemon--&gt;&gt;CLI: Healthy
+
+    CLI-&gt;&gt;User: Instance ready!</code></pre>
+<h3 id="launch-steps">Launch Steps<a class="headerlink" href="#launch-steps" title="Anchor link to this section">&para;</a></h3>
+<ol>
+<li><strong>User initiates launch</strong></li>
+<li>Command: <code>soong start --model deepseek-r1-70b</code></li>
+<li>
+<p>CLI loads configuration from YAML</p>
+</li>
+<li>
+<p><strong>API preparation</strong></p>
+</li>
+<li>Fetch instance types for pricing</li>
+<li>Show cost estimate and get confirmation</li>
+<li>
+<p>Validate SSH keys exist in account</p>
+</li>
+<li>
+<p><strong>Instance provisioning</strong> (Lambda API)</p>
+</li>
+<li>POST to <code>/instance-operations/launch</code></li>
+<li>Payload includes region, GPU type, SSH keys, filesystem</li>
+<li>
+<p>API returns instance ID immediately</p>
+</li>
+<li>
+<p><strong>Polling for ready state</strong></p>
+</li>
+<li>Poll <code>/instances</code> every 10 seconds</li>
+<li>Wait for status <code>active</code> and IP assignment</li>
+<li>
+<p>Timeout after 600 seconds (10 minutes)</p>
+</li>
+<li>
+<p><strong>Bootstrap completion</strong> (cloud-init on instance)</p>
+</li>
+<li>Mount persistent filesystem</li>
+<li>Load secrets from <code>/lambda/nfs/coding-stack/secrets/</code></li>
+<li>Deploy SGLang, n8n, status daemon</li>
+<li>
+<p>Start monitoring</p>
+</li>
+<li>
+<p><strong>Confirmation</strong></p>
+</li>
+<li>CLI displays instance IP</li>
+<li>Shows SSH and status commands</li>
+<li>User can connect via <code>soong ssh</code></li>
+</ol>
+<h2 id="data-flow-status-query">Data Flow: Status Query<a class="headerlink" href="#data-flow-status-query" title="Anchor link to this section">&para;</a></h2>
+<pre class="mermaid"><code>sequenceDiagram
+    participant User
+    participant CLI
+    participant API as Lambda API
+    participant Instance
+    participant Daemon as Status Daemon
+
+    User-&gt;&gt;CLI: soong status
+
+    CLI-&gt;&gt;API: GET /instances
+    API--&gt;&gt;CLI: Instance list
+
+    CLI-&gt;&gt;API: GET /instance-types
+    API--&gt;&gt;CLI: Pricing (cached)
+
+    CLI-&gt;&gt;Daemon: GET /status (optional)
+    Daemon--&gt;&gt;CLI: Uptime, model, lease info
+
+    Note over CLI: Calculate costs&lt;br/&gt;Format lease time&lt;br/&gt;Color-code status
+
+    CLI-&gt;&gt;User: Display table</code></pre>
+<h3 id="status-information-sources">Status Information Sources<a class="headerlink" href="#status-information-sources" title="Anchor link to this section">&para;</a></h3>
+<ol>
+<li><strong>Lambda API</strong> (required)</li>
+<li>Instance ID, name, status</li>
+<li>IP address</li>
+<li>GPU type, region</li>
+<li>Created timestamp</li>
+<li>
+<p>Lease expiration</p>
+</li>
+<li>
+<p><strong>Pricing API</strong> (optional, cached)</p>
+</li>
+<li>Hourly rate for GPU type</li>
+<li>
+<p>Cost calculations</p>
+</li>
+<li>
+<p><strong>Status Daemon</strong> (optional)</p>
+</li>
+<li>Current uptime</li>
+<li>Loaded model</li>
+<li>Last activity timestamp</li>
+<li>Shutdown time</li>
+</ol>
+<h3 id="cost-calculations">Cost Calculations<a class="headerlink" href="#cost-calculations" title="Anchor link to this section">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Current cost</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">uptime_hours</span> <span class="o">=</span> <span class="p">(</span><span class="n">now</span> <span class="o">-</span> <span class="n">created_at</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span> <span class="o">/</span> <span class="mi">3600</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">current_cost</span> <span class="o">=</span> <span class="n">hourly_rate</span> <span class="o">*</span> <span class="n">uptime_hours</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="c1"># Estimated total</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">lease_hours</span> <span class="o">=</span> <span class="p">(</span><span class="n">lease_expires_at</span> <span class="o">-</span> <span class="n">created_at</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span> <span class="o">/</span> <span class="mi">3600</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">total_cost</span> <span class="o">=</span> <span class="n">hourly_rate</span> <span class="o">*</span> <span class="n">lease_hours</span>
+</span></code></pre></div>
+<h2 id="security-model">Security Model<a class="headerlink" href="#security-model" title="Anchor link to this section">&para;</a></h2>
+<h3 id="authentication-layers">Authentication Layers<a class="headerlink" href="#authentication-layers" title="Anchor link to this section">&para;</a></h3>
+<ol>
+<li><strong>Lambda API</strong>: Bearer token authentication</li>
+<li>API key stored in <code>~/.config/gpu-dashboard/config.yaml</code> (mode 0600)</li>
+<li>Never logged or displayed</li>
+<li>
+<p>Passed in <code>Authorization</code> header</p>
+</li>
+<li>
+<p><strong>Status Daemon</strong>: Shared secret authentication</p>
+</li>
+<li>Token generated during configuration (32-byte URL-safe)</li>
+<li>Stored in config and deployed to instance</li>
+<li>
+<p>Required for all daemon endpoints</p>
+</li>
+<li>
+<p><strong>SSH Access</strong>: Key-based authentication</p>
+</li>
+<li>Private key path configurable</li>
+<li>SSH keys managed in Lambda account</li>
+<li>Tunnel uses <code>-o StrictHostKeyChecking=no</code> for automation</li>
+</ol>
+<h3 id="secret-management">Secret Management<a class="headerlink" href="#secret-management" title="Anchor link to this section">&para;</a></h3>
+<p><strong>Local secrets:</strong></p>
+<ul>
+<li><code>~/.config/gpu-dashboard/config.yaml</code> (mode 0600)</li>
+<li>Contains API keys, tokens, SSH key paths</li>
+</ul>
+<p><strong>Instance secrets:</strong></p>
+<ul>
+<li><code>/lambda/nfs/coding-stack/secrets/env.sh</code></li>
+<li>Sourced by services during startup</li>
+<li>Contains Anthropic API keys, service tokens</li>
+</ul>
+<h3 id="network-security">Network Security<a class="headerlink" href="#network-security" title="Anchor link to this section">&para;</a></h3>
+<p><strong>Inbound:</strong></p>
+<ul>
+<li>Lambda instances have public IPs</li>
+<li>SSH (port 22) open for management</li>
+<li>Services (8000, 5678, 8080) open for development</li>
+<li>Production deployments should use VPC</li>
+</ul>
+<p><strong>Outbound:</strong></p>
+<ul>
+<li>No restrictions</li>
+<li>Services make API calls (OpenAI, Anthropic, etc.)</li>
+<li>Metrics/monitoring can send to external services</li>
+</ul>
+<h2 id="performance-considerations">Performance Considerations<a class="headerlink" href="#performance-considerations" title="Anchor link to this section">&para;</a></h2>
+<h3 id="api-rate-limiting">API Rate Limiting<a class="headerlink" href="#api-rate-limiting" title="Anchor link to this section">&para;</a></h3>
+<p>Lambda API has rate limits (undocumented). The client implements:</p>
+<ul>
+<li>Exponential backoff on errors</li>
+<li>Caching of instance types (pricing)</li>
+<li>Efficient polling intervals (10s)</li>
+</ul>
+<h3 id="instance-boot-time">Instance Boot Time<a class="headerlink" href="#instance-boot-time" title="Anchor link to this section">&para;</a></h3>
+<p>Typical boot sequence:</p>
+<ol>
+<li>Instance provisioning: 30-60 seconds</li>
+<li>Cloud-init execution: 2-3 minutes</li>
+<li>Service deployment: 3-5 minutes</li>
+<li>Model loading (SGLang): 2-5 minutes</li>
+</ol>
+<p><strong>Total:</strong> 7-14 minutes for ready state</p>
+<h3 id="filesystem-mounting">Filesystem Mounting<a class="headerlink" href="#filesystem-mounting" title="Anchor link to this section">&para;</a></h3>
+<p>Persistent filesystem mount is fast (1-2 seconds) because Lambda uses high-performance NFS.</p>
+<h2 id="error-handling">Error Handling<a class="headerlink" href="#error-handling" title="Anchor link to this section">&para;</a></h2>
+<h3 id="api-errors">API Errors<a class="headerlink" href="#api-errors" title="Anchor link to this section">&para;</a></h3>
+<p><strong>Transient errors</strong> (retry with backoff):</p>
+<ul>
+<li>Network timeouts</li>
+<li>5xx server errors</li>
+<li>Rate limiting (429)</li>
+</ul>
+<p><strong>Permanent errors</strong> (fail immediately):</p>
+<ul>
+<li>Invalid API key (401)</li>
+<li>Resource not found (404)</li>
+<li>Insufficient quota (403)</li>
+</ul>
+<h3 id="instance-states">Instance States<a class="headerlink" href="#instance-states" title="Anchor link to this section">&para;</a></h3>
+<p><strong>Terminal states</strong> (stop polling):</p>
+<ul>
+<li><code>terminated</code></li>
+<li><code>unhealthy</code></li>
+</ul>
+<p><strong>Transient states</strong> (keep polling):</p>
+<ul>
+<li><code>booting</code></li>
+<li><code>pending</code></li>
+<li><code>active</code> (without IP yet)</li>
+</ul>
+<h3 id="ssh-tunnel-errors">SSH Tunnel Errors<a class="headerlink" href="#ssh-tunnel-errors" title="Anchor link to this section">&para;</a></h3>
+<p><strong>Common failures:</strong></p>
+<ul>
+<li>Port already in use (tunnel exists)</li>
+<li>Connection refused (instance not ready)</li>
+<li>Authentication failure (wrong key)</li>
+</ul>
+<p><strong>Recovery:</strong></p>
+<ul>
+<li>Check tunnel status before starting</li>
+<li>Stop existing tunnel automatically</li>
+<li>Verify instance has IP before connecting</li>
+</ul>
+<h2 id="deployment-considerations">Deployment Considerations<a class="headerlink" href="#deployment-considerations" title="Anchor link to this section">&para;</a></h2>
+<h3 id="local-development">Local Development<a class="headerlink" href="#local-development" title="Anchor link to this section">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nb">cd</span><span class="w"> </span>cli
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[test]&quot;</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>soong<span class="w"> </span>configure
+</span></code></pre></div>
+<h3 id="production-usage">Production Usage<a class="headerlink" href="#production-usage" title="Anchor link to this section">&para;</a></h3>
+<p>For production deployments, consider:</p>
+<ol>
+<li><strong>VPC networking</strong> for private instance access</li>
+<li><strong>Cloudflare Workers</strong> for watchdog monitoring</li>
+<li><strong>Secrets management</strong> via environment variables</li>
+<li><strong>Log aggregation</strong> for debugging</li>
+<li><strong>Cost alerts</strong> for budget monitoring</li>
+</ol>
+<h3 id="multi-user-setup">Multi-User Setup<a class="headerlink" href="#multi-user-setup" title="Anchor link to this section">&para;</a></h3>
+<p>The CLI is designed for single-user workstations. For multi-user scenarios:</p>
+<ul>
+<li>Each user needs their own <code>~/.config/gpu-dashboard/</code></li>
+<li>Shared Lambda account (API key) or separate accounts</li>
+<li>Filesystem naming convention (e.g., <code>coding-stack-{username}</code>)</li>
+<li>Cost tracking per user via instance naming</li>
+</ul>
+<h2 id="monitoring-and-observability">Monitoring and Observability<a class="headerlink" href="#monitoring-and-observability" title="Anchor link to this section">&para;</a></h2>
+<h3 id="cli-logging">CLI Logging<a class="headerlink" href="#cli-logging" title="Anchor link to this section">&para;</a></h3>
+<p>The CLI uses Rich console for output:</p>
+<ul>
+<li>Color-coded status (green=success, red=error, yellow=warning)</li>
+<li>Progress spinners for long operations</li>
+<li>Tables for structured data</li>
+</ul>
+<h3 id="instance-logs">Instance Logs<a class="headerlink" href="#instance-logs" title="Anchor link to this section">&para;</a></h3>
+<p>On the GPU instance:</p>
+<ul>
+<li><code>/var/log/gpu-stack-boot.log</code> - Cloud-init execution</li>
+<li><code>journalctl -u sglang</code> - SGLang service logs</li>
+<li><code>journalctl -u n8n</code> - n8n workflow logs</li>
+<li><code>journalctl -u status-daemon</code> - Status daemon logs</li>
+</ul>
+<h3 id="health-checks">Health Checks<a class="headerlink" href="#health-checks" title="Anchor link to this section">&para;</a></h3>
+<p><strong>Status daemon health:</strong></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer &lt;token&gt;&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span>http://&lt;instance-ip&gt;:8080/health
+</span></code></pre></div>
+<p><strong>Service health:</strong></p>
+<ul>
+<li>SGLang: <code>curl http://localhost:8000/health</code></li>
+<li>n8n: <code>curl http://localhost:5678/healthz</code></li>
+</ul>
+<h2 id="future-enhancements">Future Enhancements<a class="headerlink" href="#future-enhancements" title="Anchor link to this section">&para;</a></h2>
+<h3 id="planned-features">Planned Features<a class="headerlink" href="#planned-features" title="Anchor link to this section">&para;</a></h3>
+<ol>
+<li><strong>Instance pools</strong>: Manage multiple instances</li>
+<li><strong>Snapshot support</strong>: Save instance state</li>
+<li><strong>GPU sharing</strong>: Multi-tenant GPU access</li>
+<li><strong>Cost analytics</strong>: Historical spending reports</li>
+<li><strong>Automatic model selection</strong>: Based on task requirements</li>
+</ol>
+<h3 id="scalability">Scalability<a class="headerlink" href="#scalability" title="Anchor link to this section">&para;</a></h3>
+<p>The current design supports:</p>
+<ul>
+<li>Single user managing 1-10 instances</li>
+<li>Manual orchestration of services</li>
+</ul>
+<p>For larger deployments:</p>
+<ul>
+<li>Consider Kubernetes for orchestration</li>
+<li>Implement instance pool management</li>
+<li>Add cost allocation and chargebacks</li>
+<li>Integrate with existing DevOps tooling</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/elijahr/my-ai" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.path", "navigation.indexes", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "stable", "provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../javascripts/extra.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,22 @@
+/* External link indicator */
+.md-typeset a[href^="http"]::after {
+  content: " \2197";
+  font-size: 0.7em;
+  vertical-align: super;
+}
+
+/* Don't add indicator to social links or repo */
+.md-social a::after,
+.md-header a::after {
+  content: none !important;
+}
+
+/* Improve table styling */
+.md-typeset table:not([class]) {
+  font-size: 0.85em;
+}
+
+/* Code block improvements */
+.md-typeset code {
+  font-size: 0.85em;
+}
