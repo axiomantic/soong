@@ -53,7 +53,6 @@ Full documentation: [axiomantic.github.io/soong](https://axiomantic.github.io/so
 
 - Python 3.10+
 - Lambda Labs account with API key
-- SSH key uploaded to Lambda Labs
 
 ## Cost Controls
 

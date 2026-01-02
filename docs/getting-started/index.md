@@ -61,7 +61,7 @@ Before you begin, make sure you have:
 
 - [ ] A Lambda Labs account ([sign up here](https://cloud.lambdalabs.com))
 - [ ] A Lambda Labs API key
-- [ ] An SSH key pair uploaded to Lambda Labs
+- [ ] An SSH key pair (Soong will prompt you if needed)
 - [ ] Python 3.10 or later installed on your machine
 - [ ] Basic familiarity with the command line
 

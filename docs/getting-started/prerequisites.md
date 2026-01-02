@@ -41,9 +41,12 @@ lam_1234567890abcdefghijklmnopqrstuvwxyz
 
 ---
 
-## 3. Create and Upload SSH Keys
+## 3. Create and Upload SSH Keys (Optional)
 
-Soong CLI uses SSH to connect to your instances. You'll need to upload your public SSH key to Lambda Labs.
+Soong CLI uses SSH to connect to your instances. If you don't have an SSH key uploaded to Lambda Labs, Soong will detect this when you try to launch an instance and prompt you to add one.
+
+!!! tip "You can skip this step"
+    Soong will check for SSH keys when launching and guide you if none are found.
 
 ### Generate an SSH Key Pair (if you don't have one)
 
@@ -126,8 +129,7 @@ Before proceeding, make sure you have:
 - [x] Lambda Labs account with verified email
 - [x] Payment method added to your account
 - [x] Lambda Labs API key generated and saved
-- [x] SSH key pair generated
-- [x] Public SSH key uploaded to Lambda Labs
+- [ ] SSH key pair (optional - Soong will prompt when needed)
 - [x] Persistent filesystem created (optional but recommended)
 
 ---
