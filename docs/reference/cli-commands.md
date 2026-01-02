@@ -315,6 +315,8 @@ soong available
 
 **No options** - displays all GPU types with availability.
 
+![soong available](../assets/screenshots/available.svg)
+
 **Output:**
 
 ```
@@ -390,6 +392,8 @@ soong models info deepseek-r1-70b
 # Show Qwen2.5 Coder details
 soong models info qwen2.5-coder-32b
 ```
+
+![soong models info](../assets/screenshots/model-info.svg)
 
 **Output:**
 

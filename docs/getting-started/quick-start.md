@@ -131,6 +131,8 @@ View your running instance details:
 soong status
 ```
 
+![soong status](../assets/screenshots/status.svg)
+
 **Expected Output**:
 ```
 Instance Status:

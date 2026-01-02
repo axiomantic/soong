@@ -4,6 +4,8 @@
 
 Soong is a powerful command-line tool that simplifies managing Lambda Labs GPU instances. Launch, monitor, and connect to GPU instances with a single command—no manual configuration required.
 
+![Soong CLI](assets/screenshots/help.svg)
+
 ---
 
 ## Key Features
