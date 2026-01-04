@@ -502,13 +502,48 @@ def start(
         if wait:
             instance = instance_mgr.wait_for_ready(instance_id, timeout_seconds=600)
             if instance:
-                console.print(f"[green]Instance ready at {instance.ip}[/green]")
-                console.print(f"\nSSH: gpu-session ssh")
-                console.print(f"Status: gpu-session status")
+                console.print(f"[green]Instance ready![/green]\n")
+
+                # Show connection details panel
+                ip = instance.ip
+                console.print(Panel(
+                    f"""[bold]Instance:[/bold] {instance_id[:8]}...
+[bold]IP Address:[/bold] {ip}
+[bold]Region:[/bold] {region}
+[bold]GPU:[/bold] {gpu}
+[bold]Lease:[/bold] {hours} hours
+
+[bold cyan]Services[/bold cyan]
+  SGLang API:    http://{ip}:8000
+  n8n Workflows: http://{ip}:5678
+  Status Daemon: http://{ip}:8080
+
+[bold cyan]Quick Start[/bold cyan]
+  [dim]# SSH into instance[/dim]
+  soong ssh
+
+  [dim]# Start SSH tunnels (access services on localhost)[/dim]
+  soong tunnel
+
+  [dim]# Check instance status[/dim]
+  soong status
+
+  [dim]# Extend lease by 2 hours[/dim]
+  soong extend 2
+
+[bold cyan]Direct SSH[/bold cyan]
+  ssh ubuntu@{ip}
+
+[bold cyan]Documentation[/bold cyan]
+  https://axiomantic.github.io/soong/""",
+                    title="Instance Ready",
+                    border_style="green",
+                ))
             else:
                 console.print("[yellow]Instance launch timed out[/yellow]")
+                console.print("Check status with: soong status")
         else:
-            console.print("\nCheck status with: gpu-session status")
+            console.print("\nCheck status with: soong status")
 
     except LambdaAPIError as e:
         console.print(f"[red]Error launching instance: {e}[/red]")
