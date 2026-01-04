@@ -5,10 +5,12 @@ Status Daemon - Health checks, lease management, idle detection, self-terminatio
 
 import os
 import time
+import math
 import threading
 import subprocess
 import requests
 from datetime import datetime, timedelta
+from typing import Optional, Tuple
 from flask import Flask, jsonify, request, render_template_string
 
 app = Flask(__name__)
@@ -20,11 +22,28 @@ IDLE_TIMEOUT_MINUTES = {{ idle_timeout_minutes }}
 LEASE_HOURS = {{ lease_hours }}
 MAX_LEASE_HOURS = {{ max_lease_hours }}
 
+# Metrics-based idle detection configuration
+SGLANG_METRICS_URL = "http://localhost:{{ sglang_metrics_port }}{{ sglang_metrics_path }}"
+N8N_METRICS_URL = "http://localhost:{{ n8n_port }}{{ n8n_metrics_path }}"
+REQUEST_IDLE_TIMEOUT = {{ request_idle_timeout_minutes }} * 60
+METRICS_CHECK_INTERVAL = {{ metrics_check_interval_seconds }}
+FAILED_CHECK_THRESHOLD = {{ metrics_failed_check_threshold }}
+
 # State
 BOOT_TIME = datetime.utcnow()
 LAST_ACTIVITY = datetime.utcnow()
 SHUTDOWN_AT = BOOT_TIME + timedelta(hours=LEASE_HOURS)
 INSTANCE_ID = None
+
+# Metrics-based idle detection state
+last_sglang_activity = None
+last_n8n_activity = None
+sglang_tokens_total = 0
+n8n_executions_total = 0
+sglang_metrics_healthy = True
+n8n_metrics_healthy = True
+sglang_failed_checks = 0
+n8n_failed_checks = 0
 
 
 def get_instance_id():
@@ -101,13 +120,120 @@ def get_model_loaded():
     return "not-loaded"
 
 
-def has_active_ssh():
-    """Check if any SSH sessions are active."""
+def parse_prometheus_metrics(text: str, metric_name: str) -> Optional[float]:
+    """
+    Extract numeric value from Prometheus text format.
+
+    If multiple lines match metric_name (due to different labels),
+    returns the FIRST matching value.
+    """
+    for line in text.split('\n'):
+        if line.startswith('#'):
+            continue
+        if line.startswith(metric_name):
+            parts = line.split()
+            if len(parts) >= 2:
+                try:
+                    value = float(parts[-1])
+                    if math.isnan(value) or math.isinf(value) or value < 0:
+                        app.logger.warning(f"Invalid metric value: {line}")
+                        continue
+                    return value
+                except ValueError:
+                    continue
+    return None
+
+
+def check_sglang_activity() -> Tuple[bool, bool]:
+    """
+    Check SGLang metrics for activity.
+
+    Returns:
+        (activity_detected: bool, metrics_healthy: bool)
+    """
+    global sglang_tokens_total, last_sglang_activity, sglang_failed_checks
+
     try:
-        output = subprocess.check_output(["who"], timeout=5).decode()
-        return len(output.strip()) > 0
-    except (subprocess.SubprocessError, FileNotFoundError):
-        return False
+        resp = requests.get(SGLANG_METRICS_URL, timeout=5)
+        resp.raise_for_status()
+        sglang_failed_checks = 0
+        metrics_text = resp.text
+
+        # Check for running requests (gauge)
+        num_running = parse_prometheus_metrics(metrics_text, "sglang:num_running_reqs")
+        if num_running is not None and num_running > 0:
+            app.logger.info(f"SGLang activity: {int(num_running)} running requests")
+            last_sglang_activity = datetime.utcnow()
+            return True, True
+
+        # Check for token generation (counter delta)
+        tokens_total = parse_prometheus_metrics(metrics_text, "sglang:generation_tokens_total")
+        if tokens_total is not None:
+            if tokens_total < sglang_tokens_total:
+                app.logger.warning("SGLang counter reset detected (service restart)")
+                last_sglang_activity = datetime.utcnow()
+                sglang_tokens_total = tokens_total
+                return True, True
+
+            if tokens_total > sglang_tokens_total:
+                delta = int(tokens_total - sglang_tokens_total)
+                app.logger.info(f"SGLang activity: {delta} tokens generated")
+                last_sglang_activity = datetime.utcnow()
+                sglang_tokens_total = tokens_total
+                return True, True
+
+            sglang_tokens_total = tokens_total
+
+        return False, True
+
+    except requests.exceptions.RequestException as e:
+        sglang_failed_checks += 1
+        app.logger.warning(f"SGLang metrics check failed ({sglang_failed_checks}/{FAILED_CHECK_THRESHOLD}): {e}")
+        if sglang_failed_checks >= FAILED_CHECK_THRESHOLD:
+            return False, False
+        return False, True
+
+
+def check_n8n_activity() -> Tuple[bool, bool]:
+    """
+    Check n8n metrics for activity.
+
+    Returns:
+        (activity_detected: bool, metrics_healthy: bool)
+    """
+    global n8n_executions_total, last_n8n_activity, n8n_failed_checks
+
+    try:
+        resp = requests.get(N8N_METRICS_URL, timeout=5)
+        resp.raise_for_status()
+        n8n_failed_checks = 0
+        metrics_text = resp.text
+
+        executions_total = parse_prometheus_metrics(metrics_text, "n8n_workflow_executions_total")
+        if executions_total is not None:
+            if executions_total < n8n_executions_total:
+                app.logger.warning("n8n counter reset detected (service restart)")
+                last_n8n_activity = datetime.utcnow()
+                n8n_executions_total = executions_total
+                return True, True
+
+            if executions_total > n8n_executions_total:
+                delta = int(executions_total - n8n_executions_total)
+                app.logger.info(f"n8n activity: {delta} workflow executions")
+                last_n8n_activity = datetime.utcnow()
+                n8n_executions_total = executions_total
+                return True, True
+
+            n8n_executions_total = executions_total
+
+        return False, True
+
+    except requests.exceptions.RequestException as e:
+        n8n_failed_checks += 1
+        app.logger.warning(f"n8n metrics check failed ({n8n_failed_checks}/{FAILED_CHECK_THRESHOLD}): {e}")
+        if n8n_failed_checks >= FAILED_CHECK_THRESHOLD:
+            return False, False
+        return False, True
 
 
 def check_auth():
@@ -157,30 +283,69 @@ def terminate_instance(reason: str):
 
 
 def idle_checker():
-    """Background thread checking for idle timeout and lease expiry."""
-    global LAST_ACTIVITY, SHUTDOWN_AT
-    while True:
-        time.sleep(60)
-        now = datetime.utcnow()
+    """Background thread checking for idle timeout and lease expiry using metrics."""
+    global LAST_ACTIVITY, SHUTDOWN_AT, sglang_metrics_healthy, n8n_metrics_healthy
 
-        # Reset activity if SSH session active
-        if has_active_ssh():
-            LAST_ACTIVITY = now
+    app.logger.info("Idle checker started (metrics-based detection)")
+
+    while True:
+        time.sleep(METRICS_CHECK_INTERVAL)
+        now = datetime.utcnow()
 
         # Check lease expiry
         if now > SHUTDOWN_AT:
             terminate_instance("lease_expired")
             return
 
-        # Check idle timeout
-        idle_minutes = (now - LAST_ACTIVITY).total_seconds() / 60
-        if idle_minutes > IDLE_TIMEOUT_MINUTES:
-            terminate_instance(f"idle_timeout ({idle_minutes:.0f} min)")
-            return
+        # Poll metrics for activity
+        sglang_active, sglang_healthy = check_sglang_activity()
+        n8n_active, n8n_healthy = check_n8n_activity()
+
+        # Update health status
+        sglang_metrics_healthy = sglang_healthy
+        n8n_metrics_healthy = n8n_healthy
+
+        # OR logic: any activity resets timer
+        if sglang_active or n8n_active:
+            LAST_ACTIVITY = now
+            app.logger.debug("Activity detected, idle timer reset")
+            continue
+
+        # Check idle timeout (only if we have a last activity timestamp)
+        if last_sglang_activity is None and last_n8n_activity is None:
+            app.logger.debug("No activity recorded yet, waiting for first request")
+            continue
+
+        # Calculate most recent activity
+        most_recent = max(
+            filter(None, [last_sglang_activity, last_n8n_activity]),
+            default=None
+        )
+
+        if most_recent:
+            idle_seconds = (now - most_recent).total_seconds()
+            if idle_seconds > REQUEST_IDLE_TIMEOUT:
+                terminate_instance(f"idle_timeout_no_requests ({idle_seconds/60:.1f} min)")
+                return
+            else:
+                app.logger.debug(
+                    f"Idle for {idle_seconds/60:.1f} min "
+                    f"({REQUEST_IDLE_TIMEOUT/60 - idle_seconds/60:.1f} min remaining)"
+                )
 
 
 def get_status_dict():
     now = datetime.utcnow()
+
+    # Calculate most recent activity from either service
+    most_recent = max(
+        filter(None, [last_sglang_activity, last_n8n_activity]),
+        default=None
+    )
+    idle_seconds = None
+    if most_recent:
+        idle_seconds = int((now - most_recent).total_seconds())
+
     return {
         "instance_id": get_instance_id(),
         "status": "healthy",
@@ -191,6 +356,15 @@ def get_status_dict():
         "model_loaded": get_model_loaded(),
         "gpu_utilization": get_gpu_utilization(),
         "boot_time": BOOT_TIME.isoformat() + "Z",
+        # Metrics-based activity tracking
+        "last_sglang_activity": last_sglang_activity.isoformat() + "Z" if last_sglang_activity else None,
+        "last_n8n_activity": last_n8n_activity.isoformat() + "Z" if last_n8n_activity else None,
+        "sglang_tokens_total": sglang_tokens_total,
+        "n8n_executions_total": n8n_executions_total,
+        "sglang_metrics_healthy": sglang_metrics_healthy,
+        "n8n_metrics_healthy": n8n_metrics_healthy,
+        "idle_seconds": idle_seconds,
+        "idle_timeout_minutes": REQUEST_IDLE_TIMEOUT / 60,
     }
 
 

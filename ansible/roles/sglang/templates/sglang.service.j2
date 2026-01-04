@@ -11,7 +11,8 @@ ExecStart=/usr/bin/python3 -m sglang.launch_server \
     --model {{ model_hf_path }} \
     --trust-remote-code \
     --port {{ sglang_port }} \
-    --host 127.0.0.1
+    --host 127.0.0.1 \
+    --enable-metrics
 Restart=on-failure
 RestartSec=10
 TimeoutStartSec=1800
