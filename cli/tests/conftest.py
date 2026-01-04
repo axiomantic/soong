@@ -164,7 +164,7 @@ def mock_http():
 @pytest.fixture
 def lambda_api_base_url():
     """Base URL for Lambda Labs API."""
-    return "https://cloud.lambdalabs.com/api/v1"
+    return "https://cloud.lambda.ai/api/v1"
 
 
 @pytest.fixture

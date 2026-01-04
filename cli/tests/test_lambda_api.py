@@ -253,6 +253,146 @@ class TestInstance:
         assert instance.status == "booting"
         assert instance.lease_expires_at is None
 
+    def test_from_api_response_missing_created_at(self):
+        """Test creating Instance when API omits created_at during booting state.
+
+        This is the exact scenario from the bug: Lambda Labs API returns instance
+        data without 'created_at' field when instance is in 'booting' status.
+        The code should handle this gracefully, not crash with KeyError.
+        """
+        # Exact API response from the bug traceback (status: booting, no created_at)
+        api_data = {
+            "id": "fd3896afa3a941be83d765158112ce62",
+            "status": "booting",
+            "ssh_key_names": ["elijahrutschman@sparkles"],
+            "file_system_names": ["data"],
+            "file_system_mounts": [
+                {
+                    "mount_point": "/lambda/nfs/data",
+                    "file_system_id": "0dbf9db45f154d05bb3f5fd324d08418"
+                }
+            ],
+            "region": {"name": "us-east-3", "description": "Washington DC, USA"},
+            "instance_type": {
+                "name": "gpu_1x_gh200",
+                "description": "1x GH200 (96 GB)",
+                "gpu_description": "GH200 (96 GB)",
+                "price_cents_per_hour": 149,
+                "specs": {"vcpus": 64, "memory_gib": 432, "storage_gib": 4096, "gpus": 1}
+            },
+            "is_reserved": False,
+            "actions": {
+                "migrate": {"available": False},
+                "rebuild": {"available": False},
+                "restart": {"available": False},
+                "cold_reboot": {"available": False},
+                "terminate": {"available": False}
+            },
+            "firewall_rulesets": []
+        }
+
+        instance = Instance.from_api_response(api_data)
+
+        assert instance.id == "fd3896afa3a941be83d765158112ce62"
+        assert instance.status == "booting"
+        assert instance.instance_type == "gpu_1x_gh200"
+        assert instance.region == "us-east-3"
+        assert instance.created_at is None  # Should be None, not crash
+        assert instance.ip is None
+        assert instance.name is None
+
+    def test_from_api_response_missing_id_raises_error(self):
+        """Test that missing 'id' field raises a clear error.
+
+        The 'id' field is truly required - we cannot create an Instance without it.
+        """
+        api_data = {
+            "status": "active",
+            "instance_type": {"name": "gpu_1x_a10"},
+            "region": {"name": "us-east-1"},
+        }
+
+        with pytest.raises(KeyError) as exc_info:
+            Instance.from_api_response(api_data)
+
+        assert "id" in str(exc_info.value)
+
+    def test_from_api_response_missing_status_raises_error(self):
+        """Test that missing 'status' field raises a clear error.
+
+        The 'status' field is truly required - we cannot track instance state without it.
+        """
+        api_data = {
+            "id": "instance-123",
+            "instance_type": {"name": "gpu_1x_a10"},
+            "region": {"name": "us-east-1"},
+        }
+
+        with pytest.raises(KeyError) as exc_info:
+            Instance.from_api_response(api_data)
+
+        assert "status" in str(exc_info.value)
+
+    def test_from_api_response_missing_instance_type_nested_name(self):
+        """Test handling of instance_type dict without 'name' key.
+
+        API might return malformed data. Should either raise clear error or handle gracefully.
+        """
+        api_data = {
+            "id": "instance-123",
+            "status": "booting",
+            "instance_type": {},  # Missing 'name' key
+            "region": {"name": "us-east-1"},
+        }
+
+        with pytest.raises(KeyError) as exc_info:
+            Instance.from_api_response(api_data)
+
+        assert "name" in str(exc_info.value)
+
+    def test_from_api_response_missing_region_nested_name(self):
+        """Test handling of region dict without 'name' key.
+
+        API might return malformed data. Should either raise clear error or handle gracefully.
+        """
+        api_data = {
+            "id": "instance-123",
+            "status": "booting",
+            "instance_type": {"name": "gpu_1x_a10"},
+            "region": {},  # Missing 'name' key
+        }
+
+        with pytest.raises(KeyError) as exc_info:
+            Instance.from_api_response(api_data)
+
+        assert "name" in str(exc_info.value)
+
+    def test_from_api_response_missing_instance_type_entirely(self):
+        """Test handling when instance_type key is completely missing."""
+        api_data = {
+            "id": "instance-123",
+            "status": "booting",
+            "region": {"name": "us-east-1"},
+        }
+
+        with pytest.raises(KeyError) as exc_info:
+            Instance.from_api_response(api_data)
+
+        assert "instance_type" in str(exc_info.value)
+
+    def test_from_api_response_missing_region_entirely(self):
+        """Test handling when region key is completely missing."""
+        api_data = {
+            "id": "instance-123",
+            "status": "booting",
+            "instance_type": {"name": "gpu_1x_a10"},
+        }
+
+        with pytest.raises(KeyError) as exc_info:
+            Instance.from_api_response(api_data)
+
+        assert "region" in str(exc_info.value)
+
     def test_is_lease_expired_no_expiration(self):
         """Test is_lease_expired returns False when no expiration set."""
         instance = Instance(
@@ -579,6 +719,185 @@ class TestLambdaAPIRequestWithRetry:
 
         with pytest.raises(LambdaAPIError, match="Connection refused"):
             api._request_with_retry("GET", "instances")
+
+
+class TestInstanceFromApiResponseIntegration:
+    """Integration tests for Instance.from_api_response with realistic API data.
+
+    These tests use HTTP-level mocking to verify the full flow from
+    API response to Instance parsing, catching bugs like the KeyError: 'created_at'.
+    """
+
+    def test_list_instances_with_booting_instance_missing_created_at(self, mock_http, lambda_api_base_url):
+        """Integration test: list_instances handles booting instance without created_at.
+
+        This is the exact scenario from the production bug. The Lambda Labs API
+        returns instance data without 'created_at' during 'booting' status.
+
+        The flow is:
+        1. CLI calls wait_for_ready
+        2. wait_for_ready calls get_instance
+        3. get_instance calls list_instances
+        4. list_instances makes HTTP request
+        5. Instance.from_api_response parses each item
+
+        This test exercises the full flow with real HTTP mocking.
+        """
+        # Exact API response from the bug traceback
+        booting_response = {
+            "data": [
+                {
+                    "id": "fd3896afa3a941be83d765158112ce62",
+                    "status": "booting",
+                    "ssh_key_names": ["elijahrutschman@sparkles"],
+                    "file_system_names": ["data"],
+                    "file_system_mounts": [
+                        {
+                            "mount_point": "/lambda/nfs/data",
+                            "file_system_id": "0dbf9db45f154d05bb3f5fd324d08418"
+                        }
+                    ],
+                    "region": {"name": "us-east-3", "description": "Washington DC, USA"},
+                    "instance_type": {
+                        "name": "gpu_1x_gh200",
+                        "description": "1x GH200 (96 GB)",
+                        "gpu_description": "GH200 (96 GB)",
+                        "price_cents_per_hour": 149,
+                        "specs": {"vcpus": 64, "memory_gib": 432, "storage_gib": 4096, "gpus": 1}
+                    },
+                    "is_reserved": False,
+                    "actions": {
+                        "migrate": {"available": False},
+                        "rebuild": {"available": False},
+                        "restart": {"available": False},
+                        "cold_reboot": {"available": False},
+                        "terminate": {"available": False}
+                    },
+                    "firewall_rulesets": []
+                    # NOTE: No 'created_at' field - this is the bug scenario
+                }
+            ]
+        }
+
+        mock_http.add(
+            responses.GET,
+            f"{lambda_api_base_url}/instances",
+            json=booting_response,
+            status=200,
+        )
+
+        api = LambdaAPI("test-key")
+        instances = api.list_instances()
+
+        # Should not crash - should return instance with None created_at
+        assert len(instances) == 1
+        assert instances[0].id == "fd3896afa3a941be83d765158112ce62"
+        assert instances[0].status == "booting"
+        assert instances[0].created_at is None
+        assert instances[0].ip is None
+        assert instances[0].name is None
+
+    def test_list_instances_with_mixed_states(self, mock_http, lambda_api_base_url):
+        """Integration test: list_instances handles mix of instance states.
+
+        Verifies parsing works for:
+        - Active instance with all fields
+        - Booting instance without created_at
+        - Pending instance without IP
+        """
+        mixed_response = {
+            "data": [
+                {
+                    "id": "active-instance-001",
+                    "name": "my-gpu-instance",
+                    "ip": "192.168.1.100",
+                    "status": "active",
+                    "region": {"name": "us-west-1", "description": "US West"},
+                    "instance_type": {"name": "gpu_1x_a100"},
+                    "created_at": "2025-01-04T10:00:00Z",
+                    "lease_expires_at": "2025-01-04T18:00:00Z"
+                },
+                {
+                    # Booting - no created_at, no IP, no name
+                    "id": "booting-instance-002",
+                    "status": "booting",
+                    "region": {"name": "us-east-3", "description": "US East"},
+                    "instance_type": {"name": "gpu_1x_gh200"}
+                },
+                {
+                    # Pending - has created_at but no IP
+                    "id": "pending-instance-003",
+                    "status": "pending",
+                    "region": {"name": "us-west-1", "description": "US West"},
+                    "instance_type": {"name": "gpu_1x_a10"},
+                    "created_at": "2025-01-04T11:00:00Z"
+                }
+            ]
+        }
+
+        mock_http.add(
+            responses.GET,
+            f"{lambda_api_base_url}/instances",
+            json=mixed_response,
+            status=200,
+        )
+
+        api = LambdaAPI("test-key")
+        instances = api.list_instances()
+
+        assert len(instances) == 3
+
+        # Active instance - all fields present
+        assert instances[0].id == "active-instance-001"
+        assert instances[0].status == "active"
+        assert instances[0].ip == "192.168.1.100"
+        assert instances[0].created_at == "2025-01-04T10:00:00Z"
+        assert instances[0].lease_expires_at == "2025-01-04T18:00:00Z"
+
+        # Booting instance - missing optional fields
+        assert instances[1].id == "booting-instance-002"
+        assert instances[1].status == "booting"
+        assert instances[1].ip is None
+        assert instances[1].created_at is None
+        assert instances[1].name is None
+
+        # Pending instance - has created_at but no IP
+        assert instances[2].id == "pending-instance-003"
+        assert instances[2].status == "pending"
+        assert instances[2].ip is None
+        assert instances[2].created_at == "2025-01-04T11:00:00Z"
+
+    def test_get_instance_with_booting_response(self, mock_http, lambda_api_base_url):
+        """Integration test: get_instance works with booting instance response.
+
+        This is the exact call path that crashed: get_instance -> list_instances.
+        """
+        booting_response = {
+            "data": [
+                {
+                    "id": "target-instance-xyz",
+                    "status": "booting",
+                    "region": {"name": "us-east-3", "description": "US East"},
+                    "instance_type": {"name": "gpu_1x_gh200"}
+                    # No created_at, ip, name, lease_expires_at
+                }
+            ]
+        }
+
+        mock_http.add(
+            responses.GET,
+            f"{lambda_api_base_url}/instances",
+            json=booting_response,
+            status=200,
+        )
+
+        api = LambdaAPI("test-key")
+        instance = api.get_instance("target-instance-xyz")
+
+        assert instance is not None
+        assert instance.id == "target-instance-xyz"
+        assert instance.status == "booting"
+        assert instance.created_at is None
 
 
 class TestLambdaAPIListInstances:

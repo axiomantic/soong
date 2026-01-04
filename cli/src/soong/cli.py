@@ -13,6 +13,7 @@ from datetime import datetime
 from .config import Config, ConfigManager, LambdaConfig, StatusDaemonConfig, DefaultsConfig, SSHConfig, validate_custom_model
 from .lambda_api import LambdaAPI, LambdaAPIError, InstanceType
 from .instance import InstanceManager
+from .validation import LaunchValidator
 from .ssh import SSHTunnelManager
 from .history import HistoryManager, HistoryEvent
 from .models import (
@@ -418,6 +419,7 @@ def start(
     name: Optional[str] = typer.Option(None, help="Instance name"),
     wait: bool = typer.Option(True, help="Wait for instance to be ready"),
     yes: bool = typer.Option(False, "-y", "--yes", help="Skip cost confirmation"),
+    skip_validation: bool = typer.Option(False, "--skip-validation", help="Skip pre-launch validation"),
 ):
     """Launch new GPU instance with cloud-init."""
     config = get_config()
@@ -454,8 +456,35 @@ def start(
         ssh_keys = api.list_ssh_keys()
         if not ssh_keys:
             console.print("[red]Error: No SSH keys found in Lambda account[/red]")
-            console.print("Add an SSH key at: https://cloud.lambdalabs.com/ssh-keys")
+            console.print("Add an SSH key at: https://cloud.lambda.ai/ssh-keys")
             raise typer.Exit(1)
+
+        # Pre-launch validation
+        if not skip_validation:
+            console.print("\n[cyan]Validating launch parameters...[/cyan]")
+            validator = LaunchValidator(api)
+            result = validator.validate(
+                gpu_type=gpu,
+                region=region,
+                filesystem_name=config.lambda_config.filesystem_name,
+                ssh_key_names=ssh_keys,
+            )
+
+            # Show warnings first
+            if result.warnings:
+                for w in result.warnings:
+                    console.print(f"[yellow]Warning:[/yellow] {w.message}")
+                    console.print(f"  [dim]{w.suggestion}[/dim]")
+                console.print()
+
+            # Show errors and exit if any
+            if not result.can_launch:
+                for e in result.errors:
+                    console.print(f"[red]Error:[/red] {e.message}")
+                    console.print(f"  [dim]{e.suggestion}[/dim]")
+                raise typer.Exit(1)
+
+            console.print("[green]Validation passed[/green]")
 
         console.print(f"\n[cyan]Launching instance...[/cyan]")
 

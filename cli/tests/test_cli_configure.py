@@ -160,7 +160,7 @@ class TestConfigureFullWizard:
         # Pattern #5 Fix: Mock HTTP endpoints, not the API class
         responses.add(
             responses.GET,
-            "https://cloud.lambdalabs.com/api/v1/instance-types",
+            "https://cloud.lambda.ai/api/v1/instance-types",
             json=_make_instance_types_api_response(),
             status=200,
         )
@@ -318,7 +318,7 @@ class TestConfigureAPIKey:
         # Pattern #5 Fix: Mock HTTP failure, not the API class
         responses.add(
             responses.GET,
-            "https://cloud.lambdalabs.com/api/v1/instance-types",
+            "https://cloud.lambda.ai/api/v1/instance-types",
             json={"error": "Invalid API key"},
             status=401,
         )
@@ -395,7 +395,7 @@ class TestConfigureStatusToken:
         # Pattern #5 Fix: Mock HTTP endpoints
         responses.add(
             responses.GET,
-            "https://cloud.lambdalabs.com/api/v1/instance-types",
+            "https://cloud.lambda.ai/api/v1/instance-types",
             json=_make_instance_types_api_response(),
             status=200,
         )
@@ -640,7 +640,7 @@ class TestConfigureModelSelection:
         # Pattern #5 Fix: Mock HTTP endpoints
         responses.add(
             responses.GET,
-            "https://cloud.lambdalabs.com/api/v1/instance-types",
+            "https://cloud.lambda.ai/api/v1/instance-types",
             json=_make_instance_types_api_response(),
             status=200,
         )
@@ -770,7 +770,7 @@ class TestConfigureGPUSelection:
         # Pattern #5 Fix: Mock HTTP endpoints
         responses.add(
             responses.GET,
-            "https://cloud.lambdalabs.com/api/v1/instance-types",
+            "https://cloud.lambda.ai/api/v1/instance-types",
             json=_make_instance_types_api_response(),
             status=200,
         )
@@ -1183,7 +1183,7 @@ class TestConfigureSaveAndSummary:
         # Pattern #5 Fix: Mock HTTP endpoints
         responses.add(
             responses.GET,
-            "https://cloud.lambdalabs.com/api/v1/instance-types",
+            "https://cloud.lambda.ai/api/v1/instance-types",
             json=_make_instance_types_api_response(),
             status=200,
         )
@@ -1329,7 +1329,7 @@ class TestConfigureCancellation:
         # Pattern #5 Fix: Mock HTTP endpoints
         responses.add(
             responses.GET,
-            "https://cloud.lambdalabs.com/api/v1/instance-types",
+            "https://cloud.lambda.ai/api/v1/instance-types",
             json=_make_instance_types_api_response(),
             status=200,
         )

@@ -130,7 +130,7 @@ async function withRetry<T>(
  */
 async function listInstances(apiKey: string): Promise<LambdaInstance[]> {
   return withRetry(async () => {
-    const response = await fetch('https://cloud.lambdalabs.com/api/v1/instances', {
+    const response = await fetch('https://cloud.lambda.ai/api/v1/instances', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -180,7 +180,7 @@ async function terminateInstance(
 ): Promise<void> {
   return withRetry(async () => {
     const response = await fetch(
-      'https://cloud.lambdalabs.com/api/v1/instance-operations/terminate',
+      'https://cloud.lambda.ai/api/v1/instance-operations/terminate',
       {
         method: 'POST',
         headers: {

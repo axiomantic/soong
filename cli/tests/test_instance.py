@@ -504,3 +504,144 @@ def test_wait_for_ready_continuous_api_errors_until_timeout(
     assert result is None
     # Should have tried multiple times before timeout
     assert mock_api.get_instance.call_count >= 1
+
+
+# Tests for booting instance without created_at (the bug scenario)
+
+
+@pytest.fixture
+def mock_booting_instance_no_created_at():
+    """Mock booting instance that lacks created_at field.
+
+    This represents the exact API response that caused the KeyError bug.
+    During 'booting' status, Lambda Labs API may omit certain fields.
+    """
+    return Instance(
+        id="fd3896afa3a941be83d765158112ce62",
+        name=None,
+        ip=None,
+        status="booting",
+        instance_type="gpu_1x_gh200",
+        region="us-east-3",
+        created_at=None,  # This is the key difference - no created_at
+        lease_expires_at=None
+    )
+
+
+def test_wait_for_ready_handles_booting_instance_without_created_at(
+    instance_manager, mock_api, mock_active_instance, mocker
+):
+    """Test wait_for_ready works when booting instance lacks created_at.
+
+    This is a regression test for the KeyError: 'created_at' bug.
+    The bug occurred when:
+    1. Instance was launched
+    2. wait_for_ready polled get_instance
+    3. get_instance called list_instances
+    4. list_instances called Instance.from_api_response
+    5. from_api_response crashed on data["created_at"]
+
+    Now created_at should be optional and the flow should work.
+    """
+    # First poll: booting without created_at
+    booting_instance = Instance(
+        id="test-booting-123",
+        name=None,
+        ip=None,
+        status="booting",
+        instance_type="gpu_1x_gh200",
+        region="us-east-3",
+        created_at=None,  # Missing created_at
+        lease_expires_at=None
+    )
+
+    # Second poll: becomes active with all fields
+    active_instance = Instance(
+        id="test-booting-123",
+        name=None,
+        ip="192.168.1.100",
+        status="active",
+        instance_type="gpu_1x_gh200",
+        region="us-east-3",
+        created_at="2025-01-04T12:00:00Z",
+        lease_expires_at=None
+    )
+
+    mock_api.get_instance.side_effect = [booting_instance, active_instance]
+    mock_sleep = mocker.patch("time.sleep")
+
+    time_values = [0, 5, 15]
+    mocker.patch("time.time", side_effect=time_values)
+
+    result = instance_manager.wait_for_ready("test-booting-123", timeout_seconds=60)
+
+    assert result is not None
+    assert result.status == "active"
+    assert result.ip == "192.168.1.100"
+    assert mock_api.get_instance.call_count == 2
+
+
+def test_wait_for_ready_polls_through_multiple_booting_states(
+    instance_manager, mock_api, mocker
+):
+    """Test wait_for_ready can poll through multiple booting states without crashing."""
+    # Simulate realistic boot sequence:
+    # Poll 1: booting, no IP, no created_at
+    # Poll 2: booting, no IP, has created_at now
+    # Poll 3: active, has IP, has created_at
+
+    poll_1 = Instance(
+        id="boot-test", name=None, ip=None, status="booting",
+        instance_type="gpu_1x_gh200", region="us-east-3",
+        created_at=None  # Not yet available
+    )
+
+    poll_2 = Instance(
+        id="boot-test", name=None, ip=None, status="booting",
+        instance_type="gpu_1x_gh200", region="us-east-3",
+        created_at="2025-01-04T12:00:00Z"  # Now available
+    )
+
+    poll_3 = Instance(
+        id="boot-test", name="my-instance", ip="10.0.0.5", status="active",
+        instance_type="gpu_1x_gh200", region="us-east-3",
+        created_at="2025-01-04T12:00:00Z"
+    )
+
+    mock_api.get_instance.side_effect = [poll_1, poll_2, poll_3]
+    mock_sleep = mocker.patch("time.sleep")
+
+    time_values = [0, 5, 15, 25, 35]
+    mocker.patch("time.time", side_effect=time_values)
+
+    result = instance_manager.wait_for_ready("boot-test", timeout_seconds=120)
+
+    assert result is not None
+    assert result.status == "active"
+    assert result.ip == "10.0.0.5"
+    assert mock_api.get_instance.call_count == 3
+
+
+def test_get_active_instance_handles_booting_without_created_at(
+    instance_manager, mock_api
+):
+    """Test get_active_instance doesn't crash on instances without created_at."""
+    mock_api.list_instances.return_value = [
+        Instance(
+            id="i-booting", name=None, ip=None, status="booting",
+            instance_type="gpu_1x_gh200", region="us-east-3",
+            created_at=None  # Missing
+        ),
+        Instance(
+            id="i-active", name="active-one", ip="1.2.3.4", status="active",
+            instance_type="gpu_1x_a100", region="us-west-1",
+            created_at="2025-01-04T12:00:00Z"
+        )
+    ]
+
+    result = instance_manager.get_active_instance()
+
+    # Should find the active instance, not crash on the booting one
+    assert result is not None
+    assert result.id == "i-active"
+    assert result.status == "active"

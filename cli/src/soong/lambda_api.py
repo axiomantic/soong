@@ -62,12 +62,20 @@ class Instance:
     status: str
     instance_type: str
     region: str
-    created_at: str
+    created_at: Optional[str] = None
     lease_expires_at: Optional[str] = None
 
     @classmethod
     def from_api_response(cls, data: Dict[str, Any]) -> "Instance":
-        """Create Instance from API response."""
+        """Create Instance from API response.
+
+        Handles API responses that may be missing optional fields, particularly
+        during transitional states like 'booting' where fields like 'created_at'
+        may not yet be populated.
+
+        Required fields: id, status, instance_type (with 'name'), region (with 'name')
+        Optional fields: name, ip, created_at, lease_expires_at
+        """
         return cls(
             id=data["id"],
             name=data.get("name"),
@@ -75,7 +83,7 @@ class Instance:
             status=data["status"],
             instance_type=data["instance_type"]["name"],
             region=data["region"]["name"],
-            created_at=data["created_at"],
+            created_at=data.get("created_at"),
             lease_expires_at=data.get("lease_expires_at"),
         )
 
@@ -115,6 +123,39 @@ class Instance:
             return "white"
 
 
+@dataclass
+class FileSystem:
+    """Lambda filesystem information."""
+    id: str
+    name: str
+    region: str
+    mount_point: str
+    is_in_use: bool
+
+    @classmethod
+    def from_api_response(cls, data: Dict[str, Any]) -> "FileSystem":
+        """Create FileSystem from Lambda API response."""
+        try:
+            required = ["id", "name", "region", "mount_point"]
+            missing = [f for f in required if f not in data]
+            if missing:
+                raise ValueError(f"Missing required fields: {', '.join(missing)}")
+
+            region = data["region"]
+            if not isinstance(region, dict) or "name" not in region:
+                raise ValueError("Invalid region structure: expected dict with 'name' field")
+
+            return cls(
+                id=data["id"],
+                name=data["name"],
+                region=region["name"],
+                mount_point=data["mount_point"],
+                is_in_use=data.get("is_in_use", False),
+            )
+        except (KeyError, TypeError) as e:
+            raise ValueError(f"Failed to parse FileSystem from API response: {e}")
+
+
 class LambdaAPIError(Exception):
     """Lambda API error."""
     pass
@@ -123,7 +164,7 @@ class LambdaAPIError(Exception):
 class LambdaAPI:
     """Lambda Labs API client with retry logic."""
 
-    BASE_URL = "https://cloud.lambdalabs.com/api/v1"
+    BASE_URL = "https://cloud.lambda.ai/api/v1"
     RETRY_MAX_ATTEMPTS = 3
     RETRY_BASE_DELAY = 1
     RETRY_BACKOFF_MULTIPLIER = 2
@@ -221,6 +262,12 @@ class LambdaAPI:
             InstanceType.from_api_response(name, info)
             for name, info in data.items()
         ]
+
+    def list_file_systems(self) -> List[FileSystem]:
+        """List all filesystems."""
+        resp = self._request_with_retry("GET", "file-systems")
+        data = resp.json()
+        return [FileSystem.from_api_response(item) for item in data.get("data", [])]
 
     def get_instance_type(self, name: str) -> Optional[InstanceType]:
         """Get a specific instance type by name."""
