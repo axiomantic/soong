@@ -127,11 +127,11 @@ class TestLaunchValidatorGPU:
             filesystem_name=None,
             ssh_key_names=["my-key"],
         )
-        # Should be warning, not error
-        assert result.can_launch is True
-        assert len(result.warnings) == 1
-        assert "No capacity" in result.warnings[0].message
-        assert "us-east-3" in result.warnings[0].suggestion
+        # No capacity is now a blocking error with suggestions
+        assert result.can_launch is False
+        assert len(result.errors) == 1
+        assert "No capacity" in result.errors[0].message
+        assert "us-east-3" in result.errors[0].suggestion
 
     def test_validate_gpu_no_capacity_anywhere(self, mock_api):
         mock_api.list_instance_types.return_value = [
@@ -152,10 +152,11 @@ class TestLaunchValidatorGPU:
             filesystem_name=None,
             ssh_key_names=["my-key"],
         )
-        assert result.can_launch is True
-        assert len(result.warnings) == 1
-        assert "No current capacity" in result.warnings[0].message
-        assert "any region" in result.warnings[0].message
+        # No capacity is now a blocking error with alternatives
+        assert result.can_launch is False
+        assert len(result.errors) == 1
+        assert "No capacity" in result.errors[0].message
+        assert "any region" in result.errors[0].message
 
     def test_validate_gpu_api_failure(self, mock_api):
         mock_api.list_instance_types.side_effect = LambdaAPIError("API down")
@@ -450,3 +451,176 @@ class TestLaunchValidatorFormatting:
         result = validator._format_available_gpus(types)
         assert "..." in result
         assert "(5 more)" in result
+
+
+class TestLaunchValidatorSmartSuggestions:
+    """Tests for smart GPU suggestions with model/filesystem awareness."""
+
+    @pytest.fixture
+    def mock_api_with_alternatives(self):
+        """API with multiple GPUs for alternative suggestion tests."""
+        api = Mock(spec=LambdaAPI)
+        api.list_instance_types.return_value = [
+            InstanceType(
+                name="gpu_1x_a100_sxm4_80gb",
+                description="1x A100 SXM4 (80 GB)",
+                price_cents_per_hour=149,
+                vcpus=8,
+                memory_gib=64,
+                storage_gib=500,
+                regions_available=["us-east-3", "us-west-2"],
+            ),
+            InstanceType(
+                name="gpu_1x_h100_pcie",
+                description="1x H100 PCIe (80 GB)",
+                price_cents_per_hour=200,
+                vcpus=8,
+                memory_gib=96,
+                storage_gib=500,
+                regions_available=["us-east-3"],
+            ),
+            InstanceType(
+                name="gpu_1x_gh200",
+                description="1x GH200 (96 GB)",
+                price_cents_per_hour=149,
+                vcpus=8,
+                memory_gib=96,
+                storage_gib=500,
+                regions_available=[],  # No capacity
+            ),
+        ]
+        api.list_file_systems.return_value = [
+            FileSystem(
+                id="fs-123",
+                name="coding-stack",
+                region="us-east-3",
+                mount_point="/lambda/nfs/coding-stack",
+                is_in_use=False,
+            ),
+        ]
+        api.list_ssh_keys.return_value = ["my-key"]
+        return api
+
+    def test_suggests_alternative_gpus_when_no_capacity(self, mock_api_with_alternatives):
+        """When requested GPU has no capacity, suggest alternatives."""
+        validator = LaunchValidator(mock_api_with_alternatives)
+        result = validator.validate(
+            gpu_type="gpu_1x_gh200",  # No capacity anywhere
+            region="us-east-3",
+            filesystem_name=None,
+            ssh_key_names=["my-key"],
+        )
+        assert result.can_launch is False
+        assert len(result.errors) == 1
+        assert "No capacity" in result.errors[0].message
+        # Should suggest alternatives
+        assert "Alternatives:" in result.errors[0].suggestion
+        assert "gpu_1x_a100_sxm4_80gb" in result.errors[0].suggestion
+
+    def test_suggests_regions_matching_filesystem(self, mock_api_with_alternatives):
+        """When GPU available elsewhere, prioritize filesystem region."""
+        # Modify fixture to have GPU in different regions
+        mock_api_with_alternatives.list_instance_types.return_value = [
+            InstanceType(
+                name="gpu_1x_a100_sxm4_80gb",
+                description="1x A100 SXM4 (80 GB)",
+                price_cents_per_hour=149,
+                vcpus=8,
+                memory_gib=64,
+                storage_gib=500,
+                regions_available=["us-west-1", "us-east-3"],  # us-east-3 matches filesystem
+            ),
+        ]
+        validator = LaunchValidator(mock_api_with_alternatives)
+        result = validator.validate(
+            gpu_type="gpu_1x_a100_sxm4_80gb",
+            region="us-central-1",  # Not available here
+            filesystem_name="coding-stack",  # In us-east-3
+            ssh_key_names=["my-key"],
+        )
+        assert result.can_launch is False
+        # Should suggest us-east-3 since it matches filesystem
+        assert "us-east-3" in result.errors[0].suggestion
+        assert "matches your filesystem" in result.errors[0].suggestion
+
+    def test_warns_filesystem_region_mismatch(self, mock_api_with_alternatives):
+        """When GPU not available in filesystem region, show alternatives."""
+        # GPU only in us-west-1, filesystem in us-east-3
+        mock_api_with_alternatives.list_instance_types.return_value = [
+            InstanceType(
+                name="gpu_1x_gh200",
+                description="1x GH200 (96 GB)",
+                price_cents_per_hour=149,
+                vcpus=8,
+                memory_gib=96,
+                storage_gib=500,
+                regions_available=["us-west-1"],  # Different from filesystem
+            ),
+            InstanceType(
+                name="gpu_1x_a100_sxm4_80gb",
+                description="1x A100 SXM4 (80 GB)",
+                price_cents_per_hour=149,
+                vcpus=8,
+                memory_gib=64,
+                storage_gib=500,
+                regions_available=["us-east-3"],  # Matches filesystem
+            ),
+        ]
+        validator = LaunchValidator(mock_api_with_alternatives)
+        result = validator.validate(
+            gpu_type="gpu_1x_gh200",
+            region="us-east-3",  # Want this region (where filesystem is)
+            filesystem_name="coding-stack",  # In us-east-3
+            ssh_key_names=["my-key"],
+        )
+        assert result.can_launch is False
+        # Should suggest alternative GPUs in filesystem region
+        assert "gpu_1x_a100_sxm4_80gb" in result.errors[0].suggestion
+
+    def test_model_id_filters_alternatives_by_vram(self, mock_api_with_alternatives):
+        """When model requires high VRAM, only suggest capable GPUs."""
+        # Add a small GPU that won't work for large models
+        mock_api_with_alternatives.list_instance_types.return_value = [
+            InstanceType(
+                name="gpu_1x_a10",
+                description="1x A10 (24 GB)",
+                price_cents_per_hour=50,
+                vcpus=8,
+                memory_gib=32,
+                storage_gib=500,
+                regions_available=["us-east-3"],  # Cheap but too small
+            ),
+            InstanceType(
+                name="gpu_1x_a100_sxm4_80gb",
+                description="1x A100 SXM4 (80 GB)",
+                price_cents_per_hour=149,
+                vcpus=8,
+                memory_gib=64,
+                storage_gib=500,
+                regions_available=["us-east-3"],
+            ),
+            InstanceType(
+                name="gpu_1x_gh200",
+                description="1x GH200 (96 GB)",
+                price_cents_per_hour=149,
+                vcpus=8,
+                memory_gib=96,
+                storage_gib=500,
+                regions_available=[],  # No capacity
+            ),
+        ]
+        validator = LaunchValidator(mock_api_with_alternatives)
+        result = validator.validate(
+            gpu_type="gpu_1x_gh200",  # No capacity
+            region="us-east-3",
+            filesystem_name=None,
+            ssh_key_names=["my-key"],
+            model_id="deepseek-r1-70b",  # Needs ~80GB VRAM
+        )
+        assert result.can_launch is False
+        # Should suggest A100 80GB, not A10 (too small)
+        assert "gpu_1x_a100_sxm4_80gb" in result.errors[0].suggestion
+        # A10 should NOT be suggested as separate option (only 24GB, insufficient for 70B model)
+        # Check it's not listed as a standalone GPU with its price
+        assert "gpu_1x_a10 (" not in result.errors[0].suggestion
+        assert "$0.50/hr" not in result.errors[0].suggestion

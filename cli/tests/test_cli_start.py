@@ -111,6 +111,7 @@ def test_start_command_with_yes_flag_skips_confirmation(mocker, sample_config):
     """Test 'gpu-session start -y' skips cost confirmation."""
     from typer.testing import CliRunner
     from soong.cli import app
+    from soong.lambda_api import InstanceType, FileSystem
 
     runner = CliRunner()
 
@@ -124,6 +125,27 @@ def test_start_command_with_yes_flag_skips_confirmation(mocker, sample_config):
     mock_api.get_instance_type.return_value = None  # No pricing available
     mock_api.list_ssh_keys.return_value = ["test-key"]
     mock_api.launch_instance.return_value = "i-12345"
+    # Required for validation
+    mock_api.list_instance_types.return_value = [
+        InstanceType(
+            name="gpu_1x_a100_sxm4_80gb",
+            description="1x A100 SXM4 (80 GB)",
+            price_cents_per_hour=129,
+            vcpus=30,
+            memory_gib=200,
+            storage_gib=1400,
+            regions_available=["us-west-1", "us-east-1"],
+        ),
+    ]
+    mock_api.list_file_systems.return_value = [
+        FileSystem(
+            id="fs-123",
+            name="test-fs",
+            region="us-west-1",
+            mount_point="/lambda/nfs/test-fs",
+            is_in_use=False,
+        ),
+    ]
 
     # Mock instance manager
     mock_mgr_class = mocker.patch("soong.cli.InstanceManager")

@@ -468,6 +468,7 @@ def start(
                 region=region,
                 filesystem_name=config.lambda_config.filesystem_name,
                 ssh_key_names=ssh_keys,
+                model_id=model,
             )
 
             # Show warnings first

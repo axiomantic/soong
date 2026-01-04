@@ -170,19 +170,38 @@ def estimate_vram(
 
 
 # Known GPU configurations (VRAM in GB)
+# Source: Lambda Labs API (as of 2025-01)
 KNOWN_GPUS = {
-    "gpu_1x_a10": {"vram_gb": 24, "description": "1x A10 (24 GB)"},
-    "gpu_1x_a100": {"vram_gb": 40, "description": "1x A100 (40 GB)"},
-    "gpu_1x_a100_sxm4": {"vram_gb": 40, "description": "1x A100 SXM4 (40 GB)"},
-    "gpu_1x_a100_sxm4_80gb": {"vram_gb": 80, "description": "1x A100 SXM4 (80 GB)"},
+    # Single GPU - Entry tier
+    "gpu_1x_rtx6000": {"vram_gb": 24, "description": "1x RTX 6000 (24 GB)"},
+    "gpu_1x_a10": {"vram_gb": 24, "description": "1x A10 (24 GB PCIe)"},
+    # Single GPU - Mid tier
     "gpu_1x_a6000": {"vram_gb": 48, "description": "1x A6000 (48 GB)"},
-    "gpu_1x_rtx6000": {"vram_gb": 48, "description": "1x RTX 6000 (48 GB)"},
-    "gpu_1x_h100_pcie": {"vram_gb": 80, "description": "1x H100 PCIe (80 GB)"},
-    "gpu_1x_h100_sxm5": {"vram_gb": 80, "description": "1x H100 SXM5 (80 GB)"},
+    "gpu_1x_a100": {"vram_gb": 40, "description": "1x A100 (40 GB PCIe)"},
+    "gpu_1x_a100_sxm4": {"vram_gb": 40, "description": "1x A100 (40 GB SXM4)"},
+    # Single GPU - High tier
+    "gpu_1x_h100_pcie": {"vram_gb": 80, "description": "1x H100 (80 GB PCIe)"},
+    "gpu_1x_h100_sxm5": {"vram_gb": 80, "description": "1x H100 (80 GB SXM5)"},
+    "gpu_1x_a100_sxm4_80gb": {"vram_gb": 80, "description": "1x A100 (80 GB SXM4)"},
+    "gpu_1x_gh200": {"vram_gb": 96, "description": "1x GH200 (96 GB)"},
+    # Single GPU - Blackwell (newest)
+    "gpu_1x_b200_sxm6": {"vram_gb": 180, "description": "1x B200 (180 GB SXM6)"},
+    # Multi-GPU - 2x
+    "gpu_2x_a6000": {"vram_gb": 96, "description": "2x A6000 (96 GB total)"},
     "gpu_2x_a100": {"vram_gb": 80, "description": "2x A100 (80 GB total)"},
+    "gpu_2x_h100_sxm5": {"vram_gb": 160, "description": "2x H100 (160 GB SXM5)"},
+    "gpu_2x_b200_sxm6": {"vram_gb": 360, "description": "2x B200 (360 GB SXM6)"},
+    # Multi-GPU - 4x
+    "gpu_4x_a6000": {"vram_gb": 192, "description": "4x A6000 (192 GB total)"},
     "gpu_4x_a100": {"vram_gb": 160, "description": "4x A100 (160 GB total)"},
-    "gpu_8x_a100": {"vram_gb": 320, "description": "8x A100 (320 GB total)"},
-    "gpu_8x_h100": {"vram_gb": 640, "description": "8x H100 (640 GB total)"},
+    "gpu_4x_h100_sxm5": {"vram_gb": 320, "description": "4x H100 (320 GB SXM5)"},
+    "gpu_4x_b200_sxm6": {"vram_gb": 720, "description": "4x B200 (720 GB SXM6)"},
+    # Multi-GPU - 8x
+    "gpu_8x_v100": {"vram_gb": 128, "description": "8x V100 (128 GB total)"},
+    "gpu_8x_a100": {"vram_gb": 320, "description": "8x A100 (320 GB SXM4)"},
+    "gpu_8x_a100_80gb_sxm4": {"vram_gb": 640, "description": "8x A100 (640 GB SXM4)"},
+    "gpu_8x_h100_sxm5": {"vram_gb": 640, "description": "8x H100 (640 GB SXM5)"},
+    "gpu_8x_b200_sxm6": {"vram_gb": 1440, "description": "8x B200 (1440 GB SXM6)"},
 }
 
 

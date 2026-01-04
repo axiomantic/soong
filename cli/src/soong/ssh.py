@@ -191,6 +191,9 @@ class SSHTunnelManager:
             console.print(f"[cyan]Connecting to {instance_ip}...[/cyan]")
             result = subprocess.run(ssh_command)
             return result.returncode == 0
+        except KeyboardInterrupt:
+            console.print("\n[yellow]SSH session interrupted by user[/yellow]")
+            return False
         except Exception as e:
             console.print(f"[red]Error connecting via SSH: {e}[/red]")
             return False

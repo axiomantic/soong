@@ -770,27 +770,26 @@ class TestAvailableCommand:
         mocker.patch("soong.cli.get_config", return_value=sample_config)
         mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
-        mock_api_instance.list_instance_types.return_value = {
-            "gpu_1x_a100_sxm4_80gb": {
-                "instance_type": {
-                    "name": "gpu_1x_a100_sxm4_80gb",
-                    "description": "1x A100 SXM4 (80 GB)",
-                },
-                "regions_with_capacity_available": {
-                    "us-west-1": {"available": True},
-                    "us-east-1": {"available": True},
-                }
-            },
-            "gpu_1x_a10": {
-                "instance_type": {
-                    "name": "gpu_1x_a10",
-                    "description": "1x A10 (24 GB)",
-                },
-                "regions_with_capacity_available": {
-                    "us-west-1": {"available": True},
-                }
-            }
-        }
+        mock_api_instance.list_instance_types.return_value = [
+            InstanceType(
+                name="gpu_1x_a100_sxm4_80gb",
+                description="1x A100 SXM4 (80 GB)",
+                price_cents_per_hour=129,
+                vcpus=30,
+                memory_gib=200,
+                storage_gib=1400,
+                regions_available=["us-west-1", "us-east-1"],
+            ),
+            InstanceType(
+                name="gpu_1x_a10",
+                description="1x A10 (24 GB)",
+                price_cents_per_hour=75,
+                vcpus=30,
+                memory_gib=200,
+                storage_gib=1400,
+                regions_available=["us-west-1"],
+            ),
+        ]
         mock_lambda_api.return_value = mock_api_instance
 
         # Run command
@@ -799,7 +798,8 @@ class TestAvailableCommand:
         # Assertions
         assert result.exit_code == 0
         assert "Available GPU Types" in result.stdout
-        assert "gpu_1x_a100_sxm4_80gb" in result.stdout
+        # Rich table may truncate long names, check for prefix
+        assert "gpu_1x_a100_sxm4_80" in result.stdout
         assert "gpu_1x_a10" in result.stdout
 
     def test_available_shows_regions(self, sample_config, mocker):
@@ -808,18 +808,17 @@ class TestAvailableCommand:
         mocker.patch("soong.cli.get_config", return_value=sample_config)
         mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
-        mock_api_instance.list_instance_types.return_value = {
-            "gpu_1x_a100_sxm4_80gb": {
-                "instance_type": {
-                    "name": "gpu_1x_a100_sxm4_80gb",
-                    "description": "1x A100 SXM4 (80 GB)",
-                },
-                "regions_with_capacity_available": {
-                    "us-west-1": {"available": True},
-                    "us-east-1": {"available": True},
-                }
-            }
-        }
+        mock_api_instance.list_instance_types.return_value = [
+            InstanceType(
+                name="gpu_1x_a100_sxm4_80gb",
+                description="1x A100 SXM4 (80 GB)",
+                price_cents_per_hour=129,
+                vcpus=30,
+                memory_gib=200,
+                storage_gib=1400,
+                regions_available=["us-west-1", "us-east-1"],
+            ),
+        ]
         mock_lambda_api.return_value = mock_api_instance
 
         # Run command
@@ -836,24 +835,26 @@ class TestAvailableCommand:
         mocker.patch("soong.cli.get_config", return_value=sample_config)
         mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
-        mock_api_instance.list_instance_types.return_value = {
-            "gpu_1x_a100_sxm4_80gb": {
-                "instance_type": {
-                    "name": "gpu_1x_a100_sxm4_80gb",
-                    "description": "1x A100 SXM4 (80 GB)",
-                },
-                "regions_with_capacity_available": {
-                    "us-west-1": {"available": True},
-                }
-            },
-            "gpu_8x_h100_sxm5": {
-                "instance_type": {
-                    "name": "gpu_8x_h100_sxm5",
-                    "description": "8x H100 SXM5 (640 GB)",
-                },
-                "regions_with_capacity_available": {}
-            }
-        }
+        mock_api_instance.list_instance_types.return_value = [
+            InstanceType(
+                name="gpu_1x_a100_sxm4_80gb",
+                description="1x A100 SXM4 (80 GB)",
+                price_cents_per_hour=129,
+                vcpus=30,
+                memory_gib=200,
+                storage_gib=1400,
+                regions_available=["us-west-1"],
+            ),
+            InstanceType(
+                name="gpu_8x_h100_sxm5",
+                description="8x H100 SXM5 (640 GB)",
+                price_cents_per_hour=2392,
+                vcpus=416,
+                memory_gib=7800,
+                storage_gib=30000,
+                regions_available=[],  # No capacity
+            ),
+        ]
         mock_lambda_api.return_value = mock_api_instance
 
         # Run command
@@ -871,7 +872,7 @@ class TestAvailableCommand:
         mocker.patch("soong.cli.get_config", return_value=sample_config)
         mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
-        mock_api_instance.list_instance_types.return_value = {}
+        mock_api_instance.list_instance_types.return_value = []
         mock_lambda_api.return_value = mock_api_instance
 
         # Run command
@@ -906,7 +907,7 @@ class TestAvailableCommand:
         mocker.patch("soong.cli.get_config", return_value=sample_config)
         mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
-        mock_api_instance.list_instance_types.return_value = {}
+        mock_api_instance.list_instance_types.return_value = []
         mock_lambda_api.return_value = mock_api_instance
 
         # Run command
@@ -924,18 +925,17 @@ class TestAvailableCommand:
         mocker.patch("soong.cli.get_config", return_value=sample_config)
         mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
-        mock_api_instance.list_instance_types.return_value = {
-            "gpu_8x_h100_sxm5": {
-                "instance_type": {
-                    "name": "gpu_8x_h100_sxm5",
-                    "description": "8x H100 SXM5 (640 GB)",
-                },
-                "regions_with_capacity_available": {
-                    "us-west-1": {"available": False},
-                    "us-east-1": {"available": False},
-                }
-            }
-        }
+        mock_api_instance.list_instance_types.return_value = [
+            InstanceType(
+                name="gpu_8x_h100_sxm5",
+                description="8x H100 SXM5 (640 GB)",
+                price_cents_per_hour=2392,
+                vcpus=416,
+                memory_gib=7800,
+                storage_gib=30000,
+                regions_available=[],  # No capacity anywhere
+            ),
+        ]
         mock_lambda_api.return_value = mock_api_instance
 
         # Run command
@@ -952,19 +952,19 @@ class TestAvailableCommand:
         mocker.patch("soong.cli.get_config", return_value=sample_config)
         mock_lambda_api = mocker.patch("soong.cli.LambdaAPI")
         mock_api_instance = Mock()
-        mock_api_instance.list_instance_types.return_value = {
-            "gpu_1x_a100_sxm4_80gb": {
-                "instance_type": {
-                    "name": "gpu_1x_a100_sxm4_80gb",
-                    "description": "1x A100 SXM4 (80 GB)",
-                },
-                "regions_with_capacity_available": {
-                    "us-west-1": {"available": True},
-                    "us-east-1": {"available": False},
-                    "eu-central-1": {"available": True},
-                }
-            }
-        }
+        # Note: regions_available contains only regions WITH capacity
+        # The API filters to only include available regions
+        mock_api_instance.list_instance_types.return_value = [
+            InstanceType(
+                name="gpu_1x_a100_sxm4_80gb",
+                description="1x A100 SXM4 (80 GB)",
+                price_cents_per_hour=129,
+                vcpus=30,
+                memory_gib=200,
+                storage_gib=1400,
+                regions_available=["us-west-1", "eu-central-1"],  # Only available regions
+            ),
+        ]
         mock_lambda_api.return_value = mock_api_instance
 
         # Run command
@@ -972,7 +972,8 @@ class TestAvailableCommand:
 
         # Assertions
         assert result.exit_code == 0
-        assert "gpu_1x_a100_sxm4_80gb" in result.stdout
+        # Rich table may truncate long names, check for prefix
+        assert "gpu_1x_a100_sxm4_80" in result.stdout
         # Should show only regions with available=True
         assert "us-west-1" in result.stdout
         assert "eu-central-1" in result.stdout

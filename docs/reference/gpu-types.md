@@ -6,27 +6,35 @@ Complete reference for Lambda Labs GPU types available through `soong`.
 
 Lambda Labs offers GPUs from NVIDIA's professional and data center lines:
 
-- **A10**: Entry-level, 24 GB VRAM
-- **A6000/RTX 6000**: Workstation class, 48 GB VRAM
+- **A10/RTX 6000**: Entry-level, 24 GB VRAM
+- **A6000**: Workstation class, 48 GB VRAM
 - **A100**: Data center standard, 40-80 GB VRAM
-- **H100**: Latest generation, 80 GB VRAM with faster performance
+- **H100**: Hopper generation, 80 GB VRAM with faster performance
+- **GH200**: Grace Hopper Superchip, 96 GB VRAM with ARM CPU
+- **B200**: Blackwell (newest), up to 180 GB VRAM per GPU
 
 ## GPU Comparison Table
 
 | GPU Type | GPU | VRAM | vCPUs | RAM | Storage | Est. Price/hr |
 |----------|-----|------|-------|-----|---------|---------------|
-| `gpu_1x_a10` | 1x A10 | 24 GB | 30 | 200 GB | 1.4 TB | $0.60 |
+| `gpu_1x_rtx6000` | 1x RTX 6000 | 24 GB | 30 | 200 GB | 1.4 TB | $0.50 |
+| `gpu_1x_a10` | 1x A10 | 24 GB | 30 | 200 GB | 1.4 TB | $0.75 |
 | `gpu_1x_a6000` | 1x A6000 | 48 GB | 28 | 200 GB | 512 GB | $0.80 |
-| `gpu_1x_rtx6000` | 1x RTX 6000 Ada | 48 GB | 30 | 200 GB | 1.4 TB | $0.80 |
-| `gpu_1x_a100` | 1x A100 PCIe | 40 GB | 30 | 200 GB | 512 GB | $1.10 |
-| `gpu_1x_a100_sxm4` | 1x A100 SXM4 | 40 GB | 30 | 200 GB | 512 GB | $1.10 |
-| `gpu_1x_a100_sxm4_80gb` | 1x A100 SXM4 | **80 GB** | 30 | 200 GB | 1.4 TB | **$1.29** |
-| `gpu_1x_h100_pcie` | 1x H100 PCIe | 80 GB | 26 | 200 GB | 512 GB | $1.99 |
-| `gpu_1x_h100_sxm5` | 1x H100 SXM5 | 80 GB | 52 | 1000 GB | 2 TB | $2.49 |
-| `gpu_2x_a100` | 2x A100 SXM4 | 80 GB (2×40) | 48 | 900 GB | 6 TB | $2.20 |
-| `gpu_4x_a100` | 4x A100 SXM4 | 160 GB (4×40) | 120 | 1800 GB | 14 TB | $4.40 |
-| `gpu_8x_a100` | 8x A100 SXM4 | 320 GB (8×40) | 240 | 1800 GB | 14 TB | $8.80 |
-| `gpu_8x_h100` | 8x H100 SXM5 | 640 GB (8×80) | 416 | 7800 GB | 30 TB | $19.92 |
+| `gpu_1x_a100` | 1x A100 PCIe | 40 GB | 30 | 200 GB | 512 GB | $1.29 |
+| `gpu_1x_a100_sxm4` | 1x A100 SXM4 | 40 GB | 30 | 200 GB | 512 GB | $1.29 |
+| `gpu_1x_gh200` | 1x GH200 | **96 GB** | 72 | 480 GB | 2 TB | **$1.49** |
+| `gpu_1x_h100_pcie` | 1x H100 PCIe | 80 GB | 26 | 200 GB | 512 GB | $2.49 |
+| `gpu_1x_h100_sxm5` | 1x H100 SXM5 | 80 GB | 52 | 1000 GB | 2 TB | $3.29 |
+| `gpu_1x_b200_sxm6` | 1x B200 Blackwell | **180 GB** | 72 | 480 GB | 2 TB | $5.29 |
+| `gpu_2x_a100` | 2x A100 SXM4 | 80 GB (2×40) | 48 | 900 GB | 6 TB | $2.58 |
+| `gpu_2x_h100_sxm5` | 2x H100 SXM5 | 160 GB (2×80) | 104 | 2000 GB | 4 TB | $6.38 |
+| `gpu_2x_b200_sxm6` | 2x B200 Blackwell | 360 GB (2×180) | 144 | 960 GB | 4 TB | $10.38 |
+| `gpu_4x_a100` | 4x A100 SXM4 | 160 GB (4×40) | 120 | 1800 GB | 14 TB | $5.16 |
+| `gpu_4x_h100_sxm5` | 4x H100 SXM5 | 320 GB (4×80) | 208 | 4000 GB | 8 TB | $12.36 |
+| `gpu_8x_a100` | 8x A100 SXM4 | 320 GB (8×40) | 240 | 1800 GB | 14 TB | $10.32 |
+| `gpu_8x_a100_80gb_sxm4` | 8x A100 SXM4 | 640 GB (8×80) | 240 | 1800 GB | 14 TB | $14.32 |
+| `gpu_8x_h100_sxm5` | 8x H100 SXM5 | 640 GB (8×80) | 416 | 7800 GB | 30 TB | $23.92 |
+| `gpu_8x_b200_sxm6` | 8x B200 Blackwell | 1440 GB (8×180) | 576 | 3840 GB | 16 TB | $39.92 |
 
 !!! note "Pricing"
     Prices are approximate and may vary by region and availability. Check Lambda Labs dashboard for current pricing.
@@ -167,7 +175,7 @@ Price: ~$1.99/hr
 Type: gpu_1x_h100_sxm5
 GPU: 1x NVIDIA H100 SXM5
 VRAM: 80 GB
-Price: ~$2.49/hr
+Price: ~$3.29/hr
 CPU: 52 vCPUs
 RAM: 1 TB
 ```
@@ -184,6 +192,62 @@ RAM: 1 TB
 **Notes:**
 - SXM5 has faster interconnect than PCIe
 - 2× more CPU cores and RAM than H100 PCIe
+
+---
+
+### GH200 (96 GB) - Grace Hopper Superchip ⭐
+
+```yaml
+Type: gpu_1x_gh200
+GPU: 1x NVIDIA GH200 Grace Hopper
+VRAM: 96 GB HBM3
+Price: ~$1.49/hr
+CPU: 72 ARM Neoverse cores
+RAM: 480 GB
+```
+
+**Best For:**
+- Large models that need >80GB VRAM
+- Excellent price/VRAM ratio
+- ARM-based workloads
+
+**Compatible Models:**
+- ✅ All 70B models at any precision
+- ✅ Qwen 2.5 Coder 32B (FP16) with room to spare
+- ✅ Models up to ~90GB VRAM requirement
+
+**Notes:**
+- Uses ARM CPU (Grace), not x86
+- Unified memory architecture
+- Best value for VRAM-hungry workloads
+
+---
+
+### B200 Blackwell (180 GB) - Next Generation
+
+```yaml
+Type: gpu_1x_b200_sxm6
+GPU: 1x NVIDIA B200 Blackwell
+VRAM: 180 GB HBM3e
+Price: ~$5.29/hr
+CPU: 72 vCPUs
+RAM: 480 GB
+```
+
+**Best For:**
+- Largest single-GPU VRAM
+- Models up to 175B at FP16
+- Future-proof workloads
+
+**Compatible Models:**
+- ✅ All models up to ~170GB VRAM
+- ✅ 70B FP16 with massive headroom
+- ✅ 175B INT8 models
+
+**Notes:**
+- Latest Blackwell architecture
+- 2× faster than H100 for some workloads
+- Highest single-GPU VRAM available
 
 ---
 
@@ -243,10 +307,10 @@ Price: ~$8.80/hr
 ### 8x H100 (640 GB Total)
 
 ```yaml
-Type: gpu_8x_h100
+Type: gpu_8x_h100_sxm5
 GPUs: 8x H100 SXM5 (80 GB each)
 Total VRAM: 640 GB
-Price: ~$19.92/hr
+Price: ~$23.92/hr
 CPU: 416 vCPUs
 RAM: 7.8 TB
 ```
@@ -255,6 +319,24 @@ RAM: 7.8 TB
 - Largest models (400B+)
 - High-throughput production serving
 - Multi-GPU training at scale
+
+---
+
+### 8x B200 Blackwell (1440 GB Total)
+
+```yaml
+Type: gpu_8x_b200_sxm6
+GPUs: 8x B200 SXM6 (180 GB each)
+Total VRAM: 1440 GB
+Price: ~$39.92/hr
+CPU: 576 vCPUs
+RAM: 3.8 TB
+```
+
+**When to Use:**
+- Largest models (1T+ parameters)
+- Maximum VRAM capacity
+- Cutting-edge Blackwell architecture
 
 ---
 
