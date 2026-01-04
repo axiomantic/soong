@@ -1042,6 +1042,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#gh200-96-gb-grace-hopper-superchip" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GH200 (96 GB) - Grace Hopper Superchip ⭐
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b200-blackwell-180-gb-next-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B200 Blackwell (180 GB) - Next Generation
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1097,6 +1119,17 @@
     <span class="md-ellipsis">
       
         8x H100 (640 GB Total)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#8x-b200-blackwell-1440-gb-total" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8x B200 Blackwell (1440 GB Total)
       
     </span>
   </a>
@@ -1872,6 +1905,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#gh200-96-gb-grace-hopper-superchip" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GH200 (96 GB) - Grace Hopper Superchip ⭐
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b200-blackwell-180-gb-next-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B200 Blackwell (180 GB) - Next Generation
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1927,6 +1982,17 @@
     <span class="md-ellipsis">
       
         8x H100 (640 GB Total)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#8x-b200-blackwell-1440-gb-total" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8x B200 Blackwell (1440 GB Total)
       
     </span>
   </a>
@@ -2361,10 +2427,12 @@
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Anchor link to this section">&para;</a></h2>
 <p>Lambda Labs offers GPUs from NVIDIA's professional and data center lines:</p>
 <ul>
-<li><strong>A10</strong>: Entry-level, 24 GB VRAM</li>
-<li><strong>A6000/RTX 6000</strong>: Workstation class, 48 GB VRAM</li>
+<li><strong>A10/RTX 6000</strong>: Entry-level, 24 GB VRAM</li>
+<li><strong>A6000</strong>: Workstation class, 48 GB VRAM</li>
 <li><strong>A100</strong>: Data center standard, 40-80 GB VRAM</li>
-<li><strong>H100</strong>: Latest generation, 80 GB VRAM with faster performance</li>
+<li><strong>H100</strong>: Hopper generation, 80 GB VRAM with faster performance</li>
+<li><strong>GH200</strong>: Grace Hopper Superchip, 96 GB VRAM with ARM CPU</li>
+<li><strong>B200</strong>: Blackwell (newest), up to 180 GB VRAM per GPU</li>
 </ul>
 <h2 id="gpu-comparison-table">GPU Comparison Table<a class="headerlink" href="#gpu-comparison-table" title="Anchor link to this section">&para;</a></h2>
 <table>
@@ -2381,13 +2449,22 @@
 </thead>
 <tbody>
 <tr>
+<td><code>gpu_1x_rtx6000</code></td>
+<td>1x RTX 6000</td>
+<td>24 GB</td>
+<td>30</td>
+<td>200 GB</td>
+<td>1.4 TB</td>
+<td>$0.50</td>
+</tr>
+<tr>
 <td><code>gpu_1x_a10</code></td>
 <td>1x A10</td>
 <td>24 GB</td>
 <td>30</td>
 <td>200 GB</td>
 <td>1.4 TB</td>
-<td>$0.60</td>
+<td>$0.75</td>
 </tr>
 <tr>
 <td><code>gpu_1x_a6000</code></td>
@@ -2399,22 +2476,13 @@
 <td>$0.80</td>
 </tr>
 <tr>
-<td><code>gpu_1x_rtx6000</code></td>
-<td>1x RTX 6000 Ada</td>
-<td>48 GB</td>
-<td>30</td>
-<td>200 GB</td>
-<td>1.4 TB</td>
-<td>$0.80</td>
-</tr>
-<tr>
 <td><code>gpu_1x_a100</code></td>
 <td>1x A100 PCIe</td>
 <td>40 GB</td>
 <td>30</td>
 <td>200 GB</td>
 <td>512 GB</td>
-<td>$1.10</td>
+<td>$1.29</td>
 </tr>
 <tr>
 <td><code>gpu_1x_a100_sxm4</code></td>
@@ -2423,16 +2491,16 @@
 <td>30</td>
 <td>200 GB</td>
 <td>512 GB</td>
-<td>$1.10</td>
+<td>$1.29</td>
 </tr>
 <tr>
-<td><code>gpu_1x_a100_sxm4_80gb</code></td>
-<td>1x A100 SXM4</td>
-<td><strong>80 GB</strong></td>
-<td>30</td>
-<td>200 GB</td>
-<td>1.4 TB</td>
-<td><strong>$1.29</strong></td>
+<td><code>gpu_1x_gh200</code></td>
+<td>1x GH200</td>
+<td><strong>96 GB</strong></td>
+<td>72</td>
+<td>480 GB</td>
+<td>2 TB</td>
+<td><strong>$1.49</strong></td>
 </tr>
 <tr>
 <td><code>gpu_1x_h100_pcie</code></td>
@@ -2441,7 +2509,7 @@
 <td>26</td>
 <td>200 GB</td>
 <td>512 GB</td>
-<td>$1.99</td>
+<td>$2.49</td>
 </tr>
 <tr>
 <td><code>gpu_1x_h100_sxm5</code></td>
@@ -2450,7 +2518,16 @@
 <td>52</td>
 <td>1000 GB</td>
 <td>2 TB</td>
-<td>$2.49</td>
+<td>$3.29</td>
+</tr>
+<tr>
+<td><code>gpu_1x_b200_sxm6</code></td>
+<td>1x B200 Blackwell</td>
+<td><strong>180 GB</strong></td>
+<td>72</td>
+<td>480 GB</td>
+<td>2 TB</td>
+<td>$5.29</td>
 </tr>
 <tr>
 <td><code>gpu_2x_a100</code></td>
@@ -2459,7 +2536,25 @@
 <td>48</td>
 <td>900 GB</td>
 <td>6 TB</td>
-<td>$2.20</td>
+<td>$2.58</td>
+</tr>
+<tr>
+<td><code>gpu_2x_h100_sxm5</code></td>
+<td>2x H100 SXM5</td>
+<td>160 GB (2×80)</td>
+<td>104</td>
+<td>2000 GB</td>
+<td>4 TB</td>
+<td>$6.38</td>
+</tr>
+<tr>
+<td><code>gpu_2x_b200_sxm6</code></td>
+<td>2x B200 Blackwell</td>
+<td>360 GB (2×180)</td>
+<td>144</td>
+<td>960 GB</td>
+<td>4 TB</td>
+<td>$10.38</td>
 </tr>
 <tr>
 <td><code>gpu_4x_a100</code></td>
@@ -2468,7 +2563,16 @@
 <td>120</td>
 <td>1800 GB</td>
 <td>14 TB</td>
-<td>$4.40</td>
+<td>$5.16</td>
+</tr>
+<tr>
+<td><code>gpu_4x_h100_sxm5</code></td>
+<td>4x H100 SXM5</td>
+<td>320 GB (4×80)</td>
+<td>208</td>
+<td>4000 GB</td>
+<td>8 TB</td>
+<td>$12.36</td>
 </tr>
 <tr>
 <td><code>gpu_8x_a100</code></td>
@@ -2477,16 +2581,34 @@
 <td>240</td>
 <td>1800 GB</td>
 <td>14 TB</td>
-<td>$8.80</td>
+<td>$10.32</td>
 </tr>
 <tr>
-<td><code>gpu_8x_h100</code></td>
+<td><code>gpu_8x_a100_80gb_sxm4</code></td>
+<td>8x A100 SXM4</td>
+<td>640 GB (8×80)</td>
+<td>240</td>
+<td>1800 GB</td>
+<td>14 TB</td>
+<td>$14.32</td>
+</tr>
+<tr>
+<td><code>gpu_8x_h100_sxm5</code></td>
 <td>8x H100 SXM5</td>
 <td>640 GB (8×80)</td>
 <td>416</td>
 <td>7800 GB</td>
 <td>30 TB</td>
-<td>$19.92</td>
+<td>$23.92</td>
+</tr>
+<tr>
+<td><code>gpu_8x_b200_sxm6</code></td>
+<td>8x B200 Blackwell</td>
+<td>1440 GB (8×180)</td>
+<td>576</td>
+<td>3840 GB</td>
+<td>16 TB</td>
+<td>$39.92</td>
 </tr>
 </tbody>
 </table>
@@ -2590,7 +2712,7 @@
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">Type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpu_1x_h100_sxm5</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="nt">GPU</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1x NVIDIA H100 SXM5</span>
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="nt">VRAM</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">80 GB</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="nt">Price</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">~$2.49/hr</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="nt">Price</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">~$3.29/hr</span>
 </span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="nt">CPU</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">52 vCPUs</span>
 </span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="nt">RAM</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1 TB</span>
 </span></code></pre></div>
@@ -2605,16 +2727,58 @@
 - SXM5 has faster interconnect than PCIe
 - 2× more CPU cores and RAM than H100 PCIe</p>
 <hr />
+<h3 id="gh200-96-gb-grace-hopper-superchip">GH200 (96 GB) - Grace Hopper Superchip ⭐<a class="headerlink" href="#gh200-96-gb-grace-hopper-superchip" title="Anchor link to this section">&para;</a></h3>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">Type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpu_1x_gh200</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nt">GPU</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1x NVIDIA GH200 Grace Hopper</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="nt">VRAM</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">96 GB HBM3</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="nt">Price</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">~$1.49/hr</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="nt">CPU</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">72 ARM Neoverse cores</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="nt">RAM</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">480 GB</span>
+</span></code></pre></div>
+<p><strong>Best For:</strong>
+- Large models that need &gt;80GB VRAM
+- Excellent price/VRAM ratio
+- ARM-based workloads</p>
+<p><strong>Compatible Models:</strong>
+- ✅ All 70B models at any precision
+- ✅ Qwen 2.5 Coder 32B (FP16) with room to spare
+- ✅ Models up to ~90GB VRAM requirement</p>
+<p><strong>Notes:</strong>
+- Uses ARM CPU (Grace), not x86
+- Unified memory architecture
+- Best value for VRAM-hungry workloads</p>
+<hr />
+<h3 id="b200-blackwell-180-gb-next-generation">B200 Blackwell (180 GB) - Next Generation<a class="headerlink" href="#b200-blackwell-180-gb-next-generation" title="Anchor link to this section">&para;</a></h3>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nt">Type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpu_1x_b200_sxm6</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nt">GPU</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1x NVIDIA B200 Blackwell</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="nt">VRAM</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">180 GB HBM3e</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="nt">Price</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">~$5.29/hr</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="nt">CPU</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">72 vCPUs</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="nt">RAM</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">480 GB</span>
+</span></code></pre></div>
+<p><strong>Best For:</strong>
+- Largest single-GPU VRAM
+- Models up to 175B at FP16
+- Future-proof workloads</p>
+<p><strong>Compatible Models:</strong>
+- ✅ All models up to ~170GB VRAM
+- ✅ 70B FP16 with massive headroom
+- ✅ 175B INT8 models</p>
+<p><strong>Notes:</strong>
+- Latest Blackwell architecture
+- 2× faster than H100 for some workloads
+- Highest single-GPU VRAM available</p>
+<hr />
 <h2 id="multi-gpu-instances">Multi-GPU Instances<a class="headerlink" href="#multi-gpu-instances" title="Anchor link to this section">&para;</a></h2>
 <div class="admonition warning">
 <p class="admonition-title">Multi-GPU Support</p>
 <p>Multi-GPU instances require distributed inference setup (e.g., vLLM, Ray). Not currently automated in <code>soong</code>.</p>
 </div>
 <h3 id="2x-a100-80-gb-total">2x A100 (80 GB Total)<a class="headerlink" href="#2x-a100-80-gb-total" title="Anchor link to this section">&para;</a></h3>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">Type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpu_2x_a100</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nt">GPUs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2x A100 SXM4 (40 GB each)</span>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="nt">Total VRAM</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">80 GB</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="nt">Price</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">~$2.20/hr</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nt">Type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpu_2x_a100</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="nt">GPUs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2x A100 SXM4 (40 GB each)</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="nt">Total VRAM</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">80 GB</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="nt">Price</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">~$2.20/hr</span>
 </span></code></pre></div>
 <p><strong>When to Use:</strong>
 - Models that need 60-80 GB total
@@ -2622,10 +2786,10 @@
 - Training with data parallelism</p>
 <hr />
 <h3 id="4x-a100-160-gb-total">4x A100 (160 GB Total)<a class="headerlink" href="#4x-a100-160-gb-total" title="Anchor link to this section">&para;</a></h3>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nt">Type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpu_4x_a100</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nt">GPUs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4x A100 SXM4 (40 GB each)</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="nt">Total VRAM</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">160 GB</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="nt">Price</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">~$4.40/hr</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nt">Type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpu_4x_a100</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="nt">GPUs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4x A100 SXM4 (40 GB each)</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="nt">Total VRAM</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">160 GB</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="nt">Price</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">~$4.40/hr</span>
 </span></code></pre></div>
 <p><strong>When to Use:</strong>
 - 70B models at FP32 precision
@@ -2633,10 +2797,10 @@
 - Multi-GPU training</p>
 <hr />
 <h3 id="8x-a100-320-gb-total">8x A100 (320 GB Total)<a class="headerlink" href="#8x-a100-320-gb-total" title="Anchor link to this section">&para;</a></h3>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nt">Type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpu_8x_a100</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="nt">GPUs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8x A100 SXM4 (40 GB each)</span>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="nt">Total VRAM</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">320 GB</span>
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="nt">Price</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">~$8.80/hr</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nt">Type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpu_8x_a100</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="nt">GPUs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8x A100 SXM4 (40 GB each)</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="nt">Total VRAM</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">320 GB</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="nt">Price</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">~$8.80/hr</span>
 </span></code></pre></div>
 <p><strong>When to Use:</strong>
 - 175B models (FP16)
@@ -2644,17 +2808,30 @@
 - Multi-user inference serving</p>
 <hr />
 <h3 id="8x-h100-640-gb-total">8x H100 (640 GB Total)<a class="headerlink" href="#8x-h100-640-gb-total" title="Anchor link to this section">&para;</a></h3>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nt">Type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpu_8x_h100</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="nt">GPUs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8x H100 SXM5 (80 GB each)</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="nt">Total VRAM</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">640 GB</span>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="nt">Price</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">~$19.92/hr</span>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="nt">CPU</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">416 vCPUs</span>
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="nt">RAM</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">7.8 TB</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nt">Type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpu_8x_h100_sxm5</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="nt">GPUs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8x H100 SXM5 (80 GB each)</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="nt">Total VRAM</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">640 GB</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="nt">Price</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">~$23.92/hr</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="nt">CPU</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">416 vCPUs</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="nt">RAM</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">7.8 TB</span>
 </span></code></pre></div>
 <p><strong>When to Use:</strong>
 - Largest models (400B+)
 - High-throughput production serving
 - Multi-GPU training at scale</p>
+<hr />
+<h3 id="8x-b200-blackwell-1440-gb-total">8x B200 Blackwell (1440 GB Total)<a class="headerlink" href="#8x-b200-blackwell-1440-gb-total" title="Anchor link to this section">&para;</a></h3>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nt">Type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpu_8x_b200_sxm6</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="nt">GPUs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8x B200 SXM6 (180 GB each)</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="nt">Total VRAM</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1440 GB</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="nt">Price</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">~$39.92/hr</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="nt">CPU</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">576 vCPUs</span>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="nt">RAM</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3.8 TB</span>
+</span></code></pre></div>
+<p><strong>When to Use:</strong>
+- Largest models (1T+ parameters)
+- Maximum VRAM capacity
+- Cutting-edge Blackwell architecture</p>
 <hr />
 <h2 id="gpu-selection-guide">GPU Selection Guide<a class="headerlink" href="#gpu-selection-guide" title="Anchor link to this section">&para;</a></h2>
 <h3 id="by-model-size">By Model Size<a class="headerlink" href="#by-model-size" title="Anchor link to this section">&para;</a></h3>
@@ -2766,7 +2943,7 @@
 <hr />
 <h2 id="availability">Availability<a class="headerlink" href="#availability" title="Anchor link to this section">&para;</a></h2>
 <p>GPU availability varies by region and time. Check current availability:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>soong<span class="w"> </span>available
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>soong<span class="w"> </span>available
 </span></code></pre></div>
 <h3 id="typical-availability-by-region">Typical Availability (by region)<a class="headerlink" href="#typical-availability-by-region" title="Anchor link to this section">&para;</a></h3>
 <table>
@@ -3052,18 +3229,18 @@
 <hr />
 <h2 id="choosing-the-right-gpu">Choosing the Right GPU<a class="headerlink" href="#choosing-the-right-gpu" title="Anchor link to this section">&para;</a></h2>
 <h3 id="decision-tree">Decision Tree<a class="headerlink" href="#decision-tree" title="Anchor link to this section">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>Need model &gt; 70B?
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>├─ Yes → Multi-GPU or wait for larger models
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>└─ No
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>    ├─ Need FP16 precision for 32B model?
-</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>    │   └─ Yes → A100 80GB
-</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>    └─ No
-</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>        ├─ Budget &lt; $1/hr?
-</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>        │   └─ Yes → A10 (use INT4 models)
-</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>        └─ No
-</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>            ├─ Need fastest inference?
-</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>            │   └─ Yes → H100
-</span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a>            └─ No → A100 80GB (best value)
+<div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>Need model &gt; 70B?
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>├─ Yes → Multi-GPU or wait for larger models
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>└─ No
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>    ├─ Need FP16 precision for 32B model?
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>    │   └─ Yes → A100 80GB
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>    └─ No
+</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>        ├─ Budget &lt; $1/hr?
+</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>        │   └─ Yes → A10 (use INT4 models)
+</span><span id="__span-14-9"><a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>        └─ No
+</span><span id="__span-14-10"><a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a>            ├─ Need fastest inference?
+</span><span id="__span-14-11"><a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a>            │   └─ Yes → H100
+</span><span id="__span-14-12"><a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a>            └─ No → A100 80GB (best value)
 </span></code></pre></div>
 <h3 id="common-mistakes">Common Mistakes<a class="headerlink" href="#common-mistakes" title="Anchor link to this section">&para;</a></h3>
 <p>❌ <strong>Using A100 40GB for Qwen 32B FP16</strong>
