@@ -2,7 +2,7 @@
 
 **Summon GPU instances for AI agent workflows.**
 
-Soong is a CLI tool for managing Lambda Labs GPU instances. Launch, monitor, and connect to GPU instances with a single command.
+Soong is a CLI tool for managing [Lambda Labs](https://lambda.ai/) GPU instances. Launch, monitor, and connect to GPU instances with a single command.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
