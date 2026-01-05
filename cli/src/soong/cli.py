@@ -1187,7 +1187,14 @@ def ssh(
     config = get_config()
     api = LambdaAPI(config.lambda_config.api_key)
     instance_mgr = InstanceManager(api)
-    ssh_mgr = SSHTunnelManager(config.ssh.key_path)
+
+    # Get Lambda SSH keys for better error messages
+    try:
+        lambda_keys = api.list_ssh_keys()
+    except LambdaAPIError:
+        lambda_keys = []
+
+    ssh_mgr = SSHTunnelManager(config.ssh.key_path, lambda_key_names=lambda_keys)
 
     # Get instance
     if instance_id:
@@ -1652,7 +1659,14 @@ def _start_tunnel(
     config = get_config()
     api = LambdaAPI(config.lambda_config.api_key)
     instance_mgr = InstanceManager(api)
-    ssh_mgr = SSHTunnelManager(config.ssh.key_path)
+
+    # Get Lambda SSH keys for better error messages
+    try:
+        lambda_keys = api.list_ssh_keys()
+    except LambdaAPIError:
+        lambda_keys = []
+
+    ssh_mgr = SSHTunnelManager(config.ssh.key_path, lambda_key_names=lambda_keys)
 
     # Get instance
     if instance_id:

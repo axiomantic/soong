@@ -666,7 +666,8 @@ class TestSSHCommand:
         assert result.exit_code == 0
 
         # Verify SSHTunnelManager was instantiated with correct key path
-        mock_ssh_mgr.assert_called_once_with(sample_config.ssh.key_path)
+        mock_ssh_mgr.assert_called_once()
+        assert mock_ssh_mgr.call_args[0][0] == sample_config.ssh.key_path
 
         # Verify get_instance was called with correct ID
         mock_api_instance.get_instance.assert_called_once_with("inst_abc123xyz")
@@ -777,7 +778,8 @@ class TestSSHCommand:
 
         # Assertions
         assert result.exit_code == 0
-        mock_ssh_mgr.assert_called_once_with(sample_config.ssh.key_path)
+        mock_ssh_mgr.assert_called_once()
+        assert mock_ssh_mgr.call_args[0][0] == sample_config.ssh.key_path
         mock_ssh_instance.connect_ssh.assert_called_once_with(mock_instance.ip)
 
 
