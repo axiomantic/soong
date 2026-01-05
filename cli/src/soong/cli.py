@@ -1284,6 +1284,7 @@ def extend(
 def stop(
     instance_id: Optional[str] = typer.Option(None, help="Instance ID (uses active if not specified)"),
     confirm: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation"),
+    wait: bool = typer.Option(True, help="Wait for instance to be terminated"),
 ):
     """Terminate instance."""
     config = get_config()
@@ -1331,7 +1332,10 @@ def stop(
 
     try:
         api.terminate_instance(instance.id)
-        console.print(f"[green]Instance {instance.id} terminated[/green]")
+        console.print(f"[cyan]Terminating instance {instance.id}...[/cyan]")
+
+        if wait:
+            instance_mgr.wait_for_terminated(instance.id, timeout_seconds=120)
 
         # Log termination event (does not raise on failure)
         log_terminate_event(config, instance, duration_minutes, cost_dollars, metrics)
