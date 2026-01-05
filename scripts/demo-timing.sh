@@ -10,14 +10,14 @@ case "$MARKER" in
     start)
         echo "start=$(date +%s.%N)" > "$TIMING_FILE"
         ;;
-    wait_start|wait_end|end)
+    wait_start|wait_end|resume|end)
         echo "${MARKER}=$(date +%s.%N)" >> "$TIMING_FILE"
         ;;
     show)
         cat "$TIMING_FILE"
         ;;
     *)
-        echo "Usage: $0 {start|wait_start|wait_end|end|show}"
+        echo "Usage: $0 {start|wait_start|wait_end|resume|end|show}"
         exit 1
         ;;
 esac

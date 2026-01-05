@@ -56,7 +56,14 @@ Enter
 # Typical boot time: 2-5 minutes without provisioning
 Sleep 360s
 
-Sleep 2s
+# Mark when we resume typing (end of dead time)
+Hide
+Type "./scripts/demo-timing.sh resume"
+Enter
+Sleep 100ms
+Show
+
+Sleep 1s
 
 # Show status with running instance
 Type "soong status"
