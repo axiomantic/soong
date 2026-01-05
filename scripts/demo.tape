@@ -2,7 +2,7 @@
 # Install vhs: brew install charmbracelet/tap/vhs
 #
 # Recording flow:
-#   1. vhs scripts/demo.tape         # Creates raw recording
+#   1. vhs scripts/demo.tape         # Creates raw recording + timing file
 #   2. scripts/process-demo.sh       # Speeds up waiting sections with ffmpeg
 #
 # Or just: make demo
@@ -18,11 +18,16 @@ Set Theme "Dracula"
 Set Padding 20
 Set PlaybackSpeed 1.5
 
-# Activate venv
+# Initialize timing file
 Hide
 Type "source .venv/bin/activate"
 Enter
 Sleep 500ms
+Type "export DEMO_TIMING=/tmp/demo-timing.txt"
+Enter
+Type "echo \"start=$(date +%s.%N)\" > $DEMO_TIMING"
+Enter
+Sleep 200ms
 Show
 
 # Show help (truncated view of recursive help)
@@ -37,16 +42,29 @@ Sleep 300ms
 Enter
 Sleep 3s
 
-# === MARKER: START_WAIT (for ffmpeg post-processing) ===
+# Record timestamp before instance start
+Hide
+Type "echo \"wait_start=$(date +%s.%N)\" >> $DEMO_TIMING"
+Enter
+Sleep 100ms
+Show
+
 # Start an instance (skip provisioning for faster demo)
 Type "soong start -y --skip-provision"
 Sleep 300ms
 Enter
 
-# Wait for instance to become ready (this section gets sped up by ffmpeg)
-Sleep 90s
+# Wait for "Instance Ready" or IP address to appear
+Wait+Screen /Instance Ready|SGLang API/
 
-# === MARKER: END_WAIT ===
+# Record timestamp after instance ready
+Hide
+Type "echo \"wait_end=$(date +%s.%N)\" >> $DEMO_TIMING"
+Enter
+Sleep 100ms
+Show
+
+Sleep 2s
 
 # Show status with running instance
 Type "soong status"
@@ -71,6 +89,15 @@ Type "soong status"
 Sleep 300ms
 Enter
 Sleep 2s
+
+# Record end timestamp
+Hide
+Type "echo \"end=$(date +%s.%N)\" >> $DEMO_TIMING"
+Enter
+Type "cat $DEMO_TIMING"
+Enter
+Sleep 200ms
+Show
 
 # End
 Sleep 1s
