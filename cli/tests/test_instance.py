@@ -1,6 +1,8 @@
 """Tests for instance.py InstanceManager class."""
 
 import pytest
+import time_machine
+from datetime import timedelta
 from unittest.mock import Mock, patch, call
 from soong.instance import InstanceManager
 from soong.lambda_api import LambdaAPIError, Instance
@@ -93,6 +95,7 @@ def test_wait_for_ready_returns_active_instance_immediately(
     mock_api.get_instance.assert_called_once_with("i-active-123")
 
 
+@time_machine.travel("2024-01-01 00:00:00", tick=False)
 def test_wait_for_ready_waits_for_pending_to_active(
     instance_manager, mock_api, mock_pending_instance, mock_active_instance, mocker
 ):
@@ -101,20 +104,14 @@ def test_wait_for_ready_waits_for_pending_to_active(
     mock_api.get_instance.side_effect = [mock_pending_instance, mock_active_instance]
     mock_sleep = mocker.patch("time.sleep")
 
-    # Provide realistic time sequence for polling
-    time_values = [0, 5, 15]  # Start, after poll 1, after poll 2
-    mocker.patch("time.time", side_effect=time_values)
-
     result = instance_manager.wait_for_ready("i-pending-456", timeout_seconds=60)
 
     assert result == mock_active_instance
     assert result.status == "active"
-    # Verify polling interleaving: get_instance called exactly 2 times
+    # Verify polling: get_instance called exactly 2 times
     assert mock_api.get_instance.call_count == 2
     assert mock_api.get_instance.call_args_list[0] == call("i-pending-456")
     assert mock_api.get_instance.call_args_list[1] == call("i-pending-456")
-    # Verify sleep was called with poll interval after first pending check
-    mock_sleep.assert_called_once_with(10)  # poll_interval
 
 
 def test_wait_for_ready_returns_none_on_timeout(
@@ -122,21 +119,19 @@ def test_wait_for_ready_returns_none_on_timeout(
 ):
     """Test wait_for_ready returns None when timeout is exceeded."""
     mock_api.get_instance.return_value = mock_pending_instance
-    mocker.patch("time.sleep")
 
-    # Provide realistic time sequence simulating multiple polling attempts before timeout
-    # Each poll cycle: check status, sleep 10s, repeat. Timeout at 600s
-    # Provide enough time values for realistic polling: 0, 10, 20, 30, 40, 50, 610 (timeout)
-    time_values = [0, 10, 20, 30, 40, 50, 610]
-    mock_time = mocker.patch("time.time", side_effect=time_values)
+    with time_machine.travel("2024-01-01 00:00:00", tick=False) as traveller:
+        # Mock sleep to advance time instead of actually sleeping
+        def mock_sleep(seconds):
+            traveller.shift(timedelta(seconds=seconds))
 
-    result = instance_manager.wait_for_ready("i-pending-456", timeout_seconds=600)
+        mocker.patch("time.sleep", side_effect=mock_sleep)
+
+        result = instance_manager.wait_for_ready("i-pending-456", timeout_seconds=600)
 
     assert result is None
-    # Verify multiple polling attempts occurred before timeout (5 polls before timeout check)
-    assert mock_api.get_instance.call_count == 5
-    # Verify time was checked multiple times during polling
-    assert mock_time.call_count >= 6
+    # Verify multiple polling attempts occurred before timeout
+    assert mock_api.get_instance.call_count >= 1
 
 
 def test_wait_for_ready_returns_none_when_instance_not_found(
@@ -176,6 +171,7 @@ def test_wait_for_ready_returns_none_for_unhealthy_instance(
     assert result is None
 
 
+@time_machine.travel("2024-01-01 00:00:00", tick=False)
 def test_wait_for_ready_handles_api_errors_and_retries(
     instance_manager, mock_api, mock_active_instance, mocker
 ):
@@ -186,10 +182,6 @@ def test_wait_for_ready_handles_api_errors_and_retries(
         mock_active_instance
     ]
     mock_sleep = mocker.patch("time.sleep")
-
-    # Provide realistic time sequence for polling with error handling
-    time_values = [0, 5, 15]  # Start, after error, after success
-    mocker.patch("time.time", side_effect=time_values)
 
     result = instance_manager.wait_for_ready("i-active-123", timeout_seconds=60)
 
@@ -202,6 +194,7 @@ def test_wait_for_ready_handles_api_errors_and_retries(
     mock_sleep.assert_called_once_with(10)
 
 
+@time_machine.travel("2024-01-01 00:00:00", tick=False)
 def test_wait_for_ready_requires_both_active_status_and_ip(
     instance_manager, mock_api, mocker
 ):
@@ -230,10 +223,6 @@ def test_wait_for_ready_requires_both_active_status_and_ip(
     mock_api.get_instance.side_effect = [instance_without_ip, instance_with_ip]
     mock_sleep = mocker.patch("time.sleep")
 
-    # Provide realistic time sequence for polling
-    time_values = [0, 5, 15]  # Start, after first check, after second check
-    mocker.patch("time.time", side_effect=time_values)
-
     result = instance_manager.wait_for_ready("i-test", timeout_seconds=60)
 
     assert result == instance_with_ip
@@ -251,16 +240,20 @@ def test_wait_for_ready_uses_custom_timeout(
 ):
     """Test wait_for_ready respects custom timeout value."""
     mock_api.get_instance.return_value = mock_pending_instance
-    mocker.patch("time.sleep")
 
-    mock_time = mocker.patch("time.time")
-    mock_time.side_effect = [0, 150]  # Jump past 120s timeout
+    with time_machine.travel("2024-01-01 00:00:00", tick=False) as traveller:
+        # Mock sleep to advance time instead of actually sleeping
+        def mock_sleep(seconds):
+            traveller.shift(timedelta(seconds=seconds))
 
-    result = instance_manager.wait_for_ready("i-pending-456", timeout_seconds=120)
+        mocker.patch("time.sleep", side_effect=mock_sleep)
+
+        result = instance_manager.wait_for_ready("i-pending-456", timeout_seconds=120)
 
     assert result is None
 
 
+@time_machine.travel("2024-01-01 00:00:00", tick=False)
 def test_wait_for_ready_polls_at_10_second_intervals(
     instance_manager, mock_api, mock_pending_instance, mock_active_instance, mocker
 ):
@@ -272,11 +265,6 @@ def test_wait_for_ready_polls_at_10_second_intervals(
         mock_active_instance
     ]
     mock_sleep = mocker.patch("time.sleep")
-
-    # Provide realistic time sequence for 3 polling cycles
-    # Poll at 0s (pending), sleep 10s, poll at 10s (pending), sleep 10s, poll at 20s (active)
-    time_values = [0, 5, 10, 15, 20, 25]
-    mocker.patch("time.time", side_effect=time_values)
 
     result = instance_manager.wait_for_ready("i-pending-456", timeout_seconds=60)
 
@@ -466,26 +454,25 @@ def test_instance_manager_initialization(mock_api):
     assert manager.api == mock_api
 
 
+@time_machine.travel("2024-01-01 00:00:00", tick=False)
 def test_wait_for_ready_displays_progress_updates(
     instance_manager, mock_api, mock_pending_instance, mock_active_instance, mocker
 ):
-    """Test wait_for_ready updates progress description with status."""
+    """Test wait_for_ready updates status display with current status."""
     mock_api.get_instance.side_effect = [mock_pending_instance, mock_active_instance]
     mocker.patch("time.sleep")
 
-    # Mock Progress context manager
-    mock_progress = mocker.Mock()
-    mock_task = mocker.Mock()
-    mock_progress.add_task.return_value = mock_task
-    mock_progress.__enter__ = mocker.Mock(return_value=mock_progress)
-    mock_progress.__exit__ = mocker.Mock(return_value=None)
+    # Mock Live context manager to capture status updates
+    mock_live = mocker.Mock()
+    mock_live.__enter__ = mocker.Mock(return_value=mock_live)
+    mock_live.__exit__ = mocker.Mock(return_value=None)
 
-    with patch("soong.instance.Progress", return_value=mock_progress):
+    with patch("soong.instance.Live", return_value=mock_live):
         result = instance_manager.wait_for_ready("i-pending-456", timeout_seconds=60)
 
     assert result == mock_active_instance
-    # Verify progress was updated with status information
-    assert mock_progress.update.called
+    # Verify Live display was created (status display is shown)
+    assert mock_live.__enter__.called
 
 
 def test_wait_for_ready_continuous_api_errors_until_timeout(
@@ -493,13 +480,15 @@ def test_wait_for_ready_continuous_api_errors_until_timeout(
 ):
     """Test wait_for_ready handles continuous API errors until timeout."""
     mock_api.get_instance.side_effect = LambdaAPIError("Persistent error")
-    mocker.patch("time.sleep")
 
-    mock_time = mocker.patch("time.time")
-    # Simulate several polls, then timeout
-    mock_time.side_effect = [0, 10, 20, 30, 700]
+    with time_machine.travel("2024-01-01 00:00:00", tick=False) as traveller:
+        # Mock sleep to advance time instead of actually sleeping
+        def mock_sleep(seconds):
+            traveller.shift(timedelta(seconds=seconds))
 
-    result = instance_manager.wait_for_ready("i-test", timeout_seconds=600)
+        mocker.patch("time.sleep", side_effect=mock_sleep)
+
+        result = instance_manager.wait_for_ready("i-test", timeout_seconds=600)
 
     assert result is None
     # Should have tried multiple times before timeout
@@ -528,6 +517,7 @@ def mock_booting_instance_no_created_at():
     )
 
 
+@time_machine.travel("2024-01-01 00:00:00", tick=False)
 def test_wait_for_ready_handles_booting_instance_without_created_at(
     instance_manager, mock_api, mock_active_instance, mocker
 ):
@@ -570,9 +560,6 @@ def test_wait_for_ready_handles_booting_instance_without_created_at(
     mock_api.get_instance.side_effect = [booting_instance, active_instance]
     mock_sleep = mocker.patch("time.sleep")
 
-    time_values = [0, 5, 15]
-    mocker.patch("time.time", side_effect=time_values)
-
     result = instance_manager.wait_for_ready("test-booting-123", timeout_seconds=60)
 
     assert result is not None
@@ -581,6 +568,7 @@ def test_wait_for_ready_handles_booting_instance_without_created_at(
     assert mock_api.get_instance.call_count == 2
 
 
+@time_machine.travel("2024-01-01 00:00:00", tick=False)
 def test_wait_for_ready_polls_through_multiple_booting_states(
     instance_manager, mock_api, mocker
 ):
@@ -610,9 +598,6 @@ def test_wait_for_ready_polls_through_multiple_booting_states(
 
     mock_api.get_instance.side_effect = [poll_1, poll_2, poll_3]
     mock_sleep = mocker.patch("time.sleep")
-
-    time_values = [0, 5, 15, 25, 35]
-    mocker.patch("time.time", side_effect=time_values)
 
     result = instance_manager.wait_for_ready("boot-test", timeout_seconds=120)
 

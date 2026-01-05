@@ -2,12 +2,29 @@
 
 import time
 from typing import Optional
-from rich.console import Console
-from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.console import Console, Group
+from rich.live import Live
+from rich.spinner import Spinner
+from rich.text import Text
 
 from .lambda_api import LambdaAPI, Instance, LambdaAPIError
 
 console = Console()
+
+
+class StatusDisplay:
+    """Dynamic status display that updates elapsed time on each render."""
+
+    def __init__(self, start_time: float):
+        self.start_time = start_time
+        self.status = "booting"
+        self.spinner = Spinner("dots")
+        self._time_func = time.time  # Capture reference before any mocking
+
+    def __rich__(self):
+        elapsed = int(self._time_func() - self.start_time)
+        text = Text(f" Status: {self.status} (elapsed: {elapsed}s)")
+        return Group(self.spinner, text)
 
 
 class InstanceManager:
@@ -30,19 +47,14 @@ class InstanceManager:
             Instance object when ready, or None if timeout
         """
         start_time = time.time()
-        poll_interval = 10  # seconds
+        poll_interval = 10  # seconds between API calls
+        status_display = StatusDisplay(start_time)
 
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console,
-        ) as progress:
-            task = progress.add_task(
-                "Waiting for instance to become ready...", total=None
-            )
-
+        with Live(status_display, console=console, refresh_per_second=4) as live:
             while True:
-                elapsed = time.time() - start_time
+                current_time = time.time()
+                elapsed = current_time - start_time
+
                 if elapsed > timeout_seconds:
                     console.print(
                         f"[red]Timeout waiting for instance after {elapsed:.0f}s[/red]"
@@ -56,18 +68,13 @@ class InstanceManager:
                         return None
 
                     if instance.status == "active" and instance.ip:
-                        progress.update(
-                            task, description="[green]Instance ready![/green]"
-                        )
+                        live.update(Text("[green]✓ Instance ready![/green]"))
                         return instance
                     elif instance.status in ["terminated", "unhealthy"]:
                         console.print(f"[red]Instance in {instance.status} state[/red]")
                         return None
 
-                    progress.update(
-                        task,
-                        description=f"Status: {instance.status} (elapsed: {elapsed:.0f}s)",
-                    )
+                    status_display.status = instance.status
 
                 except LambdaAPIError as e:
                     console.print(f"[yellow]API error: {e}[/yellow]")
