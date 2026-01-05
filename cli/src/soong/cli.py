@@ -28,38 +28,77 @@ from .models import (
 )
 
 
-def print_recursive_help(cmd: click.Command, ctx: click.Context, prefix: str = "") -> None:
-    """Recursively print help for a command and all its subcommands."""
-    # Print section header
+def format_compact_help(cmd: click.Command, ctx: click.Context, prefix: str = "") -> list[str]:
+    """Generate compact help lines for a command and its subcommands."""
+    lines = []
     cmd_path = f"{prefix} {cmd.name}".strip() if prefix else cmd.name
-    click.echo(click.style(f"\n{'=' * 60}", fg="cyan"))
-    click.echo(click.style(f"  {cmd_path}", fg="cyan", bold=True))
-    click.echo(click.style(f"{'=' * 60}\n", fg="cyan"))
 
-    # Print the command's help
-    with ctx.scope() as sub_ctx:
-        click.echo(cmd.get_help(sub_ctx))
+    # Command header
+    lines.append(click.style(f"\n{cmd_path}", fg="cyan", bold=True))
 
-    # Recurse into subcommands if this is a group
+    # Get help text
+    if cmd.help:
+        lines.append(f"  {cmd.help}")
+
+    # Show usage
+    pieces = cmd.collect_usage_pieces(ctx)
+    usage = " ".join(pieces)
+    if usage:
+        lines.append(click.style(f"  Usage: {cmd_path} {usage}", fg="white", dim=True))
+
+    # Show options (compact)
+    opts = []
+    for param in cmd.get_params(ctx):
+        if isinstance(param, click.Option):
+            opt_names = ", ".join(param.opts)
+            opt_help = param.help or ""
+            if param.required:
+                opt_help = f"(required) {opt_help}"
+            if opt_help:
+                opts.append(f"    {opt_names:20} {opt_help}")
+            else:
+                opts.append(f"    {opt_names}")
+
+    # Show arguments
+    for param in cmd.get_params(ctx):
+        if isinstance(param, click.Argument):
+            arg_name = param.name.upper()
+            required = "(required)" if param.required else "(optional)"
+            opts.append(f"    {arg_name:20} {required}")
+
+    if opts:
+        lines.append(click.style("  Options:", fg="yellow"))
+        lines.extend(opts)
+
+    # Show subcommands for groups
+    if isinstance(cmd, click.Group) and cmd.commands:
+        lines.append(click.style("  Commands:", fg="yellow"))
+        for name, sub_cmd in sorted(cmd.commands.items()):
+            sub_help = sub_cmd.help.split('\n')[0] if sub_cmd.help else ""
+            lines.append(f"    {name:20} {sub_help}")
+
+    # Recurse into subcommands
     if isinstance(cmd, click.Group):
         for name, sub_cmd in sorted(cmd.commands.items()):
             sub_ctx = click.Context(sub_cmd, parent=ctx, info_name=name)
-            print_recursive_help(sub_cmd, sub_ctx, prefix=cmd_path)
+            lines.extend(format_compact_help(sub_cmd, sub_ctx, prefix=cmd_path))
+
+    return lines
 
 
 def full_help_callback(ctx: click.Context, param: click.Parameter, value: bool) -> None:
-    """Custom help callback that shows recursive help for all commands."""
+    """Custom help callback that shows compact recursive help for all commands."""
     if not value or ctx.resilient_parsing:
         return
 
-    cmd = ctx.command
-    click.echo(click.style("\n" + "=" * 60, fg="green"))
-    click.echo(click.style("  SOONG - GPU Instance Management CLI", fg="green", bold=True))
-    click.echo(click.style("  Full Command Reference", fg="green"))
-    click.echo(click.style("=" * 60, fg="green"))
+    click.echo(click.style("SOONG - GPU Instance Management CLI", fg="green", bold=True))
+    click.echo(click.style("Full Command Reference\n", fg="green"))
 
-    print_recursive_help(cmd, ctx)
+    lines = format_compact_help(ctx.command, ctx)
+    for line in lines:
+        click.echo(line)
 
+    click.echo()
     ctx.exit(0)
 
 
