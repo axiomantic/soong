@@ -3,6 +3,7 @@
 import typer
 import secrets
 import questionary
+from pathlib import Path
 from typing import Optional, Dict
 from rich.console import Console
 from rich.table import Table
@@ -18,6 +19,7 @@ from .lambda_api import LambdaAPI, LambdaAPIError, InstanceType
 from .instance import InstanceManager
 from .validation import LaunchValidator
 from .ssh import SSHTunnelManager
+from .provision import provision_instance, ProvisionConfig
 from .worker import deploy_worker, worker_status, worker_logs, destroy_worker
 from .models import (
     KNOWN_MODELS, KNOWN_GPUS, ModelConfig, Quantization,
@@ -572,8 +574,9 @@ def start(
     wait: bool = typer.Option(True, help="Wait for instance to be ready"),
     yes: bool = typer.Option(False, "-y", "--yes", help="Skip cost confirmation"),
     skip_validation: bool = typer.Option(False, "--skip-validation", help="Skip pre-launch validation"),
+    skip_provision: bool = typer.Option(False, "--skip-provision", help="Skip Ansible provisioning"),
 ):
-    """Launch new GPU instance with cloud-init."""
+    """Launch new GPU instance and provision services."""
     config = get_config()
     api = LambdaAPI(config.lambda_config.api_key)
     instance_mgr = InstanceManager(api)
@@ -688,8 +691,26 @@ def start(
 
                 ip = instance.ip
 
+                # Provision the instance with services
+                if not skip_provision:
+                    console.print("[cyan]Provisioning instance...[/cyan]")
+                    provision_config = ProvisionConfig(
+                        instance_ip=ip,
+                        ssh_key_path=str(Path(config.ssh.key_path).expanduser()),
+                        lambda_api_key=config.lambda_config.api_key,
+                        status_token=config.status_daemon.token,
+                        model=model,
+                        lease_hours=hours,
+                    )
+
+                    if not provision_instance(provision_config):
+                        console.print("[yellow]Warning: Provisioning failed. Services may not be available.[/yellow]")
+                        console.print("[dim]You can SSH in and set up manually, or try 'soong provision'[/dim]\n")
+                else:
+                    console.print("[dim]Skipping provisioning (--skip-provision)[/dim]")
+
                 # Auto-start SSH tunnel
-                console.print("[cyan]Starting SSH tunnel...[/cyan]")
+                console.print("\n[cyan]Starting SSH tunnel...[/cyan]")
                 try:
                     lambda_keys = api.list_ssh_keys()
                 except LambdaAPIError:

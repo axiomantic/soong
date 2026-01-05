@@ -3,8 +3,7 @@
 # Configures SGLang, n8n, OpenHands, and Status Daemon on Lambda instance
 
 - name: Configure Lambda GPU Coding Stack
-  hosts: localhost
-  connection: local
+  hosts: all
   become: yes
 
   vars_files:
