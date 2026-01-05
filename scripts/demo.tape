@@ -47,14 +47,14 @@ Enter
 Sleep 100ms
 Show
 
-# Start instance in background, wait for completion, then mark time
-Type "soong start -y --skip-provision && ./scripts/demo-timing.sh wait_end"
+# Start instance with full provisioning and health check
+Type "soong start -y && ./scripts/demo-timing.sh wait_end"
 Sleep 300ms
 Enter
 
 # Let the command run - VHS will wait for prompt to return
-# Typical boot time: 2-5 minutes without provisioning
-Sleep 360s
+# Full flow: boot (~3min) + provision (~3min) + health check (~1min) = ~7min
+Sleep 600s
 
 # Mark when we resume typing (end of dead time)
 Hide
