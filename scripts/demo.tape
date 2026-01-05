@@ -32,14 +32,10 @@ Sleep 300ms
 Enter
 Sleep 3s
 
-# Start an instance
+# Start an instance (blocks until ready)
 Type "soong start -y"
 Sleep 300ms
 Enter
-
-# Wait for instance to be ready (boot + provision + health check)
-Sleep 600s
-
 Sleep 2s
 
 # Show instance status
