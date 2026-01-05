@@ -2,12 +2,64 @@
 
 import os
 import signal
+import socket
 import subprocess
-from typing import Optional, List, Dict
+from dataclasses import dataclass
+from typing import Optional, List, Dict, Tuple
 from pathlib import Path
 from rich.console import Console
 
 console = Console()
+
+
+def is_port_available(port: int) -> bool:
+    """
+    Check if a local port is available for binding.
+
+    Args:
+        port: Port number to check
+
+    Returns:
+        True if port is available, False if in use
+    """
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(("127.0.0.1", port))
+            return True
+    except OSError:
+        return False
+
+
+def find_available_port(start_port: int, max_attempts: int = 100) -> int:
+    """
+    Find an available port starting from start_port, incrementing by 1.
+
+    Args:
+        start_port: Port to start searching from
+        max_attempts: Maximum number of ports to try
+
+    Returns:
+        Available port number
+
+    Raises:
+        RuntimeError: If no available port found within max_attempts
+    """
+    for offset in range(max_attempts):
+        port = start_port + offset
+        if is_port_available(port):
+            return port
+
+    raise RuntimeError(
+        f"No available port found in range {start_port}-{start_port + max_attempts - 1}"
+    )
+
+
+@dataclass
+class TunnelPorts:
+    """Actual ports used for tunnel forwarding."""
+    sglang: int
+    n8n: int
+    status: int
 
 
 def scan_local_ssh_keys() -> Dict[str, Path]:
@@ -112,31 +164,50 @@ class SSHTunnelManager:
         local_ports: List[int],
         remote_ports: List[int],
         username: str = "ubuntu",
-    ) -> bool:
+        auto_find_ports: bool = True,
+    ) -> Optional[TunnelPorts]:
         """
         Start SSH tunnel with port forwarding.
 
         Args:
             instance_ip: Remote instance IP
-            local_ports: List of local ports to forward from
+            local_ports: List of local ports to forward from (defaults to try first)
             remote_ports: List of remote ports to forward to
             username: SSH username (default: ubuntu)
+            auto_find_ports: If True, find available ports starting from local_ports
 
         Returns:
-            True if tunnel started successfully
+            TunnelPorts with actual ports used, or None if failed
         """
         if len(local_ports) != len(remote_ports):
             console.print("[red]Error: local_ports and remote_ports must match[/red]")
-            return False
+            return None
 
         # Check if tunnel already running
         if self.is_tunnel_running():
             console.print("[yellow]Tunnel already running. Stop it first.[/yellow]")
-            return False
+            return None
+
+        # Find available ports if auto_find_ports is enabled
+        actual_local_ports = []
+        if auto_find_ports:
+            for default_port in local_ports:
+                try:
+                    available_port = find_available_port(default_port)
+                    actual_local_ports.append(available_port)
+                    if available_port != default_port:
+                        console.print(
+                            f"[dim]Port {default_port} in use, using {available_port}[/dim]"
+                        )
+                except RuntimeError as e:
+                    console.print(f"[red]Error finding available port: {e}[/red]")
+                    return None
+        else:
+            actual_local_ports = local_ports
 
         # Build SSH command with port forwarding
         forwarding_args = []
-        for local, remote in zip(local_ports, remote_ports):
+        for local, remote in zip(actual_local_ports, remote_ports):
             forwarding_args.extend(["-L", f"{local}:localhost:{remote}"])
 
         ssh_command = [
@@ -168,29 +239,46 @@ class SSHTunnelManager:
                 if "Permission denied" in stderr or "publickey" in stderr.lower():
                     self._suggest_key_fix()
 
-                return False
+                return None
 
-            # Find and store tunnel PID
+            # Build TunnelPorts result
+            tunnel_ports = TunnelPorts(
+                sglang=actual_local_ports[0],
+                n8n=actual_local_ports[1],
+                status=actual_local_ports[2],
+            )
+
+            # Find and store tunnel PID with port info
             pid = self._find_tunnel_pid(instance_ip)
             if pid:
                 self.tunnel_pid_file.parent.mkdir(parents=True, exist_ok=True)
-                self.tunnel_pid_file.write_text(str(pid))
+                # Store PID and ports as JSON for later retrieval
+                import json
+                tunnel_info = {
+                    "pid": pid,
+                    "ports": {
+                        "sglang": tunnel_ports.sglang,
+                        "n8n": tunnel_ports.n8n,
+                        "status": tunnel_ports.status,
+                    },
+                }
+                self.tunnel_pid_file.write_text(json.dumps(tunnel_info))
                 console.print(f"[green]SSH tunnel started (PID: {pid})[/green]")
 
-                for local, remote in zip(local_ports, remote_ports):
+                for local, remote in zip(actual_local_ports, remote_ports):
                     console.print(f"  localhost:{local} -> {instance_ip}:{remote}")
 
-                return True
+                return tunnel_ports
             else:
                 console.print("[yellow]Tunnel may have started but PID not found[/yellow]")
-                return True
+                return tunnel_ports
 
         except subprocess.TimeoutExpired:
             console.print("[red]SSH tunnel command timed out[/red]")
-            return False
+            return None
         except Exception as e:
             console.print(f"[red]Error starting tunnel: {e}[/red]")
-            return False
+            return None
 
     def stop_tunnel(self) -> bool:
         """
@@ -204,7 +292,17 @@ class SSHTunnelManager:
             return False
 
         try:
-            pid = int(self.tunnel_pid_file.read_text().strip())
+            import json
+            content = self.tunnel_pid_file.read_text().strip()
+
+            # Handle both old (plain int) and new (JSON) format
+            try:
+                tunnel_info = json.loads(content)
+                pid = tunnel_info["pid"]
+            except (json.JSONDecodeError, KeyError):
+                # Fallback for old format
+                pid = int(content)
+
             os.kill(pid, signal.SIGTERM)
             self.tunnel_pid_file.unlink()
             console.print(f"[green]Stopped tunnel (PID: {pid})[/green]")
@@ -228,13 +326,51 @@ class SSHTunnelManager:
             return False
 
         try:
-            pid = int(self.tunnel_pid_file.read_text().strip())
+            import json
+            content = self.tunnel_pid_file.read_text().strip()
+
+            # Handle both old (plain int) and new (JSON) format
+            try:
+                tunnel_info = json.loads(content)
+                pid = tunnel_info["pid"]
+            except (json.JSONDecodeError, KeyError):
+                # Fallback for old format
+                pid = int(content)
+
             os.kill(pid, 0)  # Check if process exists
             return True
         except (ProcessLookupError, ValueError):
             # Clean up stale PID file
             self.tunnel_pid_file.unlink()
             return False
+
+    def get_tunnel_ports(self) -> Optional[TunnelPorts]:
+        """
+        Get the ports used by the current tunnel.
+
+        Returns:
+            TunnelPorts if tunnel is running, None otherwise
+        """
+        if not self.tunnel_pid_file.exists():
+            return None
+
+        try:
+            import json
+            content = self.tunnel_pid_file.read_text().strip()
+            tunnel_info = json.loads(content)
+
+            # Verify tunnel is still running
+            pid = tunnel_info["pid"]
+            os.kill(pid, 0)
+
+            ports = tunnel_info.get("ports", {})
+            return TunnelPorts(
+                sglang=ports.get("sglang", 8000),
+                n8n=ports.get("n8n", 5678),
+                status=ports.get("status", 8080),
+            )
+        except (json.JSONDecodeError, KeyError, ProcessLookupError, ValueError):
+            return None
 
     def _find_tunnel_pid(self, instance_ip: str) -> Optional[int]:
         """

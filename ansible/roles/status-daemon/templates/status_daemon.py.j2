@@ -21,6 +21,7 @@ STATUS_TOKEN = "{{ status_token }}"
 IDLE_TIMEOUT_MINUTES = {{ idle_timeout_minutes }}
 LEASE_HOURS = {{ lease_hours }}
 MAX_LEASE_HOURS = {{ max_lease_hours }}
+WORKER_URL = "{{ worker_url | default('') }}"
 
 # Metrics-based idle detection configuration
 SGLANG_METRICS_URL = "http://localhost:{{ sglang_metrics_port }}{{ sglang_metrics_path }}"
@@ -236,6 +237,37 @@ def check_n8n_activity() -> Tuple[bool, bool]:
         return False, True
 
 
+def send_heartbeat():
+    """
+    Push heartbeat to Worker (non-blocking, fire-and-forget).
+
+    This enables the Worker to detect if this instance is healthy without
+    needing any inbound ports open. The Worker tracks last_seen per instance
+    and terminates instances that stop sending heartbeats.
+    """
+    if not WORKER_URL:
+        return  # Worker not configured
+
+    try:
+        payload = {
+            "instance_id": get_instance_id(),
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "uptime_minutes": int((datetime.utcnow() - BOOT_TIME).total_seconds() / 60),
+            "model_loaded": get_model_loaded(),
+            "sglang_healthy": sglang_metrics_healthy,
+            "n8n_healthy": n8n_metrics_healthy,
+        }
+        requests.post(
+            f"{WORKER_URL}/heartbeat",
+            json=payload,
+            headers={"Authorization": f"Bearer {STATUS_TOKEN}"},
+            timeout=5,
+        )
+        app.logger.debug(f"Heartbeat sent for {payload['instance_id'][:8]}")
+    except requests.exceptions.RequestException as e:
+        app.logger.warning(f"Heartbeat failed (non-fatal): {e}")
+
+
 def check_auth():
     """Verify bearer token."""
     auth = request.headers.get("Authorization", "")
@@ -332,6 +364,9 @@ def idle_checker():
                     f"Idle for {idle_seconds/60:.1f} min "
                     f"({REQUEST_IDLE_TIMEOUT/60 - idle_seconds/60:.1f} min remaining)"
                 )
+
+        # Send heartbeat to Worker (if configured)
+        send_heartbeat()
 
 
 def get_status_dict():

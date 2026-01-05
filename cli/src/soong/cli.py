@@ -1,5 +1,6 @@
 """CLI interface for GPU session management."""
 
+import click
 import typer
 import secrets
 import questionary
@@ -13,7 +14,7 @@ from datetime import datetime, timezone
 
 import requests
 
-from .config import Config, ConfigManager, LambdaConfig, StatusDaemonConfig, DefaultsConfig, SSHConfig, CloudflareConfig, validate_custom_model
+from .config import Config, ConfigManager, LambdaConfig, StatusDaemonConfig, DefaultsConfig, SSHConfig, CloudflareConfig, TunnelConfig, validate_custom_model
 from .pending import save_pending_event, sync_pending_events
 from .lambda_api import LambdaAPI, LambdaAPIError, InstanceType
 from .instance import InstanceManager
@@ -26,11 +27,66 @@ from .models import (
     get_model_config, get_recommended_gpu, estimate_vram, format_model_info
 )
 
+
+def print_recursive_help(cmd: click.Command, ctx: click.Context, prefix: str = "") -> None:
+    """Recursively print help for a command and all its subcommands."""
+    # Print section header
+    cmd_path = f"{prefix} {cmd.name}".strip() if prefix else cmd.name
+    click.echo(click.style(f"\n{'=' * 60}", fg="cyan"))
+    click.echo(click.style(f"  {cmd_path}", fg="cyan", bold=True))
+    click.echo(click.style(f"{'=' * 60}\n", fg="cyan"))
+
+    # Print the command's help
+    with ctx.scope() as sub_ctx:
+        click.echo(cmd.get_help(sub_ctx))
+
+    # Recurse into subcommands if this is a group
+    if isinstance(cmd, click.Group):
+        for name, sub_cmd in sorted(cmd.commands.items()):
+            sub_ctx = click.Context(sub_cmd, parent=ctx, info_name=name)
+            print_recursive_help(sub_cmd, sub_ctx, prefix=cmd_path)
+
+
+def full_help_callback(ctx: click.Context, param: click.Parameter, value: bool) -> None:
+    """Custom help callback that shows recursive help for all commands."""
+    if not value or ctx.resilient_parsing:
+        return
+
+    cmd = ctx.command
+    click.echo(click.style("\n" + "=" * 60, fg="green"))
+    click.echo(click.style("  SOONG - GPU Instance Management CLI", fg="green", bold=True))
+    click.echo(click.style("  Full Command Reference", fg="green"))
+    click.echo(click.style("=" * 60, fg="green"))
+
+    print_recursive_help(cmd, ctx)
+
+    ctx.exit(0)
+
+
 app = typer.Typer(
-    name="gpu-session",
+    name="soong",
     help="GPU session management for Lambda Labs",
     add_completion=False,
 )
+
+# Override the default --help to show full recursive help
+@app.callback(invoke_without_command=True)
+def main_callback(
+    ctx: typer.Context,
+    help: bool = typer.Option(
+        False,
+        "--help", "-h",
+        is_eager=True,
+        callback=full_help_callback,
+        help="Show full help for all commands",
+    ),
+):
+    """GPU session management for Lambda Labs with automatic cost controls."""
+    if ctx.invoked_subcommand is None and not help:
+        # No command specified, show help
+        full_help_callback(ctx, None, True)
+
+
 console = Console()
 
 config_manager = ConfigManager()
@@ -701,6 +757,7 @@ def start(
                         status_token=config.status_daemon.token,
                         model=model,
                         lease_hours=hours,
+                        worker_url=config.cloudflare.worker_url or None,
                     )
 
                     if not provision_instance(provision_config):
@@ -717,13 +774,17 @@ def start(
                     lambda_keys = []
 
                 ssh_mgr = SSHTunnelManager(config.ssh.key_path, lambda_key_names=lambda_keys)
-                tunnel_started = ssh_mgr.start_tunnel(
+                tunnel_ports = ssh_mgr.start_tunnel(
                     ip,
-                    local_ports=[8000, 5678, 8080],
+                    local_ports=[
+                        config.tunnel.sglang_port,
+                        config.tunnel.n8n_port,
+                        config.tunnel.status_port,
+                    ],
                     remote_ports=[8000, 5678, 8080],
                 )
 
-                if tunnel_started:
+                if tunnel_ports:
                     # Show connection details with localhost URLs
                     console.print(Panel(
                         f"""[bold]Instance:[/bold] {instance_id[:8]}...
@@ -733,9 +794,9 @@ def start(
 [bold]Lease:[/bold] {hours} hours
 
 [bold cyan]Services (via tunnel)[/bold cyan]
-  SGLang API:    http://localhost:8000
-  n8n Workflows: http://localhost:5678
-  Status Daemon: http://localhost:8080
+  SGLang API:    http://localhost:{tunnel_ports.sglang}
+  n8n Workflows: http://localhost:{tunnel_ports.n8n}
+  Status Daemon: http://localhost:{tunnel_ports.status}
 
 [bold cyan]Quick Commands[/bold cyan]
   soong ssh       [dim]# SSH into instance[/dim]
@@ -1705,14 +1766,19 @@ app.add_typer(tunnel_app, name="tunnel")
 
 def _start_tunnel(
     instance_id: Optional[str] = None,
-    sglang_port: int = 8000,
-    n8n_port: int = 5678,
-    status_port: int = 8080,
+    sglang_port: Optional[int] = None,
+    n8n_port: Optional[int] = None,
+    status_port: Optional[int] = None,
 ):
     """Shared tunnel start logic."""
     config = get_config()
     api = LambdaAPI(config.lambda_config.api_key)
     instance_mgr = InstanceManager(api)
+
+    # Use config defaults if not specified
+    sglang_port = sglang_port if sglang_port is not None else config.tunnel.sglang_port
+    n8n_port = n8n_port if n8n_port is not None else config.tunnel.n8n_port
+    status_port = status_port if status_port is not None else config.tunnel.status_port
 
     # Get Lambda SSH keys for better error messages
     try:
@@ -1736,24 +1802,30 @@ def _start_tunnel(
         console.print("[red]Instance has no IP address[/red]")
         raise typer.Exit(1)
 
-    # Start tunnel
-    success = ssh_mgr.start_tunnel(
+    # Start tunnel (returns TunnelPorts with actual ports used)
+    tunnel_ports = ssh_mgr.start_tunnel(
         instance.ip,
         local_ports=[sglang_port, n8n_port, status_port],
         remote_ports=[8000, 5678, 8080],
     )
 
-    if not success:
+    if not tunnel_ports:
         raise typer.Exit(1)
+
+    # Show actual ports if different from defaults
+    console.print("\n[bold cyan]Service URLs:[/bold cyan]")
+    console.print(f"  SGLang API:    http://localhost:{tunnel_ports.sglang}")
+    console.print(f"  n8n Workflows: http://localhost:{tunnel_ports.n8n}")
+    console.print(f"  Status Daemon: http://localhost:{tunnel_ports.status}")
 
 
 @tunnel_app.callback(invoke_without_command=True)
 def tunnel_default(
     ctx: typer.Context,
     instance_id: Optional[str] = typer.Option(None, help="Instance ID (uses active if not specified)"),
-    sglang_port: int = typer.Option(8000, help="Local port for SGLang"),
-    n8n_port: int = typer.Option(5678, help="Local port for n8n"),
-    status_port: int = typer.Option(8080, help="Local port for status daemon"),
+    sglang_port: Optional[int] = typer.Option(None, help="Local port for SGLang (default: from config)"),
+    n8n_port: Optional[int] = typer.Option(None, help="Local port for n8n (default: from config)"),
+    status_port: Optional[int] = typer.Option(None, help="Local port for status daemon (default: from config)"),
 ):
     """Start SSH tunnels to instance services (default: start)."""
     if ctx.invoked_subcommand is None:
@@ -1763,9 +1835,9 @@ def tunnel_default(
 @tunnel_app.command("start")
 def tunnel_start(
     instance_id: Optional[str] = typer.Option(None, help="Instance ID (uses active if not specified)"),
-    sglang_port: int = typer.Option(8000, help="Local port for SGLang"),
-    n8n_port: int = typer.Option(5678, help="Local port for n8n"),
-    status_port: int = typer.Option(8080, help="Local port for status daemon"),
+    sglang_port: Optional[int] = typer.Option(None, help="Local port for SGLang (default: from config)"),
+    n8n_port: Optional[int] = typer.Option(None, help="Local port for n8n (default: from config)"),
+    status_port: Optional[int] = typer.Option(None, help="Local port for status daemon (default: from config)"),
 ):
     """Start SSH tunnel to instance."""
     _start_tunnel(instance_id, sglang_port, n8n_port, status_port)
@@ -1789,6 +1861,12 @@ def tunnel_status():
 
     if ssh_mgr.is_tunnel_running():
         console.print("[green]Tunnel is running[/green]")
+        tunnel_ports = ssh_mgr.get_tunnel_ports()
+        if tunnel_ports:
+            console.print("\n[bold cyan]Service URLs:[/bold cyan]")
+            console.print(f"  SGLang API:    http://localhost:{tunnel_ports.sglang}")
+            console.print(f"  n8n Workflows: http://localhost:{tunnel_ports.n8n}")
+            console.print(f"  Status Daemon: http://localhost:{tunnel_ports.status}")
     else:
         console.print("[yellow]Tunnel is not running[/yellow]")
 

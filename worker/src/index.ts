@@ -32,21 +32,7 @@ interface LambdaInstance {
   created_at: string;
 }
 
-interface StatusResponse {
-  instance_id: string;
-  status: string;
-  uptime_minutes: number;
-  idle_minutes: number;
-  shutdown_at: string;
-  shutdown_in_minutes: number;
-  model_loaded: string;
-  gpu_utilization: number;
-  boot_time: string;
-}
-
-interface FailureTracker {
-  [instanceId: string]: number;
-}
+// StatusResponse and FailureTracker removed - no longer needed with heartbeat-based watchdog
 
 interface HistoryEvent {
   timestamp: string;
@@ -62,7 +48,7 @@ interface InstanceEvent {
   event_type: "launch" | "terminate" | "extend" | "idle_shutdown" | "watchdog_termination";
   timestamp: string;
   instance_id: string;
-  instance_name: string;
+  instance_name: string | null;
   gpu_type: string;
   region: string;
   duration_minutes: number | null;
@@ -76,10 +62,18 @@ interface InstanceEvent {
   } | null;
 }
 
-// KV namespace to track consecutive failures across cron runs
-// Note: This would require adding KV binding in wrangler.toml for production
-// For now, we'll use a global in-memory store (resets on each deployment)
-let failureTracker: FailureTracker = {};
+interface HeartbeatPayload {
+  instance_id: string;
+  timestamp: string;
+  uptime_minutes: number;
+  model_loaded: string;
+  sglang_healthy: boolean;
+  n8n_healthy: boolean;
+  received_at?: string;
+}
+
+// Heartbeat-based watchdog: instances push heartbeats to Worker
+// No inbound ports needed - fully push-based architecture
 
 /**
  * Log a history event to KV storage
@@ -171,34 +165,35 @@ async function listInstances(apiKey: string): Promise<LambdaInstance[]> {
 }
 
 /**
- * Check instance health via status daemon
+ * List all heartbeats from KV storage
  */
-async function checkInstanceHealth(
-  instanceIp: string,
-  statusToken: string
-): Promise<StatusResponse | null> {
-  return withRetry(async () => {
-    const response = await fetch(`http://${instanceIp}:8080/status`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${statusToken}`,
-      },
-      signal: AbortSignal.timeout(10000), // 10 second timeout
-    });
+async function listHeartbeats(env: Env): Promise<HeartbeatPayload[]> {
+  if (!env.KV) {
+    return [];
+  }
 
-    if (!response.ok) {
-      return null;
+  const list = await env.KV.list({ prefix: 'heartbeats/' });
+  const heartbeats: HeartbeatPayload[] = [];
+
+  for (const key of list.keys) {
+    const value = await env.KV.get(key.name);
+    if (value) {
+      try {
+        heartbeats.push(JSON.parse(value) as HeartbeatPayload);
+      } catch {
+        console.warn(`Invalid heartbeat JSON for key ${key.name}`);
+      }
     }
+  }
 
-    return await response.json() as StatusResponse;
-  }, 3, 1000).catch(() => null); // Return null on all failures
+  return heartbeats;
 }
 
 /**
  * Terminate a Lambda instance
  */
 async function terminateInstance(
-  apiKey: string,
+  env: Env,
   instanceId: string
 ): Promise<void> {
   return withRetry(async () => {
@@ -207,7 +202,7 @@ async function terminateInstance(
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
+          'Authorization': `Bearer ${env.LAMBDA_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -223,15 +218,50 @@ async function terminateInstance(
 }
 
 /**
- * Main watchdog logic
+ * Log watchdog termination event to KV
+ */
+async function logWatchdogEvent(
+  env: Env,
+  instance: LambdaInstance,
+  reason: string
+): Promise<void> {
+  if (!env.KV) return;
+
+  const event: InstanceEvent = {
+    event_type: 'watchdog_termination',
+    timestamp: new Date().toISOString(),
+    instance_id: instance.id,
+    instance_name: instance.name,
+    gpu_type: instance.instance_type?.name || 'unknown',
+    region: instance.region?.name || 'unknown',
+    duration_minutes: null,
+    cost_dollars: null,
+    shutdown_reason: reason,
+    metrics: null,
+  };
+
+  const key = `events/${event.timestamp}_${instance.id}_watchdog`;
+  await env.KV.put(key, JSON.stringify(event), { expirationTtl: 90 * 24 * 60 * 60 });
+  console.log(`Logged watchdog event: ${key}`);
+}
+
+/**
+ * Main watchdog logic - heartbeat-based detection
+ *
+ * Instances push heartbeats to Worker. This function:
+ * 1. Lists running instances from Lambda API
+ * 2. Compares against heartbeats in KV
+ * 3. Terminates instances with stale/missing heartbeats
  */
 async function watchdogCheck(env: Env): Promise<string[]> {
   const logs: string[] = [];
+  const STALE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+  const GRACE_PERIOD_MS = 10 * 60 * 1000; // 10 minutes for new instances
 
-  logs.push(`[${new Date().toISOString()}] Watchdog check starting`);
+  logs.push(`[${new Date().toISOString()}] Watchdog check starting (heartbeat-based)`);
 
   try {
-    // Fetch all instances
+    // 1. Get all running instances from Lambda API
     const instances = await listInstances(env.LAMBDA_API_KEY);
     logs.push(`Found ${instances.length} total instances`);
 
@@ -241,69 +271,61 @@ async function watchdogCheck(env: Env): Promise<string[]> {
     );
     logs.push(`Found ${codingStackInstances.length} instances with coding-stack filesystem`);
 
-    // Check each instance
+    if (codingStackInstances.length === 0) {
+      logs.push('No instances to check');
+      logs.push(`[${new Date().toISOString()}] Watchdog check complete`);
+      return logs;
+    }
+
+    // 2. Get all heartbeats from KV
+    const heartbeats = await listHeartbeats(env);
+    const heartbeatMap = new Map(heartbeats.map(h => [h.instance_id, h]));
+    logs.push(`Found ${heartbeats.length} heartbeats in KV`);
+
+    // 3. Check each instance
+    const now = Date.now();
     for (const instance of codingStackInstances) {
-      if (!instance.ip) {
-        logs.push(`Instance ${instance.id} has no IP yet (still booting?), skipping`);
+      const heartbeat = heartbeatMap.get(instance.id);
+      const shortId = instance.id.slice(0, 8);
+
+      if (!heartbeat) {
+        // No heartbeat ever received - check if instance is new
+        const createdAt = new Date(instance.created_at).getTime();
+        const age = now - createdAt;
+
+        if (age > GRACE_PERIOD_MS) {
+          logs.push(`Instance ${shortId}: No heartbeat, age ${Math.round(age / 60000)}m - TERMINATING`);
+          try {
+            await terminateInstance(env, instance.id);
+            await logWatchdogEvent(env, instance, 'no_heartbeat');
+            logs.push(`Instance ${shortId}: Terminated successfully`);
+          } catch (e) {
+            const errorMsg = e instanceof Error ? e.message : String(e);
+            logs.push(`Instance ${shortId}: ERROR terminating: ${errorMsg}`);
+          }
+        } else {
+          logs.push(`Instance ${shortId}: No heartbeat, age ${Math.round(age / 60000)}m - grace period`);
+        }
         continue;
       }
 
-      logs.push(`Checking instance ${instance.id} (${instance.ip})`);
+      // Has heartbeat - check staleness
+      const lastSeen = new Date(heartbeat.received_at!).getTime();
+      const staleness = now - lastSeen;
 
-      // Attempt health check
-      const health = await checkInstanceHealth(instance.ip, env.STATUS_DAEMON_TOKEN);
-
-      if (health && health.status === 'healthy') {
-        // Health check passed - reset failure count
-        if (failureTracker[instance.id]) {
-          logs.push(`Instance ${instance.id} recovered (was ${failureTracker[instance.id]} failures)`);
-          delete failureTracker[instance.id];
-        } else {
-          logs.push(`Instance ${instance.id} healthy (uptime: ${health.uptime_minutes}m, idle: ${health.idle_minutes}m)`);
+      if (staleness > STALE_THRESHOLD_MS) {
+        logs.push(`Instance ${shortId}: Stale heartbeat (${Math.round(staleness / 60000)}m ago) - TERMINATING`);
+        try {
+          await terminateInstance(env, instance.id);
+          await logWatchdogEvent(env, instance, 'stale_heartbeat');
+          logs.push(`Instance ${shortId}: Terminated successfully`);
+        } catch (e) {
+          const errorMsg = e instanceof Error ? e.message : String(e);
+          logs.push(`Instance ${shortId}: ERROR terminating: ${errorMsg}`);
         }
       } else {
-        // Health check failed - increment failure count
-        const previousFailures = failureTracker[instance.id] || 0;
-        const currentFailures = previousFailures + 1;
-        failureTracker[instance.id] = currentFailures;
-
-        logs.push(`Instance ${instance.id} health check failed (${currentFailures} consecutive failures)`);
-
-        // Terminate after 2 consecutive failures (2 checks * 30 min = 1 hour)
-        if (currentFailures >= 2) {
-          logs.push(`Instance ${instance.id} failed ${currentFailures} consecutive checks, terminating...`);
-
-          try {
-            // Calculate uptime (rough estimate based on created_at)
-            const createdAt = new Date(instance.created_at);
-            const now = new Date();
-            const uptimeMinutes = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60));
-
-            // Log history event before terminating
-            await logHistoryEvent(
-              env,
-              instance,
-              'watchdog: health check failures',
-              uptimeMinutes
-            );
-
-            await terminateInstance(env.LAMBDA_API_KEY, instance.id);
-            logs.push(`Instance ${instance.id} terminated successfully`);
-            delete failureTracker[instance.id];
-          } catch (error) {
-            const errorMsg = error instanceof Error ? error.message : String(error);
-            logs.push(`Failed to terminate instance ${instance.id}: ${errorMsg}`);
-          }
-        }
-      }
-    }
-
-    // Clean up stale failure tracker entries (instances that no longer exist)
-    const currentInstanceIds = new Set(codingStackInstances.map(i => i.id));
-    for (const trackedId in failureTracker) {
-      if (!currentInstanceIds.has(trackedId)) {
-        logs.push(`Removing stale tracker entry for ${trackedId}`);
-        delete failureTracker[trackedId];
+        const healthInfo = heartbeat.sglang_healthy ? 'sglang:ok' : 'sglang:down';
+        logs.push(`Instance ${shortId}: OK (${Math.round(staleness / 1000)}s ago, ${healthInfo})`);
       }
     }
 
@@ -378,11 +400,13 @@ export default {
 
     // Status endpoint
     if (request.method === 'GET' && url.pathname === '/status') {
+      const heartbeats = await listHeartbeats(env);
       return new Response(
         JSON.stringify({
           service: 'gpu-watchdog',
-          version: '1.0.0',
-          tracked_failures: failureTracker,
+          version: '3.0.0',
+          mode: 'heartbeat-based',
+          active_heartbeats: heartbeats.length,
           timestamp: new Date().toISOString(),
         }),
         {
@@ -390,6 +414,78 @@ export default {
             'Content-Type': 'application/json',
           },
         }
+      );
+    }
+
+    // POST /heartbeat - Receive heartbeat from instance
+    if (request.method === 'POST' && url.pathname === '/heartbeat') {
+      // Validate auth
+      const authHeader = request.headers.get('Authorization') || '';
+      const token = authHeader.replace('Bearer ', '');
+      if (token !== env.STATUS_DAEMON_TOKEN) {
+        return new Response(
+          JSON.stringify({ error: 'unauthorized' }),
+          { status: 401, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Validate KV availability
+      if (!env.KV) {
+        return new Response(
+          JSON.stringify({ error: 'KV namespace not configured' }),
+          { status: 503, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
+      let payload: HeartbeatPayload;
+      try {
+        payload = await request.json() as HeartbeatPayload;
+      } catch {
+        return new Response(
+          JSON.stringify({ error: 'invalid JSON' }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Validate required fields
+      if (!payload.instance_id || !payload.timestamp) {
+        return new Response(
+          JSON.stringify({ error: 'missing instance_id or timestamp' }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Store in KV with 10-minute TTL (2x stale threshold for buffer)
+      const key = `heartbeats/${payload.instance_id}`;
+      const value: HeartbeatPayload = {
+        ...payload,
+        received_at: new Date().toISOString(),
+      };
+
+      await env.KV.put(key, JSON.stringify(value), { expirationTtl: 600 });
+
+      return new Response(
+        JSON.stringify({ success: true, key }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // GET /heartbeats - List all current heartbeats (for debugging)
+    if (request.method === 'GET' && url.pathname === '/heartbeats') {
+      // Validate auth
+      const authHeader = request.headers.get('Authorization') || '';
+      const token = authHeader.replace('Bearer ', '');
+      if (token !== env.STATUS_DAEMON_TOKEN) {
+        return new Response(
+          JSON.stringify({ error: 'unauthorized' }),
+          { status: 401, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const heartbeats = await listHeartbeats(env);
+      return new Response(
+        JSON.stringify({ heartbeats, count: heartbeats.length }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
@@ -604,7 +700,7 @@ export default {
       }
     }
 
-    return new Response('GPU Watchdog Worker\n\nEndpoints:\n- GET /health (health check)\n- GET /trigger (manual run)\n- GET /status (view tracker)\n- GET /history?hours=24 (legacy termination history)\n- POST /event (log lifecycle event, auth required)\n- GET /events?hours=24&instance_id=X&event_type=Y&limit=100 (query events)', {
+    return new Response('GPU Watchdog Worker (Heartbeat-Based)\n\nEndpoints:\n- GET /health (health check)\n- GET /trigger (manual watchdog run)\n- GET /status (view active heartbeats)\n- POST /heartbeat (receive instance heartbeat, auth required)\n- GET /heartbeats (list all heartbeats, auth required)\n- POST /event (log lifecycle event, auth required)\n- GET /events?hours=24 (query events)\n- GET /history?hours=24 (legacy termination history)', {
       headers: {
         'Content-Type': 'text/plain',
       },

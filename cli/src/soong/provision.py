@@ -29,6 +29,7 @@ class ProvisionConfig:
     lease_hours: int
     idle_timeout_minutes: int = 30
     max_lease_hours: int = 8
+    worker_url: Optional[str] = None
 
 
 class ProvisionDisplay:
@@ -116,6 +117,10 @@ def run_ansible_playbook(config: ProvisionConfig) -> bool:
             "-e", f"max_lease_hours={config.max_lease_hours}",
             "--become",
         ]
+
+        # Add worker_url if configured (for heartbeat push)
+        if config.worker_url:
+            cmd.extend(["-e", f"worker_url={config.worker_url}"])
 
         result = subprocess.run(
             cmd,

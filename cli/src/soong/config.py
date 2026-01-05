@@ -82,6 +82,14 @@ class CloudflareConfig:
 
 
 @dataclass
+class TunnelConfig:
+    """SSH tunnel port configuration."""
+    sglang_port: int = 8000
+    n8n_port: int = 5678
+    status_port: int = 8080
+
+
+@dataclass
 class Config:
     """Complete configuration."""
     lambda_config: LambdaConfig
@@ -89,6 +97,7 @@ class Config:
     defaults: DefaultsConfig = None
     ssh: SSHConfig = None
     cloudflare: CloudflareConfig = None
+    tunnel: TunnelConfig = None
     custom_models: Dict[str, dict] = None
 
     def __post_init__(self):
@@ -98,6 +107,8 @@ class Config:
             self.ssh = SSHConfig()
         if self.cloudflare is None:
             self.cloudflare = CloudflareConfig()
+        if self.tunnel is None:
+            self.tunnel = TunnelConfig()
         if self.custom_models is None:
             self.custom_models = {}
 
@@ -133,6 +144,7 @@ class ConfigManager:
             defaults=DefaultsConfig(**data.get("defaults", {})),
             ssh=SSHConfig(**data.get("ssh", {})),
             cloudflare=CloudflareConfig(**data.get("cloudflare", {})),
+            tunnel=TunnelConfig(**data.get("tunnel", {})),
             custom_models=custom_models,
         )
 
@@ -146,6 +158,7 @@ class ConfigManager:
             "defaults": asdict(config.defaults),
             "ssh": asdict(config.ssh),
             "cloudflare": asdict(config.cloudflare),
+            "tunnel": asdict(config.tunnel),
             "custom_models": config.custom_models,
         }
 

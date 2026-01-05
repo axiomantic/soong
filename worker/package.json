@@ -5,11 +5,14 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "test": "echo \"No tests yet\""
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.11.1",
     "@cloudflare/workers-types": "^4.20231218.0",
     "typescript": "^5.3.3",
+    "vitest": "^4.0.16",
     "wrangler": "^3.22.1"
   }
 }

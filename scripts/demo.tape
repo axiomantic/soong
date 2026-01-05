@@ -25,7 +25,13 @@ Sleep 500ms
 Enter
 Sleep 3s
 
-# Show model info
+# List all models with VRAM requirements
+Type "soong models"
+Sleep 500ms
+Enter
+Sleep 4s
+
+# Show detailed model info
 Type "soong models info deepseek-r1-70b"
 Sleep 500ms
 Enter
@@ -37,8 +43,8 @@ Sleep 500ms
 Enter
 Sleep 4s
 
-# Show start help
-Type "soong start --help"
+# Show instance status (with cost tracking)
+Type "soong status"
 Sleep 500ms
 Enter
 Sleep 3s

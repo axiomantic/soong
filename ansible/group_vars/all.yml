@@ -46,3 +46,4 @@ retry_backoff_multiplier: 2
 # lambda_api_key: ""
 # status_token: ""
 # n8n_token: ""
+# worker_url: ""  # Cloudflare Worker URL for heartbeat push
