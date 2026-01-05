@@ -405,6 +405,53 @@ def test_api_call(mock_http, lambda_api_base_url):
     assert len(mock_http.calls) == 1
 ```
 
+## Recording the Demo
+
+The project includes a VHS script for recording demo videos.
+
+### Prerequisites
+
+Install VHS (terminal recording tool):
+
+```bash
+brew install charmbracelet/tap/vhs
+```
+
+Also requires `ffmpeg` and `ttyd` (installed automatically by VHS on first run).
+
+### Recording
+
+```bash
+make demo
+```
+
+This runs `vhs scripts/demo.tape` which:
+
+1. Shows `soong --help`
+2. Shows `soong available` (GPU/model availability)
+3. Runs `soong start -y` (launches instance, provisions, waits for health)
+4. Shows `soong status`
+5. Runs a `curl` command to chat with the model via OpenAI-compatible API
+6. Runs `soong stop -y` to tear down
+7. Shows final `soong status`
+
+**Requirements:**
+
+- Valid Lambda API credentials configured (`soong configure`)
+- Sufficient Lambda credits (instance runs for ~10 minutes)
+- `jq` installed for JSON parsing in the curl demo
+
+**Output:**
+
+- `docs/assets/demo.gif` - Animated GIF for documentation
+- `docs/assets/demo.mp4` - Video file
+
+The recording uses `PlaybackSpeed 2` to keep the video reasonable length despite the ~10 minute real-time duration.
+
+### Customizing
+
+Edit `scripts/demo.tape` to modify the demo. See [VHS documentation](https://github.com/charmbracelet/vhs) for syntax.
+
 ## Troubleshooting
 
 ### Import Errors
