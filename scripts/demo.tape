@@ -37,7 +37,7 @@ Sleep 3s
 Type "soong start -y"
 Sleep 300ms
 Enter
-Wait+Screen /Instance Ready/
+Wait+Screen /Instance ready/
 Sleep 2s
 
 # Show instance status
