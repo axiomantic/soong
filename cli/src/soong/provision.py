@@ -134,10 +134,6 @@ def run_ansible_playbook(config: ProvisionConfig) -> bool:
     except subprocess.TimeoutExpired:
         console.print("[red]Ansible playbook timed out[/red]")
         return False
-    except FileNotFoundError:
-        console.print("[red]ansible-playbook not found. Install Ansible:[/red]")
-        console.print("  pip install ansible")
-        return False
     finally:
         # Clean up temporary inventory
         if inventory_file.exists():
