@@ -1482,6 +1482,56 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#recording-the-demo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recording the Demo
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Recording the Demo">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prerequisites_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recording" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recording
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#customizing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Customizing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#troubleshooting" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1918,6 +1968,56 @@
     <span class="md-ellipsis">
       
         Working with Mocks
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recording-the-demo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recording the Demo
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Recording the Demo">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prerequisites_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recording" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recording
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#customizing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Customizing
       
     </span>
   </a>
@@ -2395,40 +2495,74 @@
 </span><span id="__span-29-16"><a id="__codelineno-29-16" name="__codelineno-29-16" href="#__codelineno-29-16"></a>    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">instances</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
 </span><span id="__span-29-17"><a id="__codelineno-29-17" name="__codelineno-29-17" href="#__codelineno-29-17"></a>    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">mock_http</span><span class="o">.</span><span class="n">calls</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
 </span></code></pre></div>
+<h2 id="recording-the-demo">Recording the Demo<a class="headerlink" href="#recording-the-demo" title="Anchor link to this section">&para;</a></h2>
+<p>The project includes a VHS script for recording demo videos.</p>
+<h3 id="prerequisites_1">Prerequisites<a class="headerlink" href="#prerequisites_1" title="Anchor link to this section">&para;</a></h3>
+<p>Install VHS (terminal recording tool):</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>brew<span class="w"> </span>install<span class="w"> </span>charmbracelet/tap/vhs
+</span></code></pre></div>
+<p>Also requires <code>ffmpeg</code> and <code>ttyd</code> (installed automatically by VHS on first run).</p>
+<h3 id="recording">Recording<a class="headerlink" href="#recording" title="Anchor link to this section">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>make<span class="w"> </span>demo
+</span></code></pre></div>
+<p>This runs <code>vhs scripts/demo.tape</code> which:</p>
+<ol>
+<li>Shows <code>soong --help</code></li>
+<li>Shows <code>soong available</code> (GPU/model availability)</li>
+<li>Runs <code>soong start -y</code> (launches instance, provisions, waits for health)</li>
+<li>Shows <code>soong status</code></li>
+<li>Runs a <code>curl</code> command to chat with the model via OpenAI-compatible API</li>
+<li>Runs <code>soong stop -y</code> to tear down</li>
+<li>Shows final <code>soong status</code></li>
+</ol>
+<p><strong>Requirements:</strong></p>
+<ul>
+<li>Valid Lambda API credentials configured (<code>soong configure</code>)</li>
+<li>Sufficient Lambda credits (instance runs for ~10 minutes)</li>
+<li><code>jq</code> installed for JSON parsing in the curl demo</li>
+</ul>
+<p><strong>Output:</strong></p>
+<ul>
+<li><code>docs/assets/demo.gif</code> - Animated GIF for documentation</li>
+<li><code>docs/assets/demo.mp4</code> - Video file</li>
+</ul>
+<p>The recording uses <code>PlaybackSpeed 2</code> to keep the video reasonable length despite the ~10 minute real-time duration.</p>
+<h3 id="customizing">Customizing<a class="headerlink" href="#customizing" title="Anchor link to this section">&para;</a></h3>
+<p>Edit <code>scripts/demo.tape</code> to modify the demo. See <a href="https://github.com/charmbracelet/vhs">VHS documentation</a> for syntax.</p>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Anchor link to this section">&para;</a></h2>
 <h3 id="import-errors">Import Errors<a class="headerlink" href="#import-errors" title="Anchor link to this section">&para;</a></h3>
 <p><strong>Problem:</strong> <code>ModuleNotFoundError: No module named 'soong'</code></p>
 <p><strong>Solution:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="c1"># Make sure you&#39;re in the venv</span>
-</span><span id="__span-30-2"><a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a><span class="nb">source</span><span class="w"> </span>venv/bin/activate
-</span><span id="__span-30-3"><a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a>
-</span><span id="__span-30-4"><a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a><span class="c1"># Reinstall in editable mode</span>
-</span><span id="__span-30-5"><a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[test]&quot;</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="c1"># Make sure you&#39;re in the venv</span>
+</span><span id="__span-32-2"><a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a><span class="nb">source</span><span class="w"> </span>venv/bin/activate
+</span><span id="__span-32-3"><a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a>
+</span><span id="__span-32-4"><a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a><span class="c1"># Reinstall in editable mode</span>
+</span><span id="__span-32-5"><a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[test]&quot;</span>
 </span></code></pre></div>
 <h3 id="test-failures">Test Failures<a class="headerlink" href="#test-failures" title="Anchor link to this section">&para;</a></h3>
 <p><strong>Problem:</strong> Tests fail with import errors</p>
 <p><strong>Solution:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="c1"># Install test dependencies</span>
-</span><span id="__span-31-2"><a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[test]&quot;</span>
-</span><span id="__span-31-3"><a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a>
-</span><span id="__span-31-4"><a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a><span class="c1"># Or explicitly</span>
-</span><span id="__span-31-5"><a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a>pip<span class="w"> </span>install<span class="w"> </span>pytest<span class="w"> </span>pytest-cov<span class="w"> </span>pytest-mock<span class="w"> </span>responses
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="c1"># Install test dependencies</span>
+</span><span id="__span-33-2"><a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[test]&quot;</span>
+</span><span id="__span-33-3"><a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a>
+</span><span id="__span-33-4"><a id="__codelineno-33-4" name="__codelineno-33-4" href="#__codelineno-33-4"></a><span class="c1"># Or explicitly</span>
+</span><span id="__span-33-5"><a id="__codelineno-33-5" name="__codelineno-33-5" href="#__codelineno-33-5"></a>pip<span class="w"> </span>install<span class="w"> </span>pytest<span class="w"> </span>pytest-cov<span class="w"> </span>pytest-mock<span class="w"> </span>responses
 </span></code></pre></div>
 <h3 id="virtual-environment-issues">Virtual Environment Issues<a class="headerlink" href="#virtual-environment-issues" title="Anchor link to this section">&para;</a></h3>
 <p><strong>Problem:</strong> Can't activate venv</p>
 <p><strong>Solution:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="c1"># Delete and recreate</span>
-</span><span id="__span-32-2"><a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a>rm<span class="w"> </span>-rf<span class="w"> </span>venv
-</span><span id="__span-32-3"><a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a>python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>venv
-</span><span id="__span-32-4"><a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a><span class="nb">source</span><span class="w"> </span>venv/bin/activate
-</span><span id="__span-32-5"><a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[test]&quot;</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="c1"># Delete and recreate</span>
+</span><span id="__span-34-2"><a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a>rm<span class="w"> </span>-rf<span class="w"> </span>venv
+</span><span id="__span-34-3"><a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a>python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>venv
+</span><span id="__span-34-4"><a id="__codelineno-34-4" name="__codelineno-34-4" href="#__codelineno-34-4"></a><span class="nb">source</span><span class="w"> </span>venv/bin/activate
+</span><span id="__span-34-5"><a id="__codelineno-34-5" name="__codelineno-34-5" href="#__codelineno-34-5"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[test]&quot;</span>
 </span></code></pre></div>
 <h3 id="config-file-permission-errors">Config File Permission Errors<a class="headerlink" href="#config-file-permission-errors" title="Anchor link to this section">&para;</a></h3>
 <p><strong>Problem:</strong> <code>PermissionError</code> when running tests</p>
 <p><strong>Solution:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="c1"># Fix permissions on config dir</span>
-</span><span id="__span-33-2"><a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a>chmod<span class="w"> </span><span class="m">755</span><span class="w"> </span>~/.config/gpu-dashboard
-</span><span id="__span-33-3"><a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a>chmod<span class="w"> </span><span class="m">600</span><span class="w"> </span>~/.config/gpu-dashboard/config.yaml
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-35-1"><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a><span class="c1"># Fix permissions on config dir</span>
+</span><span id="__span-35-2"><a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a>chmod<span class="w"> </span><span class="m">755</span><span class="w"> </span>~/.config/gpu-dashboard
+</span><span id="__span-35-3"><a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a>chmod<span class="w"> </span><span class="m">600</span><span class="w"> </span>~/.config/gpu-dashboard/config.yaml
 </span></code></pre></div>
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Anchor link to this section">&para;</a></h2>
 <ul>
