@@ -53,13 +53,15 @@ Sleep 2s
 Type "curl -s localhost:8000/v1/models | jq -r '.data[0].id'"
 Sleep 300ms
 Enter
-Sleep 3s
+Wait+Screen /deepseek|llama|mistral|qwen/
+Sleep 2s
 
 # Chat with the model via OpenAI-compatible API
 Type `MODEL=$(curl -s localhost:8000/v1/models | jq -r '.data[0].id') && curl -s localhost:8000/v1/chat/completions -H 'Content-Type: application/json' -d "{\"model\":\"$MODEL\",\"messages\":[{\"role\":\"user\",\"content\":\"What is 2+2?\"}]}" | jq -r '.choices[0].message.content'`
 Sleep 300ms
 Enter
-Sleep 10s
+Wait+Screen /4|four|Four/
+Sleep 2s
 
 # Show instance status again
 Type "soong status"
