@@ -1,5 +1,6 @@
 """Instance lifecycle management."""
 
+import subprocess
 import time
 from typing import Optional
 from rich.console import Console, Group
@@ -10,6 +11,39 @@ from rich.text import Text
 from .lambda_api import LambdaAPI, Instance, LambdaAPIError
 
 console = Console()
+
+
+def check_service_health(ip: str, ssh_key_path: str, timeout: int = 5) -> bool:
+    """
+    Check if services are healthy via SSH.
+
+    Args:
+        ip: Instance IP address
+        ssh_key_path: Path to SSH private key
+        timeout: SSH command timeout
+
+    Returns:
+        True if status daemon /health returns OK
+    """
+    try:
+        result = subprocess.run(
+            [
+                "ssh",
+                "-o", "StrictHostKeyChecking=no",
+                "-o", "UserKnownHostsFile=/dev/null",
+                "-o", "ConnectTimeout=5",
+                "-o", "BatchMode=yes",
+                "-i", ssh_key_path,
+                f"ubuntu@{ip}",
+                "curl -sf http://localhost:8080/health",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+        return result.returncode == 0
+    except (subprocess.TimeoutExpired, subprocess.SubprocessError):
+        return False
 
 
 class StatusDisplay:
@@ -79,6 +113,45 @@ class InstanceManager:
                 except LambdaAPIError as e:
                     console.print(f"[yellow]API error: {e}[/yellow]")
 
+                time.sleep(poll_interval)
+
+    def wait_for_services(
+        self,
+        ip: str,
+        ssh_key_path: str,
+        timeout_seconds: int = 300,
+    ) -> bool:
+        """
+        Wait for services to be healthy on the instance.
+
+        Args:
+            ip: Instance IP address
+            ssh_key_path: Path to SSH private key
+            timeout_seconds: Maximum time to wait (default 5 minutes)
+
+        Returns:
+            True if services are healthy, False on timeout
+        """
+        start_time = time.time()
+        poll_interval = 10
+        status_display = StatusDisplay(start_time)
+        status_display.status = "waiting for services"
+
+        with Live(status_display, console=console, refresh_per_second=4) as live:
+            while True:
+                elapsed = time.time() - start_time
+
+                if elapsed > timeout_seconds:
+                    console.print(
+                        f"[red]Timeout waiting for services after {elapsed:.0f}s[/red]"
+                    )
+                    return False
+
+                if check_service_health(ip, ssh_key_path):
+                    live.update(Text("[green]✓ Services healthy![/green]"))
+                    return True
+
+                status_display.status = f"waiting for services ({int(elapsed)}s)"
                 time.sleep(poll_interval)
 
     def get_active_instance(self) -> Optional[Instance]:

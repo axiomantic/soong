@@ -802,6 +802,13 @@ def start(
                     if not provision_instance(provision_config):
                         console.print("[yellow]Warning: Provisioning failed. Services may not be available.[/yellow]")
                         console.print("[dim]You can SSH in and set up manually, or try 'soong provision'[/dim]\n")
+                    else:
+                        # Wait for services to be healthy
+                        console.print("\n[cyan]Waiting for services to start...[/cyan]")
+                        ssh_key_path = str(Path(config.ssh.key_path).expanduser())
+                        if not instance_mgr.wait_for_services(ip, ssh_key_path, timeout_seconds=300):
+                            console.print("[yellow]Warning: Services health check timed out[/yellow]")
+                            console.print("[dim]Services may still be starting. Check 'soong status' in a minute.[/dim]\n")
                 else:
                     console.print("[dim]Skipping provisioning (--skip-provision)[/dim]")
 
