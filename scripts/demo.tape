@@ -47,20 +47,14 @@ Enter
 Sleep 100ms
 Show
 
-# Start an instance (skip provisioning for faster demo)
-Type "soong start -y --skip-provision"
+# Start instance in background, wait for completion, then mark time
+Type "soong start -y --skip-provision && ./scripts/demo-timing.sh wait_end"
 Sleep 300ms
 Enter
 
-# Wait for "Instance Ready" or IP address to appear
-Wait+Screen /Instance Ready|SGLang API/
-
-# Record timestamp after instance ready
-Hide
-Type "./scripts/demo-timing.sh wait_end"
-Enter
-Sleep 100ms
-Show
+# Let the command run - VHS will wait for prompt to return
+# Typical boot time: 2-5 minutes without provisioning
+Sleep 360s
 
 Sleep 2s
 
