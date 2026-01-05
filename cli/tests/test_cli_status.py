@@ -507,73 +507,64 @@ def test_status_instance_not_found(mocker, sample_config):
 
 
 def test_status_with_history_flag(mocker, sample_config):
-    """Test 'gpu-session status --history' shows termination history."""
+    """Test 'gpu-session status --history' queries Worker for history."""
+    # Configure Worker URL
+    sample_config.cloudflare.worker_url = "https://worker.example.com"
+
     mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
     mock_api_class = mocker.patch("soong.cli.LambdaAPI")
     mock_api = mock_api_class.return_value
 
-    mock_history_mgr_class = mocker.patch("soong.cli.HistoryManager")
-    mock_history_mgr = mock_history_mgr_class.return_value
-
-    events = [
-        HistoryEvent(
-            timestamp="2026-01-01T10:00:00Z",
-            instance_id="test-instance-1",
-            event_type="termination",
-            reason="User terminated",
-            uptime_minutes=120,
-            gpu_type="gpu_1x_a10",
-            region="us-west-1",
-        )
-    ]
-
-    mock_history_mgr.get_local_history.return_value = events
+    # Mock requests.get to simulate Worker response
+    mock_requests = mocker.patch("soong.cli.requests")
+    mock_response = mocker.Mock()
+    mock_response.json.return_value = {
+        "events": [
+            {
+                "timestamp": "2026-01-01T10:00:00Z",
+                "instance_id": "test-instance-1",
+                "event_type": "terminate",
+                "gpu_type": "gpu_1x_a10",
+                "region": "us-west-1",
+                "duration_minutes": 120,
+                "cost_dollars": 1.50,
+            }
+        ]
+    }
+    mock_requests.get.return_value = mock_response
 
     result = runner.invoke(app, ["status", "--history"], catch_exceptions=False)
 
     assert result.exit_code == 0
-    assert "Termination History" in result.stdout
-    assert "User" in result.stdout and "terminated" in result.stdout
+    assert "Instance History" in result.stdout
+    assert "test-instanc" in result.stdout  # Truncated to 12 chars
+    assert "terminate" in result.stdout
+    assert "$1.50" in result.stdout
+    mock_requests.get.assert_called_once_with(
+        "https://worker.example.com/events",
+        params={"hours": 24},
+        timeout=(5, 15),
+    )
 
 
-def test_status_with_history_and_worker_url(mocker, sample_config):
-    """Test 'gpu-session status --history --worker-url' syncs from worker."""
+def test_status_with_history_flag_no_worker(mocker, sample_config):
+    """Test 'gpu-session status --history' fails gracefully when Worker not deployed."""
+    # Ensure Worker URL is not configured
+    sample_config.cloudflare.worker_url = ""
+
     mock_manager = mocker.patch("soong.cli.config_manager")
     mock_manager.load.return_value = sample_config
 
     mock_api_class = mocker.patch("soong.cli.LambdaAPI")
-    mock_api_class.return_value
+    mock_api = mock_api_class.return_value
 
-    mock_history_mgr_class = mocker.patch("soong.cli.HistoryManager")
-    mock_history_mgr = mock_history_mgr_class.return_value
+    result = runner.invoke(app, ["status", "--history"], catch_exceptions=False)
 
-    events = [
-        HistoryEvent(
-            timestamp="2026-01-01T10:00:00Z",
-            instance_id="test-instance-1",
-            event_type="termination",
-            reason="Synced from worker",
-            uptime_minutes=60,
-            gpu_type="gpu_1x_a10",
-            region="us-west-1",
-        )
-    ]
-
-    mock_history_mgr.sync_from_worker.return_value = events
-
-    result = runner.invoke(
-        app,
-        ["status", "--history", "--worker-url", "https://worker.example.com"],
-        catch_exceptions=False,
-    )
-
-    assert result.exit_code == 0
-    mock_history_mgr.sync_from_worker.assert_called_once_with(
-        "https://worker.example.com", 24
-    )
-    assert "Synced" in result.stdout and "worker" in result.stdout
+    assert result.exit_code == 1
+    assert "Worker not deployed" in result.stdout
+    assert "soong worker deploy" in result.stdout
 
 
 def test_status_with_stopped_flag(mocker, sample_config):

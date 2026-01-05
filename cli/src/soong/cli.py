@@ -8,14 +8,17 @@ from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 from rich import print as rprint
-from datetime import datetime
+from datetime import datetime, timezone
 
-from .config import Config, ConfigManager, LambdaConfig, StatusDaemonConfig, DefaultsConfig, SSHConfig, validate_custom_model
+import requests
+
+from .config import Config, ConfigManager, LambdaConfig, StatusDaemonConfig, DefaultsConfig, SSHConfig, CloudflareConfig, validate_custom_model
+from .pending import save_pending_event, sync_pending_events
 from .lambda_api import LambdaAPI, LambdaAPIError, InstanceType
 from .instance import InstanceManager
 from .validation import LaunchValidator
 from .ssh import SSHTunnelManager
-from .history import HistoryManager, HistoryEvent
+from .worker import deploy_worker, worker_status, worker_logs, destroy_worker
 from .models import (
     KNOWN_MODELS, KNOWN_GPUS, ModelConfig, Quantization,
     get_model_config, get_recommended_gpu, estimate_vram, format_model_info
@@ -56,6 +59,122 @@ def get_config() -> Config:
         console.print("[red]Error: Not configured. Run 'gpu-session configure' first.[/red]")
         raise typer.Exit(1)
     return config
+
+
+def log_launch_event(config: Config, instance_id: str, gpu_type: str, region: str) -> None:
+    """
+    Log instance launch event to Worker.
+
+    Args:
+        config: Current configuration
+        instance_id: Instance ID from Lambda API
+        gpu_type: GPU type selected by user
+        region: Region selected by user
+
+    Raises:
+        RuntimeError: If Worker is unreachable (hard fail)
+    """
+    if not config.cloudflare.worker_url:
+        return  # Worker not configured, skip
+
+    event = {
+        "event_type": "launch",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "instance_id": instance_id,
+        "instance_name": None,
+        "gpu_type": gpu_type,
+        "region": region,
+        "duration_minutes": None,
+        "cost_dollars": None,
+        "shutdown_reason": None,
+        "metrics": None,
+    }
+
+    try:
+        response = requests.post(
+            f"{config.cloudflare.worker_url}/event",
+            json=event,
+            headers={"Authorization": f"Bearer {config.status_daemon.token}"},
+            timeout=(5, 10),
+        )
+        response.raise_for_status()
+        console.print("[dim]✓ Launch logged to history[/dim]")
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        console.print(f"[red]Failed to log launch event (network error): {e}[/red]")
+        console.print("[yellow]Aborting launch to maintain history integrity[/yellow]")
+        console.print("[dim]Check worker status: soong worker status[/dim]")
+        raise RuntimeError("Worker unreachable during launch")
+    except requests.exceptions.HTTPError as e:
+        console.print(f"[red]Failed to log launch event (HTTP {e.response.status_code}): {e}[/red]")
+        console.print("[yellow]Aborting launch to maintain history integrity[/yellow]")
+        console.print("[dim]Check worker status: soong worker status[/dim]")
+        raise RuntimeError("Worker error during launch")
+
+
+def fetch_status_daemon_metrics(instance_ip: str, status_token: str) -> Optional[dict]:
+    """Fetch metrics from status daemon before termination."""
+    try:
+        response = requests.get(
+            f"http://{instance_ip}:8080/status",
+            headers={"Authorization": f"Bearer {status_token}"},
+            timeout=(5, 10),
+        )
+        response.raise_for_status()
+        data = response.json()
+
+        uptime_minutes = data.get("uptime_minutes", 0)
+        idle_seconds = data.get("idle_seconds")
+        idle_percentage = None
+        if idle_seconds is not None and uptime_minutes > 0:
+            idle_percentage = round((idle_seconds / 60) / uptime_minutes * 100, 1)
+
+        return {
+            "tokens_generated": data.get("sglang_tokens_total"),
+            "idle_percentage": idle_percentage,
+            "lease_extensions": 0,
+        }
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
+        console.print(f"[yellow]Warning: Could not fetch metrics from instance: {e}[/yellow]")
+        return None
+
+
+def log_terminate_event(
+    config: Config,
+    instance,
+    duration_minutes: int,
+    cost_dollars: float,
+    metrics: Optional[dict],
+) -> None:
+    """Log instance termination event to Worker. Does NOT raise on failure - saves to pending queue."""
+    if not config.cloudflare.worker_url:
+        return
+
+    event = {
+        "event_type": "terminate",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "instance_id": instance.id,
+        "instance_name": instance.name,
+        "gpu_type": instance.instance_type,
+        "region": instance.region,
+        "duration_minutes": duration_minutes,
+        "cost_dollars": cost_dollars,
+        "shutdown_reason": "user",
+        "metrics": metrics,
+    }
+
+    try:
+        response = requests.post(
+            f"{config.cloudflare.worker_url}/event",
+            json=event,
+            headers={"Authorization": f"Bearer {config.status_daemon.token}"},
+            timeout=(5, 10),
+        )
+        response.raise_for_status()
+        console.print("[dim]✓ Termination logged to history[/dim]")
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
+        console.print(f"[yellow]Worker unreachable: {e}[/yellow]")
+        save_pending_event(event)
+        console.print("[dim]Event saved for later sync[/dim]")
 
 
 @app.command()
@@ -101,8 +220,37 @@ def configure():
     else:
         console.print()
 
-    # Step 3: Select model first (determines GPU requirements)
-    console.print("[bold]Step 3: Select default model[/bold]")
+    # Step 3: Cloudflare credentials (optional)
+    console.print("[bold]Step 3: Cloudflare Worker Configuration (Optional)[/bold]")
+    console.print("[dim]Configure Cloudflare for global instance history tracking.[/dim]")
+    console.print("[dim]Leave blank to skip Worker features.[/dim]\n")
+
+    cloudflare_api_token = questionary.text(
+        "Cloudflare API token (optional, for Worker management):",
+        default="",
+    ).ask()
+    if cloudflare_api_token is None:
+        raise typer.Exit(1)
+
+    cloudflare_account_id = ""
+    if cloudflare_api_token.strip():
+        cloudflare_account_id = questionary.text(
+            "Cloudflare account ID (find in dashboard):",
+            default="",
+        ).ask()
+        if cloudflare_account_id is None:
+            raise typer.Exit(1)
+
+        # Validate account ID format (32-character hex)
+        import re
+        if cloudflare_account_id and not re.match(r'^[a-f0-9]{32}$', cloudflare_account_id, re.IGNORECASE):
+            console.print("[yellow]Warning: Account ID should be a 32-character hex string[/yellow]")
+            console.print("[dim]Continuing anyway, you can fix this later with 'soong configure'[/dim]\n")
+    else:
+        console.print("[dim]Skipping Cloudflare configuration[/dim]\n")
+
+    # Step 4: Select model first (determines GPU requirements)
+    console.print("[bold]Step 4: Select default model[/bold]")
     console.print("[dim]The model determines minimum GPU requirements.[/dim]\n")
 
     model_choices = []
@@ -171,8 +319,8 @@ def configure():
                 gpu_info = KNOWN_GPUS.get(recommended_gpu, {})
                 console.print(f"  Recommended GPU: {gpu_info.get('description', recommended_gpu)}\n")
 
-    # Step 4: GPU type selection (with recommendation)
-    console.print("[bold]Step 4: Select GPU type[/bold]")
+    # Step 5: GPU type selection (with recommendation)
+    console.print("[bold]Step 5: Select GPU type[/bold]")
 
     # Calculate minimum VRAM needed
     min_vram_needed = 0
@@ -288,8 +436,8 @@ def configure():
         selected_type = None
         console.print(f"[yellow]Using GPU: {default_gpu}[/yellow]\n")
 
-    # Step 5: Default region
-    console.print("[bold]Step 5: Select region[/bold]")
+    # Step 6: Default region
+    console.print("[bold]Step 6: Select region[/bold]")
     if selected_type and selected_type.regions_available:
         region_choices = [questionary.Choice(title=r, value=r) for r in selected_type.regions_available]
         if not any(c.value == "us-west-1" for c in region_choices):
@@ -308,8 +456,8 @@ def configure():
         raise typer.Exit(1)
     console.print()
 
-    # Step 6: Filesystem name
-    console.print("[bold]Step 6: Persistent filesystem[/bold]")
+    # Step 7: Filesystem name
+    console.print("[bold]Step 7: Persistent filesystem[/bold]")
     console.print("[dim]Stores models, secrets, and project files across sessions.[/dim]")
     filesystem_name = questionary.text(
         "Filesystem name:",
@@ -319,8 +467,8 @@ def configure():
         raise typer.Exit(1)
     console.print()
 
-    # Step 7: Default lease hours (with cost estimates)
-    console.print("[bold]Step 7: Default lease duration[/bold]")
+    # Step 8: Default lease hours (with cost estimates)
+    console.print("[bold]Step 8: Default lease duration[/bold]")
     if selected_type:
         lease_choices = [
             questionary.Choice(title=f"2 hours (${selected_type.price_per_hour * 2:.2f})", value=2),
@@ -344,7 +492,7 @@ def configure():
         raise typer.Exit(1)
     console.print()
 
-    # Step 8: SSH key path
+    # Step 9: SSH key path
     ssh_key_path = questionary.path(
         "SSH private key path:",
         default="~/.ssh/id_rsa",
@@ -360,6 +508,10 @@ def configure():
             filesystem_name=filesystem_name,
         ),
         status_daemon=StatusDaemonConfig(token=status_token),
+        cloudflare=CloudflareConfig(
+            api_token=cloudflare_api_token.strip(),
+            account_id=cloudflare_account_id.strip(),
+        ),
         defaults=DefaultsConfig(
             model=default_model,
             gpu=default_gpu,
@@ -425,6 +577,17 @@ def start(
     config = get_config()
     api = LambdaAPI(config.lambda_config.api_key)
     instance_mgr = InstanceManager(api)
+
+    # Attempt to sync pending events if Worker is configured
+    if config.cloudflare.worker_url:
+        successes, failures = sync_pending_events(
+            config.cloudflare.worker_url,
+            config.status_daemon.token,
+        )
+        if successes > 0:
+            console.print(f"[dim green]✓ Synced {successes} pending event(s)[/dim green]")
+        if failures > 0:
+            console.print(f"[dim yellow]⚠ Failed to sync {failures} event(s)[/dim yellow]")
 
     # Use config defaults if not specified
     model = model or config.defaults.model
@@ -500,6 +663,24 @@ def start(
 
         console.print(f"[green]Instance launched: {instance_id}[/green]")
 
+        # Log launch event to Worker (hard fail if Worker configured but unreachable)
+        try:
+            log_launch_event(config, instance_id, gpu, region)
+        except RuntimeError:
+            # Hard fail: abort launch and clean up
+            console.print("\n[red]Launch aborted due to Worker logging failure[/red]")
+            console.print("[yellow]Attempting to terminate instance...[/yellow]")
+
+            # Best-effort cleanup: terminate the instance
+            try:
+                api.terminate_instance(instance_id)
+                console.print("[green]Instance terminated successfully[/green]")
+            except Exception as cleanup_error:
+                console.print(f"[red]Warning: Failed to terminate instance: {cleanup_error}[/red]")
+                console.print(f"[yellow]Please manually terminate instance {instance_id} via Lambda dashboard[/yellow]")
+
+            raise typer.Exit(1)
+
         if wait:
             instance = instance_mgr.wait_for_ready(instance_id, timeout_seconds=600)
             if instance:
@@ -549,6 +730,77 @@ def start(
     except LambdaAPIError as e:
         console.print(f"[red]Error launching instance: {e}[/red]")
         raise typer.Exit(1)
+
+
+def display_worker_history(config: Config, hours: int = 24) -> None:
+    """Query and display instance history from Worker."""
+    if not config.cloudflare.worker_url:
+        console.print("[red]Worker not deployed. Run 'soong worker deploy' first[/red]")
+        raise typer.Exit(1)
+
+    console.print(f"[cyan]Fetching instance history (last {hours} hours)...[/cyan]\n")
+
+    try:
+        response = requests.get(
+            f"{config.cloudflare.worker_url}/events",
+            params={"hours": hours},
+            timeout=(5, 15),
+        )
+        response.raise_for_status()
+        data = response.json()
+    except requests.exceptions.Timeout:
+        console.print("[red]Worker query timed out[/red]")
+        raise typer.Exit(1)
+    except requests.exceptions.ConnectionError as e:
+        console.print(f"[red]Cannot connect to Worker: {e}[/red]")
+        raise typer.Exit(1)
+    except requests.exceptions.HTTPError as e:
+        console.print(f"[red]Worker HTTP error {e.response.status_code}[/red]")
+        raise typer.Exit(1)
+
+    events = data.get("events", [])
+
+    if not events:
+        console.print("[yellow]No instance history found[/yellow]")
+        console.print(f"[dim]Time window: last {hours} hours[/dim]")
+        return
+
+    # Display events table
+    table = Table(title=f"Instance History (Last {hours} Hours)")
+    table.add_column("Timestamp", style="cyan")
+    table.add_column("Instance ID", style="magenta")
+    table.add_column("Event", style="yellow")
+    table.add_column("GPU Type", style="green")
+    table.add_column("Duration", justify="right")
+    table.add_column("Cost", justify="right")
+
+    for event in events:
+        timestamp = event["timestamp"][:19].replace("T", " ")
+        instance_id_short = event["instance_id"][:12] if event.get("instance_id") else "-"
+        event_type = event.get("event_type", "-")
+        gpu_type = event.get("gpu_type", "-").replace("gpu_1x_", "")
+
+        duration = "-"
+        cost = "-"
+
+        if event.get("duration_minutes"):
+            hrs = event["duration_minutes"] // 60
+            mins = event["duration_minutes"] % 60
+            duration = f"{hrs}h {mins}m"
+
+        if event.get("cost_dollars"):
+            cost = f"${event['cost_dollars']:.2f}"
+
+        table.add_row(timestamp, instance_id_short, event_type, gpu_type, duration, cost)
+
+    console.print(table)
+
+    # Show summary for terminate events
+    terminate_events = [e for e in events if e.get("event_type") in ["terminate", "idle_shutdown", "watchdog"]]
+    if terminate_events:
+        total_minutes = sum(e.get("duration_minutes") or 0 for e in terminate_events)
+        total_cost = sum(e.get("cost_dollars") or 0 for e in terminate_events)
+        console.print(f"\n[bold]Summary:[/bold] {len(terminate_events)} sessions, {total_minutes // 60}h {total_minutes % 60}m total, ${total_cost:.2f}")
 
 
 def show_termination_history(events: list, hours: int):
@@ -643,7 +895,6 @@ def status(
     history: bool = typer.Option(False, "--history", "-h", help="Show termination history"),
     stopped: bool = typer.Option(False, "--stopped", "-s", help="Show stopped instances"),
     history_hours: int = typer.Option(24, help="Hours of history to show"),
-    worker_url: Optional[str] = typer.Option(None, help="Cloudflare Worker URL for history"),
 ):
     """Show status of running instances."""
     config = get_config()
@@ -652,12 +903,7 @@ def status(
     try:
         # Show termination history if requested
         if history:
-            history_mgr = HistoryManager()
-            if worker_url:
-                events = history_mgr.sync_from_worker(worker_url, history_hours)
-            else:
-                events = history_mgr.get_local_history(history_hours)
-            show_termination_history(events, history_hours)
+            display_worker_history(config, history_hours)
             return
 
         if instance_id:
@@ -898,9 +1144,36 @@ def stop(
         if not confirmed:
             raise typer.Abort()
 
+    # Fetch metrics from status daemon (best effort, before termination)
+    metrics = None
+    if instance.ip:
+        metrics = fetch_status_daemon_metrics(instance.ip, config.status_daemon.token)
+
+    # Calculate duration and cost from instance metadata
+    duration_minutes = 0
+    cost_dollars = 0.0
+    try:
+        # Check if created_at exists and is a string
+        if hasattr(instance, 'created_at') and isinstance(instance.created_at, str):
+            created = datetime.fromisoformat(instance.created_at.replace('Z', '+00:00'))
+            now = datetime.now(timezone.utc)
+            duration = now - created
+            duration_minutes = int(duration.total_seconds() / 60)
+
+            # Get pricing info for cost calculation
+            instance_type = api.get_instance_type(instance.instance_type)
+            if instance_type:
+                duration_hours = duration.total_seconds() / 3600
+                cost_dollars = round(instance_type.price_per_hour * duration_hours, 2)
+    except (ValueError, AttributeError, LambdaAPIError):
+        pass  # Continue with zero values if calculation fails
+
     try:
         api.terminate_instance(instance.id)
         console.print(f"[green]Instance {instance.id} terminated[/green]")
+
+        # Log termination event (does not raise on failure)
+        log_terminate_event(config, instance, duration_minutes, cost_dollars, metrics)
     except LambdaAPIError as e:
         console.print(f"[red]Error terminating instance: {e}[/red]")
         raise typer.Exit(1)
@@ -1273,6 +1546,95 @@ def models_remove(
     config_manager.save(config)
 
     console.print(f"[green]Custom model '{model_id}' removed.[/green]")
+
+
+# Worker subcommand group
+worker_app = typer.Typer(help="Manage Cloudflare Worker watchdog")
+app.add_typer(worker_app, name="worker")
+
+
+@worker_app.command("deploy")
+def worker_deploy_cmd(
+    force: bool = typer.Option(False, "--force", "-f", help="Force redeploy even if already deployed"),
+):
+    """Deploy or update the Cloudflare Worker watchdog."""
+    config = get_config()
+
+    # Validate Cloudflare credentials
+    if not config.cloudflare.api_token or not config.cloudflare.account_id:
+        console.print("[red]Error: Cloudflare credentials not configured[/red]")
+        console.print("Run 'soong configure' and provide Cloudflare API token and account ID")
+        raise typer.Exit(1)
+
+    # Check if already deployed
+    if config.cloudflare.worker_url and not force:
+        console.print(f"[yellow]Worker already deployed: {config.cloudflare.worker_url}[/yellow]")
+        console.print("Use --force to redeploy")
+        raise typer.Exit(0)
+
+    try:
+        updated_config = deploy_worker(config, config_manager)
+    except RuntimeError as e:
+        console.print(f"[red]Deployment failed: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@worker_app.command("status")
+def worker_status_cmd():
+    """Check Worker health status."""
+    config = get_config()
+
+    if not config.cloudflare.worker_url:
+        console.print("[red]Worker not deployed[/red]")
+        console.print("Run 'soong worker deploy' first")
+        raise typer.Exit(1)
+
+    try:
+        status = worker_status(config)
+
+        # Display status
+        console.print(Panel(
+            f"[bold]Status:[/bold] {status.get('status', 'unknown')}\n"
+            f"[bold]Version:[/bold] {status.get('version', 'unknown')}\n"
+            f"[bold]KV Available:[/bold] {status.get('kv_available', False)}\n"
+            f"[bold]URL:[/bold] {config.cloudflare.worker_url}",
+            title="[cyan]Worker Status[/cyan]",
+            border_style="green" if status.get('status') == 'healthy' else "yellow",
+        ))
+    except RuntimeError as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@worker_app.command("logs")
+def worker_logs_cmd():
+    """Stream Worker logs (real-time)."""
+    config = get_config()
+
+    if not config.cloudflare.worker_url:
+        console.print("[red]Worker not deployed[/red]")
+        console.print("Run 'soong worker deploy' first")
+        raise typer.Exit(1)
+
+    try:
+        worker_logs()
+    except RuntimeError as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@worker_app.command("destroy")
+def worker_destroy_cmd(
+    force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation"),
+):
+    """Destroy Worker deployment and KV namespace."""
+    config = get_config()
+
+    try:
+        updated_config = destroy_worker(config, config_manager, force=force)
+    except RuntimeError as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
 
 
 # Tunnel subcommand group

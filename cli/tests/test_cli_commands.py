@@ -461,6 +461,10 @@ class TestStopCommand:
 
         mocker.patch("soong.cli.InstanceManager")
 
+        # Mock the new helper functions
+        mocker.patch("soong.cli.fetch_status_daemon_metrics", return_value=None)
+        mocker.patch("soong.cli.log_terminate_event")
+
         # Verify initial state is active (Pattern #7 fix)
         initial_instance = mock_api_instance.get_instance(mock_instance.id)
         assert initial_instance.status == "active"
@@ -491,6 +495,10 @@ class TestStopCommand:
         mock_mgr_instance.get_active_instance.return_value = mock_instance
         mock_instance_mgr.return_value = mock_mgr_instance
 
+        # Mock the new helper functions
+        mocker.patch("soong.cli.fetch_status_daemon_metrics", return_value=None)
+        mocker.patch("soong.cli.log_terminate_event")
+
         # Run command with --yes to skip confirmation
         result = runner.invoke(app, ["stop", "--yes"])
 
@@ -512,6 +520,10 @@ class TestStopCommand:
         mocker.patch("soong.cli.InstanceManager")
         mock_confirm = mocker.patch("soong.cli.typer.confirm", return_value=True)
 
+        # Mock the new helper functions
+        mocker.patch("soong.cli.fetch_status_daemon_metrics", return_value=None)
+        mocker.patch("soong.cli.log_terminate_event")
+
         # Run command without --yes flag
         result = runner.invoke(app, ["stop", "--instance-id", "inst_abc123xyz"])
 
@@ -531,6 +543,10 @@ class TestStopCommand:
 
         mocker.patch("soong.cli.InstanceManager")
         mock_confirm = mocker.patch("soong.cli.typer.confirm")
+
+        # Mock the new helper functions
+        mocker.patch("soong.cli.fetch_status_daemon_metrics", return_value=None)
+        mocker.patch("soong.cli.log_terminate_event")
 
         # Run command with --yes flag
         result = runner.invoke(app, ["stop", "--instance-id", "inst_abc123xyz", "--yes"])
@@ -606,6 +622,10 @@ class TestStopCommand:
         mock_lambda_api.return_value = mock_api_instance
 
         mocker.patch("soong.cli.InstanceManager")
+
+        # Mock the new helper functions
+        mocker.patch("soong.cli.fetch_status_daemon_metrics", return_value=None)
+        mocker.patch("soong.cli.log_terminate_event")
 
         # Run command with --yes to skip confirmation
         result = runner.invoke(app, ["stop", "--instance-id", "inst_abc123xyz", "--yes"])

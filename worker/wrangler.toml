@@ -14,4 +14,4 @@ crons = ["*/30 * * * *"]
 # Then replace the id below with the namespace ID from the output
 [[kv_namespaces]]
 binding = "KV"
-id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"  # Replace with actual KV namespace ID
+id = "new_kv_namespace_123"  # Replace with actual KV namespace ID

@@ -58,6 +58,24 @@ interface HistoryEvent {
   region: string;
 }
 
+interface InstanceEvent {
+  event_type: "launch" | "terminate" | "extend" | "idle_shutdown" | "watchdog_termination";
+  timestamp: string;
+  instance_id: string;
+  instance_name: string;
+  gpu_type: string;
+  region: string;
+  duration_minutes: number | null;
+  cost_dollars: number | null;
+  shutdown_reason: string | null;
+  metrics: {
+    tokens_generated: number | null;
+    idle_percentage: number | null;
+    lease_extensions: number;
+    cpu_hours: number | null;
+  } | null;
+}
+
 // KV namespace to track consecutive failures across cron runs
 // Note: This would require adding KV binding in wrangler.toml for production
 // For now, we'll use a global in-memory store (resets on each deployment)
@@ -78,20 +96,25 @@ async function logHistoryEvent(
     return;
   }
 
-  const event: HistoryEvent = {
-    timestamp: new Date().toISOString(),
+  const timestamp = new Date().toISOString();
+
+  const event: InstanceEvent = {
+    event_type: 'watchdog_termination',
+    timestamp,
     instance_id: instance.id,
-    event_type: 'termination',
-    reason,
-    uptime_minutes: uptimeMinutes,
+    instance_name: instance.name || 'unnamed',
     gpu_type: instance.instance_type.name,
     region: instance.region.name,
+    duration_minutes: uptimeMinutes,
+    cost_dollars: null,
+    shutdown_reason: reason,
+    metrics: null,
   };
 
-  // Store with key: history:{timestamp}:{instance_id}
-  const key = `history:${event.timestamp}:${instance.id}`;
+  // NEW KEY FORMAT: events/{timestamp}_{instance_id}_{event_type}
+  const key = `events/${timestamp}_${instance.id}_watchdog_termination`;
   await env.KV.put(key, JSON.stringify(event), {
-    expirationTtl: 7 * 24 * 60 * 60,  // Keep for 7 days
+    expirationTtl: 90 * 24 * 60 * 60,  // 90 days
   });
 
   console.log(`Logged history event: ${key}`);
@@ -316,6 +339,25 @@ export default {
   ): Promise<Response> {
     const url = new URL(request.url);
 
+    // Health endpoint for deployment verification
+    if (request.method === 'GET' && url.pathname === '/health') {
+      return new Response(
+        JSON.stringify({
+          status: 'healthy',
+          service: 'gpu-watchdog',
+          version: '2.0.0',
+          kv_available: !!env.KV,
+          timestamp: new Date().toISOString(),
+        }),
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+    }
+
     // Allow manual triggering via HTTP for testing
     if (request.method === 'GET' && url.pathname === '/trigger') {
       const logs = await watchdogCheck(env);
@@ -422,7 +464,147 @@ export default {
       }
     }
 
-    return new Response('GPU Watchdog Worker\n\nEndpoints:\n- GET /trigger (manual run)\n- GET /status (view tracker)\n- GET /history?hours=24 (termination history)', {
+    // POST /event - Log instance lifecycle events
+    if (request.method === 'POST' && url.pathname === '/event') {
+      // Verify auth
+      const authHeader = request.headers.get('Authorization');
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return new Response(
+          JSON.stringify({ error: 'Missing authorization header' }),
+          { status: 401, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const token = authHeader.substring(7);
+      if (token !== env.STATUS_DAEMON_TOKEN) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid authorization token' }),
+          { status: 401, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Validate KV availability
+      if (!env.KV) {
+        return new Response(
+          JSON.stringify({ error: 'KV namespace not configured' }),
+          { status: 503, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
+      try {
+        // Parse request body
+        const event: InstanceEvent = await request.json();
+
+        // Validate required fields
+        if (!event.event_type || !event.timestamp || !event.instance_id) {
+          return new Response(
+            JSON.stringify({ error: 'Missing required fields: event_type, timestamp, instance_id' }),
+            { status: 400, headers: { 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Build KV key: events/{ISO8601_timestamp}_{instance_id}_{event_type}
+        const key = `events/${event.timestamp}_${event.instance_id}_${event.event_type}`;
+
+        // Write to KV with 90-day TTL
+        await env.KV.put(key, JSON.stringify(event), {
+          expirationTtl: 90 * 24 * 60 * 60,  // 90 days in seconds
+        });
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            key,
+            timestamp: event.timestamp,
+          }),
+          { status: 201, headers: { 'Content-Type': 'application/json' } }
+        );
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        return new Response(
+          JSON.stringify({ error: `KV write failed: ${errorMsg}` }),
+          { status: 500, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // GET /events - Query instance lifecycle events
+    if (request.method === 'GET' && url.pathname === '/events') {
+      if (!env.KV) {
+        return new Response(
+          JSON.stringify({ error: 'KV namespace not configured', events: [] }),
+          { status: 503, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
+      try {
+        // Parse query parameters
+        const hours = parseInt(url.searchParams.get('hours') || '24', 10);
+        const instanceId = url.searchParams.get('instance_id');
+        const eventType = url.searchParams.get('event_type');
+        const limit = parseInt(url.searchParams.get('limit') || '100', 10);
+
+        // Calculate cutoff time
+        const cutoffTime = new Date(Date.now() - hours * 60 * 60 * 1000);
+
+        // List all event keys
+        const { keys } = await env.KV.list({ prefix: 'events/' });
+
+        // Fetch and filter events
+        const events: InstanceEvent[] = [];
+        for (const key of keys) {
+          if (events.length >= limit) break;
+
+          const value = await env.KV.get(key.name);
+          if (!value) continue;
+
+          const event: InstanceEvent = JSON.parse(value);
+          const eventTime = new Date(event.timestamp);
+
+          // Apply filters
+          if (eventTime <= cutoffTime) continue;
+          if (instanceId && event.instance_id !== instanceId) continue;
+          if (eventType && event.event_type !== eventType) continue;
+
+          events.push(event);
+        }
+
+        // Sort by timestamp descending (newest first)
+        events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+        // Calculate aggregates
+        let totalHours = 0;
+        let totalCost = 0;
+        for (const event of events) {
+          if (event.duration_minutes !== null) {
+            totalHours += event.duration_minutes / 60;
+          }
+          if (event.cost_dollars !== null) {
+            totalCost += event.cost_dollars;
+          }
+        }
+
+        return new Response(
+          JSON.stringify({
+            events,
+            count: events.length,
+            total_hours: parseFloat(totalHours.toFixed(2)),
+            total_cost: parseFloat(totalCost.toFixed(2)),
+            query: { hours, instance_id: instanceId, event_type: eventType, limit },
+            timestamp: new Date().toISOString(),
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        );
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        return new Response(
+          JSON.stringify({ error: errorMsg, events: [] }),
+          { status: 500, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    return new Response('GPU Watchdog Worker\n\nEndpoints:\n- GET /health (health check)\n- GET /trigger (manual run)\n- GET /status (view tracker)\n- GET /history?hours=24 (legacy termination history)\n- POST /event (log lifecycle event, auth required)\n- GET /events?hours=24&instance_id=X&event_type=Y&limit=100 (query events)', {
       headers: {
         'Content-Type': 'text/plain',
       },

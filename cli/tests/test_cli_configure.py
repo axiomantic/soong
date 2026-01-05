@@ -169,6 +169,7 @@ class TestConfigureFullWizard:
         user_responses = iter([
             "test_api_key_12345678",              # API key
             "my_status_token",                     # status daemon token
+            "",                                    # Cloudflare token (skip)
             "deepseek-r1-70b",                     # model selection
             "gpu_1x_a100_sxm4_80gb",              # GPU type
             "us-west-1",                           # region
@@ -269,6 +270,7 @@ class TestConfigureAPIKey:
         responses = iter([
             "valid_api_key_123",
             "token123",
+            "",                      # Cloudflare token (skip)
             "llama-2-70b",
             "gpu_1x_a100_sxm4_80gb",
             "us-west-1",
@@ -403,6 +405,7 @@ class TestConfigureStatusToken:
         user_responses = iter([
             "api_key_123",
             "",  # Blank token - should auto-generate
+            "",  # Cloudflare token (skip)
             "llama-2-70b",
             "gpu_1x_a100_sxm4_80gb",
             "us-west-1",
@@ -476,6 +479,7 @@ class TestConfigureStatusToken:
         responses = iter([
             "api_key_123",
             "custom_token_abc",  # User provides their own token
+            "",                  # Cloudflare token (skip)
             "llama-2-70b",
             "gpu_1x_a100_sxm4_80gb",
             "us-west-1",
@@ -534,6 +538,7 @@ class TestConfigureModelSelection:
         responses = iter([
             "api_key_123",
             "token",
+            "",                  # Cloudflare token (skip)
             "qwen-2.5-coder-32b",  # Known model
             "gpu_1x_a100_sxm4_80gb",
             "us-west-1",
@@ -587,6 +592,7 @@ class TestConfigureModelSelection:
         responses = iter([
             "api_key_123",
             "token",
+            "",                  # Cloudflare token (skip)
             "_custom",                        # Select custom model option
             "my-org/my-custom-model",        # Custom model name
             "13",                             # params_billions
@@ -648,6 +654,7 @@ class TestConfigureModelSelection:
         user_responses = iter([
             "api_key_123",
             "token",
+            "",                      # Cloudflare token (skip)
             "_custom",
             "test/big-model",
             "70",                    # 70B params
@@ -720,6 +727,7 @@ class TestConfigureGPUSelection:
         responses = iter([
             "api_key_123",
             "token",
+            "",                  # Cloudflare token (skip)
             "deepseek-r1-70b",      # Needs 48GB
             "gpu_1x_a6000",         # 48GB GPU (should be viable)
             "us-west-1",
@@ -779,6 +787,7 @@ class TestConfigureGPUSelection:
         user_responses = iter([
             "api_key_123",
             "token",
+            "",                   # Cloudflare token (skip)
             "deepseek-r1-70b",    # Needs ~44GB VRAM
             "gpu_1x_a10",         # Only 24GB - insufficient
             "us-west-1",
@@ -851,6 +860,7 @@ class TestConfigureGPUSelection:
         responses = iter([
             "api_key_123",
             "token",
+            "",                  # Cloudflare token (skip)
             "llama-2-7b",           # Small model, any GPU works
             "gpu_1x_a10",           # Choose cheapest ($0.60/hr)
             "us-west-1",
@@ -909,6 +919,7 @@ class TestConfigureRegionSelection:
         responses = iter([
             "api_key_123",
             "token",
+            "",                  # Cloudflare token (skip)
             "llama-2-70b",
             "gpu_1x_a100_sxm4_80gb",  # Has us-west-1 and us-east-1
             "us-east-1",               # Choose us-east-1
@@ -961,6 +972,7 @@ class TestConfigureRegionSelection:
         responses = iter([
             "api_key_123",
             "token",
+            "",                  # Cloudflare token (skip)
             "llama-2-70b",
             "us-west-2",  # Manual region entry
             "test-fs",
@@ -1016,6 +1028,7 @@ class TestConfigureFilesystem:
         responses = iter([
             "api_key_123",
             "token",
+            "",                  # Cloudflare token (skip)
             "llama-2-70b",
             "gpu_1x_a100_sxm4_80gb",
             "us-west-1",
@@ -1072,6 +1085,7 @@ class TestConfigureLeaseDuration:
         responses = iter([
             "api_key_123",
             "token",
+            "",                  # Cloudflare token (skip)
             "llama-2-70b",
             "gpu_1x_a100_sxm4_80gb",
             "us-west-1",
@@ -1129,6 +1143,7 @@ class TestConfigureSSHKey:
         responses = iter([
             "api_key_123",
             "token",
+            "",                  # Cloudflare token (skip)
             "llama-2-70b",
             "gpu_1x_a100_sxm4_80gb",
             "us-west-1",
@@ -1191,6 +1206,7 @@ class TestConfigureSaveAndSummary:
         user_responses = iter([
             "complete_api_key_xyz",
             "complete_token",
+            "",                      # Cloudflare token (skip)
             "deepseek-r1-70b",
             "gpu_1x_a100_sxm4_80gb",
             "us-east-1",
@@ -1271,6 +1287,7 @@ class TestConfigureSaveAndSummary:
         responses = iter([
             "summary_test_api_key",
             "summary_token",
+            "",                  # Cloudflare token (skip)
             "llama-2-70b",
             "gpu_1x_a6000",
             "us-west-1",
@@ -1337,6 +1354,7 @@ class TestConfigureCancellation:
         user_responses = iter([
             "api_key_123",
             "token",
+            "",    # Cloudflare token (skip)
             None,  # Cancel at model selection
         ])
 
@@ -1384,6 +1402,7 @@ class TestConfigureCancellation:
         responses = iter([
             "api_key_123",
             "token",
+            "",                  # Cloudflare token (skip)
             "llama-2-70b",
             None,  # Cancel at GPU selection
         ])
@@ -1422,6 +1441,7 @@ class TestConfigureCancellation:
         responses = iter([
             "api_key_123",
             "token",
+            "",                  # Cloudflare token (skip)
             "deepseek-r1-70b",
             "_separator",  # Try to select separator (should be disabled/rejected)
         ])
@@ -1465,6 +1485,7 @@ class TestConfigureEdgeCases:
         responses = iter([
             "api_key_123",
             "token",
+            "",            # Cloudflare token (skip)
             "llama-2-70b",
             "us-west-1",
             "test-fs",
@@ -1518,6 +1539,7 @@ class TestConfigureEdgeCases:
         responses = iter([
             "api_key_123",
             "token",
+            "",        # Cloudflare token (skip)
             "_custom",
             None,  # Cancel at custom model name entry
         ])
@@ -1556,6 +1578,7 @@ class TestConfigureEdgeCases:
         responses = iter([
             "api_key_123",
             "token",
+            "",              # Cloudflare token (skip)
             "_custom",
             "test/model",
             "not_a_number",  # Invalid params
@@ -1594,3 +1617,120 @@ class TestConfigureEdgeCases:
         # Should show warning but continue
         assert result.exit_code == 0
         assert "Could not parse specs" in result.stdout or "will select GPU manually" in result.stdout
+
+
+class TestConfigureCloudflare:
+    """Test Cloudflare configuration prompts in wizard."""
+
+    @responses.activate
+    def test_configure_prompts_for_cloudflare_credentials(
+        self, runner, temp_config_manager, monkeypatch
+    ):
+        """Test configure command prompts for Cloudflare credentials."""
+        responses.add(
+            responses.GET,
+            "https://cloud.lambda.ai/api/v1/instance-types",
+            json=_make_instance_types_api_response(),
+            status=200,
+        )
+
+        user_responses = iter([
+            "lambda_api_key_123",
+            "status_token_456",
+            "cloudflare_token_789",
+            "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6",
+            "deepseek-r1-70b",
+            "gpu_1x_a100_sxm4_80gb",
+            "us-west-1",
+            "coding-stack",
+            4,
+            "~/.ssh/id_rsa",
+        ])
+
+        def mock_text(prompt, **kwargs):
+            class MockResult:
+                def ask(self):
+                    return next(user_responses)
+            return MockResult()
+
+        def mock_select(prompt, **kwargs):
+            class MockResult:
+                def ask(self):
+                    return next(user_responses)
+            return MockResult()
+
+        def mock_path(prompt, **kwargs):
+            class MockResult:
+                def ask(self):
+                    return next(user_responses)
+            return MockResult()
+
+        monkeypatch.setattr(questionary, "text", mock_text)
+        monkeypatch.setattr(questionary, "select", mock_select)
+        monkeypatch.setattr(questionary, "path", mock_path)
+
+        result = runner.invoke(app, ["configure"])
+
+        assert result.exit_code == 0
+
+        config = temp_config_manager.load()
+        assert config is not None
+
+        assert config.cloudflare.api_token == "cloudflare_token_789"
+        assert config.cloudflare.account_id == "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
+
+    @responses.activate
+    def test_configure_allows_empty_cloudflare_credentials(
+        self, runner, temp_config_manager, monkeypatch
+    ):
+        """Test configure allows skipping Cloudflare credentials."""
+        responses.add(
+            responses.GET,
+            "https://cloud.lambda.ai/api/v1/instance-types",
+            json=_make_instance_types_api_response(),
+            status=200,
+        )
+
+        user_responses = iter([
+            "lambda_api_key_123",
+            "status_token_456",
+            "",
+            "deepseek-r1-70b",
+            "gpu_1x_a100_sxm4_80gb",
+            "us-west-1",
+            "coding-stack",
+            4,
+            "~/.ssh/id_rsa",
+        ])
+
+        def mock_text(prompt, **kwargs):
+            class MockResult:
+                def ask(self):
+                    return next(user_responses)
+            return MockResult()
+
+        def mock_select(prompt, **kwargs):
+            class MockResult:
+                def ask(self):
+                    return next(user_responses)
+            return MockResult()
+
+        def mock_path(prompt, **kwargs):
+            class MockResult:
+                def ask(self):
+                    return next(user_responses)
+            return MockResult()
+
+        monkeypatch.setattr(questionary, "text", mock_text)
+        monkeypatch.setattr(questionary, "select", mock_select)
+        monkeypatch.setattr(questionary, "path", mock_path)
+
+        result = runner.invoke(app, ["configure"])
+
+        assert result.exit_code == 0
+
+        config = temp_config_manager.load()
+        assert config is not None
+
+        assert config.cloudflare.api_token == ""
+        assert config.cloudflare.account_id == ""

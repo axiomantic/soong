@@ -72,12 +72,23 @@ class SSHConfig:
 
 
 @dataclass
+class CloudflareConfig:
+    """Cloudflare API configuration."""
+    api_token: str = ""
+    account_id: str = ""
+    kv_namespace_id: str = ""
+    worker_url: str = ""
+    worker_name: str = "gpu-watchdog"
+
+
+@dataclass
 class Config:
     """Complete configuration."""
     lambda_config: LambdaConfig
     status_daemon: StatusDaemonConfig
     defaults: DefaultsConfig = None
     ssh: SSHConfig = None
+    cloudflare: CloudflareConfig = None
     custom_models: Dict[str, dict] = None
 
     def __post_init__(self):
@@ -85,6 +96,8 @@ class Config:
             self.defaults = DefaultsConfig()
         if self.ssh is None:
             self.ssh = SSHConfig()
+        if self.cloudflare is None:
+            self.cloudflare = CloudflareConfig()
         if self.custom_models is None:
             self.custom_models = {}
 
@@ -119,6 +132,7 @@ class ConfigManager:
             status_daemon=StatusDaemonConfig(**data.get("status_daemon", {})),
             defaults=DefaultsConfig(**data.get("defaults", {})),
             ssh=SSHConfig(**data.get("ssh", {})),
+            cloudflare=CloudflareConfig(**data.get("cloudflare", {})),
             custom_models=custom_models,
         )
 
@@ -131,6 +145,7 @@ class ConfigManager:
             "status_daemon": asdict(config.status_daemon),
             "defaults": asdict(config.defaults),
             "ssh": asdict(config.ssh),
+            "cloudflare": asdict(config.cloudflare),
             "custom_models": config.custom_models,
         }
 
