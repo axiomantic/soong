@@ -19,7 +19,10 @@ GPU Instance (Lambda Labs)
   └─ Persistent Filesystem (/lambda/nfs/coding-stack/)
 
 Cloudflare Worker (Optional)
-  └─ Watchdog Monitor (health checks every 5 min)
+  ├─ KV Storage (instance events)
+  ├─ /event endpoint (POST) - Receive lifecycle events
+  ├─ /events endpoint (GET) - Query event history
+  └─ /health endpoint (GET) - Health check
 ```
 
 ## Key Directories
@@ -93,13 +96,18 @@ The idle checker runs every 60 seconds and checks for established connections to
 ## CLI Commands
 
 ```bash
-soong configure    # Interactive setup wizard
-soong start        # Launch GPU instance
-soong status       # Show instance status and costs
-soong ssh          # Interactive SSH session
-soong tunnel       # Start SSH tunnels to services
-soong extend <hrs> # Extend lease duration
-soong stop         # Terminate instance
+soong configure      # Interactive setup wizard
+soong start          # Launch GPU instance
+soong status         # Show instance status and costs
+soong status --history  # View global instance history (from Worker)
+soong ssh            # Interactive SSH session
+soong tunnel         # Start SSH tunnels to services
+soong extend <hrs>   # Extend lease duration
+soong stop           # Terminate instance
+soong worker deploy  # Deploy Cloudflare Worker
+soong worker status  # Check Worker health
+soong worker logs    # Stream Worker logs
+soong worker destroy # Destroy Worker and KV
 ```
 
 ## Configuration
@@ -116,11 +124,60 @@ status_daemon:
   token: string            # Shared secret
   port: int                # Default: 8080
 
+cloudflare:
+  api_token: string        # Cloudflare API token
+  account_id: string       # Cloudflare account ID
+  kv_namespace_id: string  # KV namespace (auto-created)
+  worker_url: string       # Worker URL (auto-set on deploy)
+
 defaults:
   model: string            # Default model ID
   gpu: string              # Default GPU type
   lease_hours: int         # Default: 4
 ```
+
+## Cloudflare Worker (Event Logging)
+
+The optional Cloudflare Worker provides centralized event logging and instance history tracking.
+
+### Architecture
+
+**Event Flow**:
+```
+CLI → Worker /event endpoint → KV Storage
+                             ↓
+                     Event Stream (SSE)
+```
+
+**Event Types**:
+- `instance.created` - Instance launched
+- `instance.terminated` - Instance stopped
+- `instance.extended` - Lease extended
+- `instance.failed` - Launch/operation failed
+
+### Failure Modes
+
+**Hard Fail (instance launch)**:
+- If Worker is configured but unreachable, launch aborts
+- Prevents untracked instances that could incur costs
+
+**Soft Fail (instance termination)**:
+- Termination always succeeds, even if Worker is down
+- Failed events queued in `~/.config/gpu-dashboard/pending_events.json`
+- Automatically retried on next successful Worker contact
+
+### Pending Queue
+
+When Worker is offline, events are:
+1. Stored locally in `pending_events.json`
+2. Retried on next Worker operation (max 3 attempts)
+3. Include original timestamp for accurate history
+
+### Data Retention
+
+- Events stored in Cloudflare KV with 30-day TTL
+- Each event keyed by `event:{timestamp}:{instance_id}`
+- Instance IDs indexed for efficient queries
 
 ## Development Setup
 
