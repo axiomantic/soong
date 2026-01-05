@@ -23,9 +23,7 @@ Hide
 Type "source .venv/bin/activate"
 Enter
 Sleep 500ms
-Type "export DEMO_TIMING=/tmp/demo-timing.txt"
-Enter
-Type "echo \"start=$(date +%s.%N)\" > $DEMO_TIMING"
+Type "./scripts/demo-timing.sh start"
 Enter
 Sleep 200ms
 Show
@@ -44,7 +42,7 @@ Sleep 3s
 
 # Record timestamp before instance start
 Hide
-Type "echo \"wait_start=$(date +%s.%N)\" >> $DEMO_TIMING"
+Type "./scripts/demo-timing.sh wait_start"
 Enter
 Sleep 100ms
 Show
@@ -59,7 +57,7 @@ Wait+Screen /Instance Ready|SGLang API/
 
 # Record timestamp after instance ready
 Hide
-Type "echo \"wait_end=$(date +%s.%N)\" >> $DEMO_TIMING"
+Type "./scripts/demo-timing.sh wait_end"
 Enter
 Sleep 100ms
 Show
@@ -92,9 +90,9 @@ Sleep 2s
 
 # Record end timestamp
 Hide
-Type "echo \"end=$(date +%s.%N)\" >> $DEMO_TIMING"
+Type "./scripts/demo-timing.sh end"
 Enter
-Type "cat $DEMO_TIMING"
+Type "./scripts/demo-timing.sh show"
 Enter
 Sleep 200ms
 Show
