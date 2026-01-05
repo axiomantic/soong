@@ -1,14 +1,9 @@
 # VHS Demo Script for Soong CLI
 # Install vhs: brew install charmbracelet/tap/vhs
-#
-# Recording flow:
-#   1. vhs scripts/demo.tape         # Creates raw recording + timing file
-#   2. scripts/process-demo.sh       # Speeds up waiting sections with ffmpeg
-#
-# Or just: make demo
+# Run: vhs scripts/demo.tape
 
-Output docs/assets/demo-raw.gif
-Output docs/assets/demo-raw.mp4
+Output docs/assets/demo.gif
+Output docs/assets/demo.mp4
 
 Set Shell "bash"
 Set FontSize 14
@@ -16,66 +11,48 @@ Set Width 1200
 Set Height 800
 Set Theme "Dracula"
 Set Padding 20
-Set PlaybackSpeed 1.5
+Set PlaybackSpeed 2
 
-# Initialize timing file
+# Activate venv
 Hide
 Type "source .venv/bin/activate"
 Enter
 Sleep 500ms
-Type "./scripts/demo-timing.sh start"
-Enter
-Sleep 200ms
 Show
 
-# Show help (truncated view of recursive help)
-Type "soong --help | head -60"
+# Show help
+Type "soong --help"
 Sleep 300ms
 Enter
 Sleep 4s
 
-# Show available GPUs
+# Show available models
 Type "soong available"
 Sleep 300ms
 Enter
 Sleep 3s
 
-# Record timestamp before instance start
-Hide
-Type "./scripts/demo-timing.sh wait_start"
-Enter
-Sleep 100ms
-Show
-
-# Start instance with full provisioning and health check
-Type "soong start -y && ./scripts/demo-timing.sh wait_end"
+# Start an instance
+Type "soong start -y"
 Sleep 300ms
 Enter
 
-# Let the command run - VHS will wait for prompt to return
-# Full flow: boot (~3min) + provision (~3min) + health check (~1min) = ~7min
+# Wait for instance to be ready (boot + provision + health check)
 Sleep 600s
 
-# Mark when we resume typing (end of dead time)
-Hide
-Type "./scripts/demo-timing.sh resume"
-Enter
-Sleep 100ms
-Show
+Sleep 2s
 
-Sleep 1s
-
-# Show status with running instance
+# Show instance status
 Type "soong status"
 Sleep 300ms
 Enter
-Sleep 4s
+Sleep 3s
 
-# Show tunnel status
-Type "soong tunnel status"
+# Chat with the model via OpenAI-compatible API
+Type `curl -s localhost:8000/v1/chat/completions -H 'Content-Type: application/json' -d '{"model":"default","messages":[{"role":"user","content":"What is 2+2?"}]}' | jq .choices[0].message.content`
 Sleep 300ms
 Enter
-Sleep 2s
+Sleep 5s
 
 # Stop the instance
 Type "soong stop -y"
@@ -83,20 +60,11 @@ Sleep 300ms
 Enter
 Sleep 3s
 
-# Final status showing no instances
+# Show no instances running
 Type "soong status"
 Sleep 300ms
 Enter
 Sleep 2s
-
-# Record end timestamp
-Hide
-Type "./scripts/demo-timing.sh end"
-Enter
-Type "./scripts/demo-timing.sh show"
-Enter
-Sleep 200ms
-Show
 
 # End
 Sleep 1s

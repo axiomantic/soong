@@ -1,11 +1,7 @@
-.PHONY: demo demo-raw docs install test clean
+.PHONY: demo docs install test clean
 
-# Record and process demo video
-demo: demo-raw
-	./scripts/process-demo.sh
-
-# Record raw demo (requires running instance capability)
-demo-raw:
+# Record demo video (requires Lambda API credentials)
+demo:
 	vhs scripts/demo.tape
 
 # Serve docs locally
@@ -22,4 +18,4 @@ test:
 
 # Clean generated files
 clean:
-	rm -f docs/assets/demo-raw.mp4 docs/assets/demo-raw.gif
+	rm -f docs/assets/demo.mp4 docs/assets/demo.gif
