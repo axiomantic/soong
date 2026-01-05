@@ -1642,14 +1642,13 @@ tunnel_app = typer.Typer(help="Manage SSH tunnels")
 app.add_typer(tunnel_app, name="tunnel")
 
 
-@tunnel_app.command("start")
-def tunnel_start(
-    instance_id: Optional[str] = typer.Option(None, help="Instance ID (uses active if not specified)"),
-    sglang_port: int = typer.Option(8000, help="Local port for SGLang"),
-    n8n_port: int = typer.Option(5678, help="Local port for n8n"),
-    status_port: int = typer.Option(8080, help="Local port for status daemon"),
+def _start_tunnel(
+    instance_id: Optional[str] = None,
+    sglang_port: int = 8000,
+    n8n_port: int = 5678,
+    status_port: int = 8080,
 ):
-    """Start SSH tunnel to instance."""
+    """Shared tunnel start logic."""
     config = get_config()
     api = LambdaAPI(config.lambda_config.api_key)
     instance_mgr = InstanceManager(api)
@@ -1678,6 +1677,30 @@ def tunnel_start(
 
     if not success:
         raise typer.Exit(1)
+
+
+@tunnel_app.callback(invoke_without_command=True)
+def tunnel_default(
+    ctx: typer.Context,
+    instance_id: Optional[str] = typer.Option(None, help="Instance ID (uses active if not specified)"),
+    sglang_port: int = typer.Option(8000, help="Local port for SGLang"),
+    n8n_port: int = typer.Option(5678, help="Local port for n8n"),
+    status_port: int = typer.Option(8080, help="Local port for status daemon"),
+):
+    """Start SSH tunnels to instance services (default: start)."""
+    if ctx.invoked_subcommand is None:
+        _start_tunnel(instance_id, sglang_port, n8n_port, status_port)
+
+
+@tunnel_app.command("start")
+def tunnel_start(
+    instance_id: Optional[str] = typer.Option(None, help="Instance ID (uses active if not specified)"),
+    sglang_port: int = typer.Option(8000, help="Local port for SGLang"),
+    n8n_port: int = typer.Option(5678, help="Local port for n8n"),
+    status_port: int = typer.Option(8080, help="Local port for status daemon"),
+):
+    """Start SSH tunnel to instance."""
+    _start_tunnel(instance_id, sglang_port, n8n_port, status_port)
 
 
 @tunnel_app.command("stop")
