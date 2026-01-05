@@ -686,41 +686,74 @@ def start(
             if instance:
                 console.print(f"[green]Instance ready![/green]\n")
 
-                # Show connection details panel
                 ip = instance.ip
-                console.print(Panel(
-                    f"""[bold]Instance:[/bold] {instance_id[:8]}...
+
+                # Auto-start SSH tunnel
+                console.print("[cyan]Starting SSH tunnel...[/cyan]")
+                try:
+                    lambda_keys = api.list_ssh_keys()
+                except LambdaAPIError:
+                    lambda_keys = []
+
+                ssh_mgr = SSHTunnelManager(config.ssh.key_path, lambda_key_names=lambda_keys)
+                tunnel_started = ssh_mgr.start_tunnel(
+                    ip,
+                    local_ports=[8000, 5678, 8080],
+                    remote_ports=[8000, 5678, 8080],
+                )
+
+                if tunnel_started:
+                    # Show connection details with localhost URLs
+                    console.print(Panel(
+                        f"""[bold]Instance:[/bold] {instance_id[:8]}...
 [bold]IP Address:[/bold] {ip}
 [bold]Region:[/bold] {region}
 [bold]GPU:[/bold] {gpu}
 [bold]Lease:[/bold] {hours} hours
 
-[bold cyan]Services[/bold cyan]
-  SGLang API:    http://{ip}:8000
-  n8n Workflows: http://{ip}:5678
-  Status Daemon: http://{ip}:8080
+[bold cyan]Services (via tunnel)[/bold cyan]
+  SGLang API:    http://localhost:8000
+  n8n Workflows: http://localhost:5678
+  Status Daemon: http://localhost:8080
 
-[bold cyan]Quick Start[/bold cyan]
-  [dim]# SSH into instance[/dim]
-  soong ssh
+[bold cyan]Quick Commands[/bold cyan]
+  soong ssh       [dim]# SSH into instance[/dim]
+  soong status    [dim]# Check instance status[/dim]
+  soong extend 2  [dim]# Extend lease by 2 hours[/dim]
+  soong tunnel stop  [dim]# Stop tunnel[/dim]
 
-  [dim]# Start SSH tunnels (access services on localhost)[/dim]
-  soong tunnel
-
-  [dim]# Check instance status[/dim]
-  soong status
-
-  [dim]# Extend lease by 2 hours[/dim]
-  soong extend 2
-
-[bold cyan]Direct SSH[/bold cyan]
+[bold cyan]Direct Access[/bold cyan]
   ssh ubuntu@{ip}
 
 [bold cyan]Documentation[/bold cyan]
   https://axiomantic.github.io/soong/""",
-                    title="Instance Ready",
-                    border_style="green",
-                ))
+                        title="Instance Ready",
+                        border_style="green",
+                    ))
+                else:
+                    # Tunnel failed, show remote URLs
+                    console.print(Panel(
+                        f"""[bold]Instance:[/bold] {instance_id[:8]}...
+[bold]IP Address:[/bold] {ip}
+[bold]Region:[/bold] {region}
+[bold]GPU:[/bold] {gpu}
+[bold]Lease:[/bold] {hours} hours
+
+[bold yellow]Tunnel failed - use direct URLs:[/bold yellow]
+  SGLang API:    http://{ip}:8000
+  n8n Workflows: http://{ip}:5678
+  Status Daemon: http://{ip}:8080
+
+[bold cyan]Quick Commands[/bold cyan]
+  soong tunnel   [dim]# Retry tunnel[/dim]
+  soong ssh      [dim]# SSH into instance[/dim]
+  soong status   [dim]# Check instance status[/dim]
+
+[bold cyan]Direct Access[/bold cyan]
+  ssh ubuntu@{ip}""",
+                        title="Instance Ready",
+                        border_style="yellow",
+                    ))
             else:
                 console.print("[yellow]Instance launch timed out[/yellow]")
                 console.print("Check status with: soong status")
