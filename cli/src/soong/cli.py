@@ -17,7 +17,25 @@ import requests
 from .config import Config, ConfigManager, LambdaConfig, StatusDaemonConfig, DefaultsConfig, SSHConfig, CloudflareConfig, TunnelConfig, validate_custom_model
 from .pending import save_pending_event, sync_pending_events
 from .lambda_api import LambdaAPI, LambdaAPIError, InstanceType
+from .mock import MockLambdaAPI
 from .instance import InstanceManager
+
+
+# Mock mode flag - set by hidden --mock CLI option
+# Used for demo recordings and testing without real API calls
+_mock_mode: bool = False
+
+
+def get_api(config) -> LambdaAPI:
+    """Get API client, using mock if --mock flag was passed.
+
+    This factory function enables demo recordings to simulate the full
+    instance lifecycle without incurring GPU costs. The mock API maintains
+    realistic state transitions (booting -> active -> terminated).
+    """
+    if _mock_mode:
+        return MockLambdaAPI(config.lambda_config.api_key)
+    return LambdaAPI(config.lambda_config.api_key)
 from .validation import LaunchValidator
 from .ssh import SSHTunnelManager
 from .provision import provision_instance, ProvisionConfig
@@ -46,10 +64,13 @@ def format_compact_help(cmd: click.Command, ctx: click.Context, prefix: str = ""
     if usage:
         lines.append(click.style(f"  Usage: {cmd_path} {usage}", fg="white", dim=True))
 
-    # Show options (compact)
+    # Show options (compact, skip hidden options)
     opts = []
     for param in cmd.get_params(ctx):
         if isinstance(param, click.Option):
+            # Skip hidden options (e.g., --mock for demo/testing)
+            if param.hidden:
+                continue
             opt_names = ", ".join(param.opts)
             opt_help = param.help or ""
             if param.required:
@@ -119,8 +140,18 @@ def main_callback(
         callback=full_help_callback,
         help="Show full help for all commands",
     ),
+    mock: bool = typer.Option(
+        False,
+        "--mock",
+        is_eager=True,
+        hidden=True,  # Hidden from --help output
+        help="Use mock API for demo/testing (no real instances)",
+    ),
 ):
     """GPU session management for Lambda Labs with automatic cost controls."""
+    global _mock_mode
+    if mock:
+        _mock_mode = True
     if ctx.invoked_subcommand is None and not help:
         # No command specified, show help
         full_help_callback(ctx, None, True)
@@ -673,11 +704,11 @@ def start(
 ):
     """Launch new GPU instance and provision services."""
     config = get_config()
-    api = LambdaAPI(config.lambda_config.api_key)
+    api = get_api(config)
     instance_mgr = InstanceManager(api)
 
-    # Attempt to sync pending events if Worker is configured
-    if config.cloudflare.worker_url:
+    # Attempt to sync pending events if Worker is configured (skip in mock mode)
+    if config.cloudflare.worker_url and not _mock_mode:
         successes, failures = sync_pending_events(
             config.cloudflare.worker_url,
             config.status_daemon.token,
@@ -761,23 +792,24 @@ def start(
 
         console.print(f"[green]Instance launched: {instance_id}[/green]")
 
-        # Log launch event to Worker (hard fail if Worker configured but unreachable)
-        try:
-            log_launch_event(config, instance_id, gpu, region)
-        except RuntimeError:
-            # Hard fail: abort launch and clean up
-            console.print("\n[red]Launch aborted due to Worker logging failure[/red]")
-            console.print("[yellow]Attempting to terminate instance...[/yellow]")
-
-            # Best-effort cleanup: terminate the instance
+        # Log launch event to Worker (skip in mock mode, hard fail if Worker configured but unreachable)
+        if not _mock_mode:
             try:
-                api.terminate_instance(instance_id)
-                console.print("[green]Instance terminated successfully[/green]")
-            except Exception as cleanup_error:
-                console.print(f"[red]Warning: Failed to terminate instance: {cleanup_error}[/red]")
-                console.print(f"[yellow]Please manually terminate instance {instance_id} via Lambda dashboard[/yellow]")
+                log_launch_event(config, instance_id, gpu, region)
+            except RuntimeError:
+                # Hard fail: abort launch and clean up
+                console.print("\n[red]Launch aborted due to Worker logging failure[/red]")
+                console.print("[yellow]Attempting to terminate instance...[/yellow]")
 
-            raise typer.Exit(1)
+                # Best-effort cleanup: terminate the instance
+                try:
+                    api.terminate_instance(instance_id)
+                    console.print("[green]Instance terminated successfully[/green]")
+                except Exception as cleanup_error:
+                    console.print(f"[red]Warning: Failed to terminate instance: {cleanup_error}[/red]")
+                    console.print(f"[yellow]Please manually terminate instance {instance_id} via Lambda dashboard[/yellow]")
+
+                raise typer.Exit(1)
 
         if wait:
             instance = instance_mgr.wait_for_ready(instance_id, timeout_seconds=600)
@@ -786,8 +818,10 @@ def start(
 
                 ip = instance.ip
 
-                # Provision the instance with services
-                if not skip_provision:
+                # Provision the instance with services (skip in mock mode)
+                if _mock_mode:
+                    console.print("[dim]Mock mode: skipping provisioning[/dim]")
+                elif not skip_provision:
                     console.print("[cyan]Provisioning instance...[/cyan]")
                     provision_config = ProvisionConfig(
                         instance_ip=ip,
@@ -812,7 +846,27 @@ def start(
                 else:
                     console.print("[dim]Skipping provisioning (--skip-provision)[/dim]")
 
-                # Auto-start SSH tunnel
+                # Auto-start SSH tunnel (skip in mock mode)
+                if _mock_mode:
+                    console.print("[dim]Mock mode: skipping SSH tunnel[/dim]")
+                    # Show simplified panel for mock mode
+                    console.print(Panel(
+                        f"""[bold]Instance:[/bold] {instance_id[:8]}...
+[bold]IP Address:[/bold] {ip}
+[bold]Region:[/bold] {region}
+[bold]GPU:[/bold] {gpu}
+[bold]Lease:[/bold] {hours} hours
+
+[bold yellow]Mock mode - no real services[/bold yellow]
+
+[bold cyan]Quick Commands[/bold cyan]
+  soong status    [dim]# Check instance status[/dim]
+  soong stop -y   [dim]# Terminate instance[/dim]""",
+                        title="Instance Ready",
+                        border_style="green",
+                    ))
+                    return
+
                 console.print("\n[cyan]Starting SSH tunnel...[/cyan]")
                 try:
                     lambda_keys = api.list_ssh_keys()
@@ -1059,7 +1113,7 @@ def status(
 ):
     """Show status of running instances."""
     config = get_config()
-    api = LambdaAPI(config.lambda_config.api_key)
+    api = get_api(config)
 
     try:
         # Show termination history if requested
@@ -1215,7 +1269,7 @@ def extend(
 ):
     """Extend instance lease."""
     config = get_config()
-    api = LambdaAPI(config.lambda_config.api_key)
+    api = get_api(config)
     instance_mgr = InstanceManager(api)
 
     # Get instance
@@ -1288,7 +1342,7 @@ def stop(
 ):
     """Terminate instance."""
     config = get_config()
-    api = LambdaAPI(config.lambda_config.api_key)
+    api = get_api(config)
     instance_mgr = InstanceManager(api)
 
     # Get instance
@@ -1306,9 +1360,9 @@ def stop(
         if not confirmed:
             raise typer.Abort()
 
-    # Fetch metrics from status daemon (best effort, before termination)
+    # Fetch metrics from status daemon (skip in mock mode, best effort before termination)
     metrics = None
-    if instance.ip:
+    if instance.ip and not _mock_mode:
         metrics = fetch_status_daemon_metrics(instance.ip, config.status_daemon.token)
 
     # Calculate duration and cost from instance metadata
@@ -1337,8 +1391,9 @@ def stop(
         if wait:
             instance_mgr.wait_for_terminated(instance.id, timeout_seconds=120)
 
-        # Log termination event (does not raise on failure)
-        log_terminate_event(config, instance, duration_minutes, cost_dollars, metrics)
+        # Log termination event (skip in mock mode, does not raise on failure)
+        if not _mock_mode:
+            log_terminate_event(config, instance, duration_minutes, cost_dollars, metrics)
     except LambdaAPIError as e:
         console.print(f"[red]Error terminating instance: {e}[/red]")
         raise typer.Exit(1)
@@ -1350,7 +1405,7 @@ def ssh(
 ):
     """SSH into instance."""
     config = get_config()
-    api = LambdaAPI(config.lambda_config.api_key)
+    api = get_api(config)
     instance_mgr = InstanceManager(api)
 
     # Get Lambda SSH keys for better error messages
@@ -1382,7 +1437,7 @@ def ssh(
 def available():
     """Show available GPU types and models."""
     config = get_config()
-    api = LambdaAPI(config.lambda_config.api_key)
+    api = get_api(config)
 
     try:
         instance_types = api.list_instance_types()
@@ -1564,7 +1619,7 @@ def models_info(model_id: str = typer.Argument(..., help="Model ID to display in
 
         # Try to get pricing from API
         try:
-            api = LambdaAPI(config.lambda_config.api_key)
+            api = get_api(config)
             instance_type = api.get_instance_type(recommended_gpu)
             if instance_type:
                 console.print(f"  Price: {instance_type.format_price()}")
@@ -1822,7 +1877,7 @@ def _start_tunnel(
 ):
     """Shared tunnel start logic."""
     config = get_config()
-    api = LambdaAPI(config.lambda_config.api_key)
+    api = get_api(config)
     instance_mgr = InstanceManager(api)
 
     # Use config defaults if not specified

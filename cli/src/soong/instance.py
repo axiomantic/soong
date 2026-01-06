@@ -10,7 +10,7 @@ from rich.text import Text
 
 from .lambda_api import LambdaAPI, Instance, LambdaAPIError
 
-console = Console()
+console = Console(force_terminal=True)
 
 
 def check_service_health(ip: str, ssh_key_path: str, timeout: int = 5) -> bool:
@@ -52,7 +52,7 @@ class StatusDisplay:
     def __init__(self, start_time: float):
         self.start_time = start_time
         self.status = "booting"
-        self.spinner = Spinner("dots")
+        self.spinner = Spinner("line")
         self._time_func = time.time  # Capture reference before any mocking
 
     def __rich__(self):
