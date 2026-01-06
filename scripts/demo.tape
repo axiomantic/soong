@@ -33,7 +33,7 @@ Sleep 4s
 # Start an instance (mock boots in ~5s, then shows panel)
 Type "soong start -y"
 Enter
-Sleep 12s
+Sleep 16s
 
 # Show instance status
 Type "soong status"
