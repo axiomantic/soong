@@ -13,7 +13,7 @@ Set Theme "Dracula"
 Set Padding 20
 Set PlaybackSpeed 2
 Set WaitTimeout 900s
-Set WaitPattern /\$\s*$/
+Set WaitPattern /[\)$>]\s*$/
 
 # Activate venv
 Hide
