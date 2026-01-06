@@ -13,19 +13,12 @@ Set Width 1200
 Set Height 800
 Set Theme "Dracula"
 Set Padding 20
-Set PlaybackSpeed 2
 Set WaitTimeout 120s
 Set WaitPattern /[\)$>]\s*$/
 
-# Clean up mock state and set up environment
+# Clean up mock state and set up environment (hidden from recording)
 Hide
-Type "rm -f /tmp/soong-mock-state.json"
-Enter
-Wait
-Type "source .venv/bin/activate"
-Enter
-Wait
-Type "export SOONG_MOCK=1"
+Type "rm -f /tmp/soong-mock-state.json && source .venv/bin/activate && export SOONG_MOCK=1 && clear"
 Enter
 Wait
 Show
@@ -34,31 +27,31 @@ Show
 Type "soong --help"
 Enter
 Wait
-Sleep 3s
+Sleep 4s
 
 # Show available GPUs
 Type "soong available"
 Enter
 Wait
-Sleep 3s
+Sleep 4s
 
 # Start an instance
 Type "soong start -y"
 Enter
 Wait
-Sleep 3s
+Sleep 5s
 
 # Show instance status
 Type "soong status"
 Enter
 Wait
-Sleep 3s
+Sleep 4s
 
 # Stop the instance
 Type "soong stop -y"
 Enter
 Wait
-Sleep 3s
+Sleep 4s
 
 # End
-Sleep 2s
+Sleep 3s
