@@ -104,7 +104,7 @@ class InstanceManager:
                         return None
 
                     if instance.status == "active" and instance.ip:
-                        live.update(Text("[green]✓ Instance ready![/green]"))
+                        live.update(Text.from_markup("[green]✓ Instance ready![/green]"))
                         return instance
                     elif instance.status in ["terminated", "unhealthy"]:
                         console.print(f"[red]Instance in {instance.status} state[/red]")
@@ -150,7 +150,7 @@ class InstanceManager:
                     return False
 
                 if check_service_health(ip, ssh_key_path):
-                    live.update(Text("[green]✓ Services healthy![/green]"))
+                    live.update(Text.from_markup("[green]✓ Services healthy![/green]"))
                     return True
 
                 status_display.status = f"waiting for services ({int(elapsed)}s)"
@@ -204,14 +204,14 @@ class InstanceManager:
                 try:
                     instance = self.api.get_instance(instance_id)
                     if instance is None or instance.status == "terminated":
-                        live.update(Text("[green]✓ Instance terminated[/green]"))
+                        live.update(Text.from_markup("[green]✓ Instance terminated[/green]"))
                         return True
 
                     status_display.status = f"terminating ({instance.status})"
 
                 except LambdaAPIError:
                     # Instance not found likely means terminated
-                    live.update(Text("[green]✓ Instance terminated[/green]"))
+                    live.update(Text.from_markup("[green]✓ Instance terminated[/green]"))
                     return True
 
                 time.sleep(poll_interval)

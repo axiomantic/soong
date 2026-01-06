@@ -34,7 +34,7 @@ Sleep 4s
 Type "soong start -y"
 Enter
 Wait
-Sleep 5s
+Sleep 8s
 
 # Show instance status
 Type "soong status"
