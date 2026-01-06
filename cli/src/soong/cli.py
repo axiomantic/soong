@@ -21,9 +21,10 @@ from .mock import MockLambdaAPI
 from .instance import InstanceManager
 
 
-# Mock mode flag - set by hidden --mock CLI option
+# Mock mode flag - set by SOONG_MOCK=1 env var or hidden --mock CLI option
 # Used for demo recordings and testing without real API calls
-_mock_mode: bool = False
+import os
+_mock_mode: bool = os.environ.get("SOONG_MOCK", "").lower() in ("1", "true", "yes")
 
 
 def get_api(config) -> LambdaAPI:
@@ -151,7 +152,7 @@ def main_callback(
     """GPU session management for Lambda Labs with automatic cost controls."""
     global _mock_mode
     if mock:
-        _mock_mode = True
+        _mock_mode = True  # --mock flag sets it (env var already checked at module load)
     if ctx.invoked_subcommand is None and not help:
         # No command specified, show help
         full_help_callback(ctx, None, True)

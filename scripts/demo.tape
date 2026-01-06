@@ -1,5 +1,5 @@
 # VHS Demo Script for Soong CLI
-# Uses --mock flag to simulate API responses without real GPU costs.
+# Uses SOONG_MOCK=1 env var to simulate API responses without real GPU costs.
 #
 # Install vhs: brew install charmbracelet/tap/vhs
 # Run: vhs scripts/demo.tape
@@ -17,12 +17,15 @@ Set PlaybackSpeed 2
 Set WaitTimeout 120s
 Set WaitPattern /[\)$>]\s*$/
 
-# Clean up mock state and activate venv
+# Clean up mock state and set up environment
 Hide
 Type "rm -f /tmp/soong-mock-state.json"
 Enter
 Wait
 Type "source .venv/bin/activate"
+Enter
+Wait
+Type "export SOONG_MOCK=1"
 Enter
 Wait
 Show
@@ -34,25 +37,25 @@ Wait
 Sleep 3s
 
 # Show available GPUs
-Type "soong --mock available"
+Type "soong available"
 Enter
 Wait
 Sleep 3s
 
 # Start an instance (mock mode - ~5 seconds instead of minutes)
-Type "soong --mock start -y --gpu gpu_1x_a100_sxm4_80gb --region us-west-1 --skip-validation"
+Type "soong start -y --gpu gpu_1x_a100_sxm4_80gb --region us-west-1 --skip-validation"
 Enter
 Wait
 Sleep 3s
 
 # Show instance status
-Type "soong --mock status"
+Type "soong status"
 Enter
 Wait
 Sleep 3s
 
 # Stop the instance
-Type "soong --mock stop -y"
+Type "soong stop -y"
 Enter
 Wait
 Sleep 3s
