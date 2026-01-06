@@ -199,7 +199,7 @@ def provision_instance(config: ProvisionConfig) -> bool:
         # Step 1: Wait for SSH
         display.status = "Waiting for SSH..."
         if not wait_for_ssh(config.instance_ip, config.ssh_key_path):
-            live.update(Text("[red]✗ SSH connection failed[/red]"))
+            live.update(Text.from_markup("[red]✗ SSH connection failed[/red]"))
             return False
         console.print("[green]✓[/green] SSH available")
 
@@ -219,8 +219,8 @@ def provision_instance(config: ProvisionConfig) -> bool:
     with Live(display, console=console, refresh_per_second=4) as live:
         display.status = "Waiting for services to start..."
         if not wait_for_services(config.instance_ip, config.ssh_key_path):
-            live.update(Text("[yellow]⚠ Services may still be starting[/yellow]"))
+            live.update(Text.from_markup("[yellow]⚠ Services may still be starting[/yellow]"))
         else:
-            live.update(Text("[green]✓ Services ready[/green]"))
+            live.update(Text.from_markup("[green]✓ Services ready[/green]"))
 
     return True
