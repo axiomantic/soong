@@ -18,46 +18,64 @@ Set WaitTimeout 900s
 Hide
 Type "source .venv/bin/activate"
 Enter
-Sleep 500ms
+Sleep 1s
 Show
 
-# Show help
+# Show help (wait for prompt after)
 Type "soong --help"
 Enter
-Sleep 6s
+Wait+Screen /worker/
+Sleep 3s
 
-# Show available models
+# Clear and show available GPUs
+Ctrl+L
+Sleep 500ms
 Type "soong available"
 Enter
-Sleep 5s
+Wait+Screen /Price/
+Sleep 3s
 
-# Start an instance (blocks until ready)
+# Clear and start an instance
+Ctrl+L
+Sleep 500ms
 Type "soong start -y"
 Enter
 Wait+Screen /Instance ready/
 Sleep 3s
 
 # Show instance status
+Ctrl+L
+Sleep 500ms
 Type "soong status"
 Enter
-Sleep 5s
+Wait+Screen /active/
+Sleep 3s
 
-# List available models
+# List available models from API
+Ctrl+L
+Sleep 500ms
 Type "curl -s localhost:8000/v1/models | jq -r '.data[0].id'"
 Enter
 Sleep 5s
 
-# Chat with the model via OpenAI-compatible API
+# Chat with the model
+Ctrl+L
+Sleep 500ms
 Type `MODEL=$(curl -s localhost:8000/v1/models | jq -r '.data[0].id') && curl -s localhost:8000/v1/chat/completions -H 'Content-Type: application/json' -d "{\"model\":\"$MODEL\",\"messages\":[{\"role\":\"user\",\"content\":\"What is 2+2?\"}]}" | jq -r '.choices[0].message.content'`
 Enter
 Sleep 20s
 
 # Show instance status again
+Ctrl+L
+Sleep 500ms
 Type "soong status"
 Enter
-Sleep 5s
+Wait+Screen /active/
+Sleep 3s
 
-# Stop the instance (blocks until terminated)
+# Stop the instance
+Ctrl+L
+Sleep 500ms
 Type "soong stop -y"
 Enter
 Wait+Screen /terminated/
