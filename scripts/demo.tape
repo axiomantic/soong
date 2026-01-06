@@ -23,53 +23,45 @@ Show
 
 # Show help
 Type "soong --help"
-Sleep 300ms
 Enter
-Sleep 4s
+Sleep 6s
 
 # Show available models
 Type "soong available"
-Sleep 300ms
 Enter
-Sleep 3s
+Sleep 5s
 
 # Start an instance (blocks until ready)
 Type "soong start -y"
-Sleep 300ms
 Enter
 Wait+Screen /Instance ready/
-Sleep 2s
+Sleep 3s
 
 # Show instance status
 Type "soong status"
-Sleep 300ms
 Enter
-Sleep 3s
+Sleep 5s
 
 # List available models
 Type "curl -s localhost:8000/v1/models | jq -r '.data[0].id'"
-Sleep 300ms
 Enter
-Sleep 3s
+Sleep 5s
 
 # Chat with the model via OpenAI-compatible API
 Type `MODEL=$(curl -s localhost:8000/v1/models | jq -r '.data[0].id') && curl -s localhost:8000/v1/chat/completions -H 'Content-Type: application/json' -d "{\"model\":\"$MODEL\",\"messages\":[{\"role\":\"user\",\"content\":\"What is 2+2?\"}]}" | jq -r '.choices[0].message.content'`
-Sleep 300ms
 Enter
-Sleep 15s
+Sleep 20s
 
 # Show instance status again
 Type "soong status"
-Sleep 300ms
 Enter
-Sleep 3s
+Sleep 5s
 
 # Stop the instance (blocks until terminated)
 Type "soong stop -y"
-Sleep 300ms
 Enter
 Wait+Screen /terminated/
-Sleep 2s
+Sleep 3s
 
 # End
-Sleep 1s
+Sleep 2s
