@@ -13,72 +13,61 @@ Set Theme "Dracula"
 Set Padding 20
 Set PlaybackSpeed 2
 Set WaitTimeout 900s
+Set WaitPattern /\$\s*$/
 
 # Activate venv
 Hide
 Type "source .venv/bin/activate"
 Enter
-Sleep 1s
+Wait
 Show
 
-# Show help (wait for prompt after)
+# Show help
 Type "soong --help"
 Enter
-Wait+Screen /worker/
+Wait
 Sleep 3s
 
-# Clear and show available GPUs
-Ctrl+L
-Sleep 500ms
+# Show available GPUs
 Type "soong available"
 Enter
-Wait+Screen /Price/
+Wait
 Sleep 3s
 
-# Clear and start an instance
-Ctrl+L
-Sleep 500ms
+# Start an instance (this takes several minutes)
 Type "soong start -y"
 Enter
-Wait+Screen /Instance ready/
+Wait
 Sleep 3s
 
 # Show instance status
-Ctrl+L
-Sleep 500ms
 Type "soong status"
 Enter
-Wait+Screen /active/
+Wait
 Sleep 3s
 
 # List available models from API
-Ctrl+L
-Sleep 500ms
 Type "curl -s localhost:8000/v1/models | jq -r '.data[0].id'"
 Enter
-Sleep 5s
+Wait
+Sleep 3s
 
 # Chat with the model
-Ctrl+L
-Sleep 500ms
 Type `MODEL=$(curl -s localhost:8000/v1/models | jq -r '.data[0].id') && curl -s localhost:8000/v1/chat/completions -H 'Content-Type: application/json' -d "{\"model\":\"$MODEL\",\"messages\":[{\"role\":\"user\",\"content\":\"What is 2+2?\"}]}" | jq -r '.choices[0].message.content'`
 Enter
-Sleep 20s
+Wait
+Sleep 3s
 
 # Show instance status again
-Ctrl+L
-Sleep 500ms
 Type "soong status"
 Enter
-Wait+Screen /active/
+Wait
 Sleep 3s
 
 # Stop the instance
-Ctrl+L
-Sleep 500ms
 Type "soong stop -y"
 Enter
-Wait+Screen /terminated/
+Wait
 Sleep 3s
 
 # End
