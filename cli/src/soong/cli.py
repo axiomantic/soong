@@ -752,8 +752,8 @@ def start(
             console.print("Add an SSH key at: https://cloud.lambda.ai/ssh-keys")
             raise typer.Exit(1)
 
-        # Pre-launch validation
-        if not skip_validation:
+        # Pre-launch validation (skip in mock mode)
+        if not skip_validation and not _mock_mode:
             console.print("\n[cyan]Validating launch parameters...[/cyan]")
             validator = LaunchValidator(api)
             result = validator.validate(

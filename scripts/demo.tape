@@ -42,8 +42,8 @@ Enter
 Wait
 Sleep 3s
 
-# Start an instance (mock mode - ~5 seconds instead of minutes)
-Type "soong start -y --gpu gpu_1x_a100_sxm4_80gb --region us-west-1 --skip-validation"
+# Start an instance
+Type "soong start -y"
 Enter
 Wait
 Sleep 3s

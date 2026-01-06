@@ -213,16 +213,7 @@ class MockLambdaAPI:
         filesystem_names: Optional[List[str]] = None,
         name: Optional[str] = None,
     ) -> str:
-        """Launch a mock instance."""
-        # Validate instance type exists
-        valid_types = [t["name"] for t in MOCK_INSTANCE_TYPES]
-        if instance_type not in valid_types:
-            raise LambdaAPIError(f"Invalid instance type: {instance_type}")
-
-        # Validate region has capacity
-        type_info = next(t for t in MOCK_INSTANCE_TYPES if t["name"] == instance_type)
-        if region not in type_info["regions_available"]:
-            raise LambdaAPIError(f"No capacity in region {region} for {instance_type}")
+        """Launch a mock instance. Accepts any GPU type and region for demo flexibility."""
 
         # Generate mock instance ID
         self.state.launch_count += 1
