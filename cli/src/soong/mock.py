@@ -270,11 +270,20 @@ class MockLambdaAPI:
         ]
 
     def get_instance_type(self, name: str) -> Optional[InstanceType]:
-        """Get a specific mock instance type."""
+        """Get a specific mock instance type. Returns fake data for unknown types."""
         for t in self.list_instance_types():
             if t.name == name:
                 return t
-        return None
+        # Return fake instance type for any unknown GPU (demo flexibility)
+        return InstanceType(
+            name=name,
+            description=name.replace("_", " ").replace("gpu ", "").title(),
+            price_cents_per_hour=129,  # Default to ~$1.29/hr
+            vcpus=30,
+            memory_gib=200,
+            storage_gib=512,
+            regions_available=["us-west-1", "us-east-1"],
+        )
 
     def list_file_systems(self) -> List[FileSystem]:
         """List mock filesystems."""

@@ -3,14 +3,15 @@
 #
 # Install vhs: brew install charmbracelet/tap/vhs
 # Run: vhs scripts/demo.tape
+# Post-process: gifsicle --no-loopcount docs/assets/demo.gif -o docs/assets/demo.gif
 
 Output docs/assets/demo.gif
 Output docs/assets/demo.mp4
 
 Set Shell "bash"
-Set FontSize 14
-Set Width 1200
-Set Height 800
+Set FontSize 16
+Set Width 1000
+Set Height 600
 Set Theme "Dracula"
 Set Padding 20
 Set WaitTimeout 120s
@@ -22,12 +23,6 @@ Type "rm -f /tmp/soong-mock-state.json && source .venv/bin/activate && export SO
 Enter
 Wait
 Show
-
-# Show help
-Type "soong --help"
-Enter
-Wait
-Sleep 4s
 
 # Show available GPUs
 Type "soong available"
@@ -54,4 +49,4 @@ Wait
 Sleep 4s
 
 # End
-Sleep 3s
+Sleep 2s
