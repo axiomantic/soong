@@ -3,9 +3,8 @@
 import subprocess
 import time
 from typing import Optional
-from rich.console import Console, Group
+from rich.console import Console
 from rich.live import Live
-from rich.spinner import Spinner
 from rich.text import Text
 
 from .lambda_api import LambdaAPI, Instance, LambdaAPIError
@@ -49,16 +48,19 @@ def check_service_health(ip: str, ssh_key_path: str, timeout: int = 5) -> bool:
 class StatusDisplay:
     """Dynamic status display that updates elapsed time on each render."""
 
+    SPINNER_CHARS = "|/-\\"
+
     def __init__(self, start_time: float):
         self.start_time = start_time
         self.status = "booting"
-        self.spinner = Spinner("line")
+        self.frame = 0
         self._time_func = time.time  # Capture reference before any mocking
 
     def __rich__(self):
         elapsed = int(self._time_func() - self.start_time)
-        text = Text(f" Status: {self.status} (elapsed: {elapsed}s)")
-        return Group(self.spinner, text)
+        spinner_char = self.SPINNER_CHARS[self.frame % len(self.SPINNER_CHARS)]
+        self.frame += 1
+        return Text(f"{spinner_char} Status: {self.status} (elapsed: {elapsed}s)")
 
 
 class InstanceManager:
